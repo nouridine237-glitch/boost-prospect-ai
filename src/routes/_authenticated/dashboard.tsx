@@ -37,7 +37,7 @@ function Dashboard() {
   const [adding, setAdding] = useState(false); const [query, setQuery] = useState("");
   const [mode, setMode] = useState<(typeof modes)[number]>(modes[0]); const [context, setContext] = useState("");
   const [result, setResult] = useState(""); const [generating, setGenerating] = useState(false); const [error, setError] = useState("");
-  const displayName = String(user.user_metadata?.full_name ?? user.email?.split("@")[0] ?? "Networker");
+  const displayName = String(user.user_metadata?.["full_name"] ?? user.email?.split("@")[0] ?? "Networker");
 
   useEffect(() => {
     supabase.from("profiles").upsert({ id: user.id, full_name: displayName });
