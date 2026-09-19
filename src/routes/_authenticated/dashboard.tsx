@@ -84,4 +84,4 @@ function Dashboard() {
 }
 
 function Stat({icon:Icon,label,value,note}:{icon:typeof UserRound;label:string;value:string;note:string}) { return <article className="surface rounded-lg p-5"><div className="flex items-center justify-between"><span className="text-xs font-semibold text-muted-foreground">{label}</span><span className="grid size-8 place-items-center rounded-md bg-primary/12 text-primary"><Icon className="size-4"/></span></div><p className="mt-4 text-3xl font-extrabold">{value}</p><p className="mt-1 text-[11px] text-muted-foreground">{note}</p></article>; }
-function slugStatus(status:string){ return status.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replaceAll(" ","-"); }
+function slugStatus(status:string){ return status.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replaceAll(" ","-").replaceAll("_","-"); }
