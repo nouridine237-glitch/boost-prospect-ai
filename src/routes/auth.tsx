@@ -8,6 +8,7 @@ import { lovable } from "@/integrations/lovable";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/auth")({
+  ssr: false,
   head: () => ({ meta: [
     { title: "Connexion — MLM Boost AI" },
     { name: "description", content: "Connectez-vous à votre espace de prospection MLM Boost AI." },

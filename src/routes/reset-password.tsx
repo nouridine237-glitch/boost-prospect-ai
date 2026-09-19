@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/reset-password")({
+  ssr: false,
   head: () => ({ meta: [{ title: "Nouveau mot de passe — MLM Boost AI" }, { name: "description", content: "Définissez un nouveau mot de passe sécurisé." }, { property: "og:title", content: "Nouveau mot de passe — MLM Boost AI" }, { property: "og:description", content: "Sécurisez votre compte MLM Boost AI." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }] }),
   component: ResetPassword,
 });
