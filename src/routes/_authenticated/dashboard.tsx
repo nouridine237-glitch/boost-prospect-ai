@@ -24,7 +24,9 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 });
 
 type Prospect = Tables<"prospects">;
-const statuses = ["Nouveau", "Contacté", "Discussion", "Intéressé", "Client", "Non intéressé"] as const;
+type Status = Prospect["status"];
+const statuses = ["nouveau", "contacté", "discussion", "intéressé", "client", "non_intéressé"] as const satisfies readonly Status[];
+const statusLabels: Record<Status, string> = { nouveau: "Nouveau", "contacté": "Contacté", discussion: "Discussion", "intéressé": "Intéressé", client: "Client", "non_intéressé": "Non intéressé" };
 const modes = ["Message de prospection", "Réponse à un prospect", "Script d'appel", "Post réseau social"] as const;
 const nav = [{ icon: LayoutDashboard, label: "Dashboard" }, { icon: ContactRound, label: "Prospects" }, { icon: Bot, label: "Assistant IA" }, { icon: BarChart3, label: "Statistiques" }, { icon: GraduationCap, label: "Académie" }, { icon: CreditCard, label: "Abonnement" }, { icon: Settings, label: "Paramètres" }];
 
