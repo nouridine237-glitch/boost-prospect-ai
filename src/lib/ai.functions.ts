@@ -4,9 +4,17 @@ import { streamText } from "ai";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
+const modeToType = {
+  "Message de prospection": "message_prospection",
+  "Réponse à un prospect": "reponse_prospect",
+  "Script d'appel": "script_appel",
+  "Post réseau social": "post_reseau_social",
+} as const;
+
 const inputSchema = z.object({
   mode: z.enum(["Message de prospection", "Réponse à un prospect", "Script d'appel", "Post réseau social"]),
   context: z.string().min(8).max(4000),
+  prospectId: z.string().uuid().optional(),
 });
 
 export const generateProspectingContent = createServerFn({ method: "POST" })
