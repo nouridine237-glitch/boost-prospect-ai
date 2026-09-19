@@ -18,22 +18,36 @@ export type Database = {
         Row: {
           created_at: string
           generated_content: string
+          generation_type: Database["public"]["Enums"]["ai_generation_type"]
           id: string
+          prospect_id: string | null
           user_id: string
         }
         Insert: {
           created_at?: string
           generated_content: string
+          generation_type?: Database["public"]["Enums"]["ai_generation_type"]
           id?: string
+          prospect_id?: string | null
           user_id: string
         }
         Update: {
           created_at?: string
           generated_content?: string
+          generation_type?: Database["public"]["Enums"]["ai_generation_type"]
           id?: string
+          prospect_id?: string | null
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "ai_generations_prospect_id_fkey"
+            columns: ["prospect_id"]
+            isOneToOne: false
+            referencedRelation: "prospects"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -66,33 +80,39 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          interest_level: number | null
           name: string
-          notes: string
-          phone: string
-          social_network: string
-          status: string
+          next_followup_date: string | null
+          notes: string | null
+          phone: string | null
+          social_network: string | null
+          status: Database["public"]["Enums"]["prospect_status"]
           updated_at: string
           user_id: string
         }
         Insert: {
           created_at?: string
           id?: string
+          interest_level?: number | null
           name: string
-          notes?: string
-          phone?: string
-          social_network?: string
-          status?: string
+          next_followup_date?: string | null
+          notes?: string | null
+          phone?: string | null
+          social_network?: string | null
+          status?: Database["public"]["Enums"]["prospect_status"]
           updated_at?: string
           user_id: string
         }
         Update: {
           created_at?: string
           id?: string
+          interest_level?: number | null
           name?: string
-          notes?: string
-          phone?: string
-          social_network?: string
-          status?: string
+          next_followup_date?: string | null
+          notes?: string | null
+          phone?: string | null
+          social_network?: string | null
+          status?: Database["public"]["Enums"]["prospect_status"]
           updated_at?: string
           user_id?: string
         }
@@ -106,7 +126,18 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      ai_generation_type:
+        | "message_prospection"
+        | "reponse_prospect"
+        | "script_appel"
+        | "post_reseau_social"
+      prospect_status:
+        | "nouveau"
+        | "contacté"
+        | "discussion"
+        | "intéressé"
+        | "client"
+        | "non_intéressé"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -233,6 +264,21 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      ai_generation_type: [
+        "message_prospection",
+        "reponse_prospect",
+        "script_appel",
+        "post_reseau_social",
+      ],
+      prospect_status: [
+        "nouveau",
+        "contacté",
+        "discussion",
+        "intéressé",
+        "client",
+        "non_intéressé",
+      ],
+    },
   },
 } as const
