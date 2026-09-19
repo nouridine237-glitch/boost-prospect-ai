@@ -48,8 +48,8 @@ function Dashboard() {
     supabase.from("ai_generations").select("id", { count: "exact", head: true }).then(({ count }) => setGenerationCount(count ?? 0));
   }, [displayName, user.id]);
 
-  const filtered = useMemo(() => prospects.filter(p => p.name.toLowerCase().includes(query.toLowerCase()) || p.phone.includes(query)), [prospects, query]);
-  const clients = prospects.filter(p => p.status === "Client").length;
+  const filtered = useMemo(() => prospects.filter(p => p.name.toLowerCase().includes(query.toLowerCase()) || (p.phone ?? "").includes(query)), [prospects, query]);
+  const clients = prospects.filter(p => p.status === "client").length;
   const conversion = prospects.length ? Math.round((clients / prospects.length) * 100) : 0;
 
   async function addProspect(event: FormEvent) {
@@ -57,7 +57,7 @@ function Dashboard() {
     const { data, error: insertError } = await supabase.from("prospects").insert({ user_id: user.id, name: name.trim(), phone: phone.trim() }).select().single();
     if (insertError) setError(insertError.message); else if (data) { setProspects(p => [data, ...p]); setName(""); setPhone(""); setAdding(false); }
   }
-  async function changeStatus(id: string, status: string) {
+  async function changeStatus(id: string, status: Status) {
     const { error: updateError } = await supabase.from("prospects").update({ status }).eq("id", id);
     if (updateError) setError(updateError.message); else setProspects(items => items.map(p => p.id === id ? { ...p, status } : p));
   }
