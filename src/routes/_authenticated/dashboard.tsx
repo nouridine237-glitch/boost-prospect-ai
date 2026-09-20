@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import ReactMarkdown from "react-markdown";
-import { BarChart3, Bot, CheckCircle2, ChevronDown, ContactRound, CreditCard, GraduationCap, LayoutDashboard, LogOut, Menu, MessageSquareText, Plus, Search, Settings, Sparkles, UserRound } from "lucide-react";
+import { BarChart3, Bot, CalendarClock, CheckCircle2, ChevronDown, ContactRound, CreditCard, GraduationCap, LayoutDashboard, LogOut, Menu, MessageSquareText, NotebookPen, Plus, Search, Settings, Sparkles, UserRound } from "lucide-react";
 import { Brand } from "@/components/brand";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -60,6 +60,10 @@ function Dashboard() {
   async function changeStatus(id: string, status: Status) {
     const { error: updateError } = await supabase.from("prospects").update({ status }).eq("id", id);
     if (updateError) setError(updateError.message); else setProspects(items => items.map(p => p.id === id ? { ...p, status } : p));
+  }
+  async function updateProspect(id: string, patch: { notes?: string; next_followup_date?: string | null }) {
+    const { error: updateError } = await supabase.from("prospects").update(patch).eq("id", id);
+    if (updateError) setError(updateError.message); else setProspects(items => items.map(p => p.id === id ? { ...p, ...patch } : p));
   }
   async function runGeneration() {
     if (context.trim().length < 8) { setError("Ajoutez un peu plus de contexte."); return; }
