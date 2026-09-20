@@ -47,6 +47,8 @@ export const generateProspectingContent = createServerFn({ method: "POST" })
     const { error } = await context.supabase.from("ai_generations").insert({
       user_id: context.userId,
       generated_content: text,
+      generation_type: modeToType[data.mode],
+      ...(data.prospectId ? { prospect_id: data.prospectId } : {}),
     });
     if (error) throw new Error("Le contenu a été créé, mais son enregistrement a échoué.");
     return { text };
