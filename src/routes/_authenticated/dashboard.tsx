@@ -35,6 +35,7 @@ const nav = [{ icon: LayoutDashboard, label: "Dashboard", to: "/dashboard" }, { 
 function Dashboard() {
   const { user } = Route.useRouteContext();
   const navigate = useNavigate();
+  const location = useLocation();
   const generate = useServerFn(generateProspectingContent);
   const [prospects, setProspects] = useState<Prospect[]>([]);
   const [generationCount, setGenerationCount] = useState(0);
