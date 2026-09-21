@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate, useLocation } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import ReactMarkdown from "react-markdown";
@@ -30,11 +30,12 @@ const statusLabels: Record<Status, string> = { nouveau: "Nouveau", "contacté": 
 const modes = ["Message de prospection", "Réponse à un prospect", "Script d'appel", "Post réseau social"] as const;
 const planLabels: Record<string, string> = { gratuit: "Gratuit", pro: "Pro", expert: "Expert", business: "Business" };
 function usageLabel(used: number, limit: number) { return limit < 0 ? `${used} (illimité)` : `${used}/${limit}`; }
-const nav = [{ icon: LayoutDashboard, label: "Dashboard" }, { icon: ContactRound, label: "Prospects" }, { icon: Bot, label: "Assistant IA" }, { icon: BarChart3, label: "Statistiques" }, { icon: GraduationCap, label: "Académie" }, { icon: CreditCard, label: "Abonnement" }, { icon: Settings, label: "Paramètres" }];
+const nav = [{ icon: LayoutDashboard, label: "Dashboard", to: "/dashboard" }, { icon: ContactRound, label: "Prospects", to: "/dashboard" }, { icon: Bot, label: "Assistant IA", to: "/dashboard" }, { icon: BarChart3, label: "Statistiques", to: "/dashboard" }, { icon: GraduationCap, label: "Académie", to: "/dashboard" }, { icon: CreditCard, label: "Abonnement", to: "/abonnement" }, { icon: Settings, label: "Paramètres", to: "/dashboard" }];
 
 function Dashboard() {
   const { user } = Route.useRouteContext();
   const navigate = useNavigate();
+  const location = useLocation();
   const generate = useServerFn(generateProspectingContent);
   const [prospects, setProspects] = useState<Prospect[]>([]);
   const [generationCount, setGenerationCount] = useState(0);
