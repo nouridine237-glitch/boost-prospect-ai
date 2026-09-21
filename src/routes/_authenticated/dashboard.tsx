@@ -28,6 +28,8 @@ type Status = Prospect["status"];
 const statuses = ["nouveau", "contacté", "discussion", "intéressé", "client", "non_intéressé"] as const satisfies readonly Status[];
 const statusLabels: Record<Status, string> = { nouveau: "Nouveau", "contacté": "Contacté", discussion: "Discussion", "intéressé": "Intéressé", client: "Client", "non_intéressé": "Non intéressé" };
 const modes = ["Message de prospection", "Réponse à un prospect", "Script d'appel", "Post réseau social"] as const;
+const planLabels: Record<string, string> = { gratuit: "Gratuit", pro: "Pro", expert: "Expert", business: "Business" };
+function usageLabel(used: number, limit: number) { return limit < 0 ? `${used} (illimité)` : `${used}/${limit}`; }
 const nav = [{ icon: LayoutDashboard, label: "Dashboard" }, { icon: ContactRound, label: "Prospects" }, { icon: Bot, label: "Assistant IA" }, { icon: BarChart3, label: "Statistiques" }, { icon: GraduationCap, label: "Académie" }, { icon: CreditCard, label: "Abonnement" }, { icon: Settings, label: "Paramètres" }];
 
 function Dashboard() {
