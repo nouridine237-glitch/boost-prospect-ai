@@ -118,6 +118,45 @@ export type Database = {
         }
         Relationships: []
       }
+      subscriptions: {
+        Row: {
+          created_at: string
+          date_debut: string
+          date_renouvellement: string | null
+          id: string
+          limite_generations_ia: number
+          limite_prospects: number
+          plan: Database["public"]["Enums"]["plan_type"]
+          status: Database["public"]["Enums"]["subscription_status"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          date_debut?: string
+          date_renouvellement?: string | null
+          id?: string
+          limite_generations_ia?: number
+          limite_prospects?: number
+          plan?: Database["public"]["Enums"]["plan_type"]
+          status?: Database["public"]["Enums"]["subscription_status"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          date_debut?: string
+          date_renouvellement?: string | null
+          id?: string
+          limite_generations_ia?: number
+          limite_prospects?: number
+          plan?: Database["public"]["Enums"]["plan_type"]
+          status?: Database["public"]["Enums"]["subscription_status"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -131,6 +170,7 @@ export type Database = {
         | "reponse_prospect"
         | "script_appel"
         | "post_reseau_social"
+      plan_type: "gratuit" | "pro" | "expert" | "business"
       prospect_status:
         | "nouveau"
         | "contacté"
@@ -138,6 +178,7 @@ export type Database = {
         | "intéressé"
         | "client"
         | "non_intéressé"
+      subscription_status: "actif" | "expire" | "en_attente"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -271,6 +312,7 @@ export const Constants = {
         "script_appel",
         "post_reseau_social",
       ],
+      plan_type: ["gratuit", "pro", "expert", "business"],
       prospect_status: [
         "nouveau",
         "contacté",
@@ -279,6 +321,7 @@ export const Constants = {
         "client",
         "non_intéressé",
       ],
+      subscription_status: ["actif", "expire", "en_attente"],
     },
   },
 } as const
