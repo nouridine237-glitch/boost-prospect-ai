@@ -36,6 +36,8 @@ function Dashboard() {
   const generate = useServerFn(generateProspectingContent);
   const [prospects, setProspects] = useState<Prospect[]>([]);
   const [generationCount, setGenerationCount] = useState(0);
+  const [monthlyGenerations, setMonthlyGenerations] = useState(0);
+  const [limits, setLimits] = useState<{ plan: string; prospects: number; generations: number }>({ plan: "gratuit", prospects: 10, generations: 5 });
   const [name, setName] = useState(""); const [phone, setPhone] = useState("");
   const [adding, setAdding] = useState(false); const [query, setQuery] = useState("");
   const [mode, setMode] = useState<(typeof modes)[number]>(modes[0]); const [context, setContext] = useState("");
@@ -46,6 +48,13 @@ function Dashboard() {
     supabase.from("profiles").upsert({ id: user.id, full_name: displayName });
     supabase.from("prospects").select("*").order("created_at", { ascending: false }).then(({ data }) => setProspects(data ?? []));
     supabase.from("ai_generations").select("id", { count: "exact", head: true }).then(({ count }) => setGenerationCount(count ?? 0));
+    const monthStart = new Date();
+    monthStart.setUTCDate(1);
+    monthStart.setUTCHours(0, 0, 0, 0);
+    supabase.from("ai_generations").select("id", { count: "exact", head: true }).gte("created_at", monthStart.toISOString()).then(({ count }) => setMonthlyGenerations(count ?? 0));
+    supabase.from("subscriptions").select("plan, limite_prospects, limite_generations_ia").eq("user_id", user.id).maybeSingle().then(({ data }) => {
+      if (data) setLimits({ plan: data.plan, prospects: data.limite_prospects, generations: data.limite_generations_ia });
+    });
   }, [displayName, user.id]);
 
   const filtered = useMemo(() => prospects.filter(p => p.name.toLowerCase().includes(query.toLowerCase()) || (p.phone ?? "").includes(query)), [prospects, query]);
@@ -54,6 +63,10 @@ function Dashboard() {
 
   async function addProspect(event: FormEvent) {
     event.preventDefault(); if (!name.trim()) return;
+    if (limits.prospects >= 0 && prospects.length >= limits.prospects) {
+      setError(`Vous avez atteint la limite de votre plan ${planLabels[limits.plan] ?? limits.plan} (${limits.prospects} prospects). Passez à un plan supérieur pour ajouter plus de prospects.`);
+      return;
+    }
     const { data, error: insertError } = await supabase.from("prospects").insert({ user_id: user.id, name: name.trim(), phone: phone.trim() }).select().single();
     if (insertError) setError(insertError.message); else if (data) { setProspects(p => [data, ...p]); setName(""); setPhone(""); setAdding(false); }
   }
@@ -68,7 +81,8 @@ function Dashboard() {
   async function runGeneration() {
     if (context.trim().length < 8) { setError("Ajoutez un peu plus de contexte."); return; }
     setGenerating(true); setError("");
-    try { const response = await generate({ data: { mode, context } }); setResult(response.text); setGenerationCount(value => value + 1); }
+    if (limits.generations >= 0 && monthlyGenerations >= limits.generations) { setError(`Vous avez atteint la limite de générations IA de votre plan ${planLabels[limits.plan] ?? limits.plan} pour ce mois. Passez à un plan supérieur pour continuer.`); return; }
+    try { const response = await generate({ data: { mode, context } }); setResult(response.text); setGenerationCount(value => value + 1); setMonthlyGenerations(value => value + 1); }
     catch (caught) { setError(caught instanceof Error ? caught.message : "La génération a échoué."); }
     finally { setGenerating(false); }
   }
