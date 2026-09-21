@@ -28,6 +28,8 @@ type Status = Prospect["status"];
 const statuses = ["nouveau", "contacté", "discussion", "intéressé", "client", "non_intéressé"] as const satisfies readonly Status[];
 const statusLabels: Record<Status, string> = { nouveau: "Nouveau", "contacté": "Contacté", discussion: "Discussion", "intéressé": "Intéressé", client: "Client", "non_intéressé": "Non intéressé" };
 const modes = ["Message de prospection", "Réponse à un prospect", "Script d'appel", "Post réseau social"] as const;
+const planLabels: Record<string, string> = { gratuit: "Gratuit", pro: "Pro", expert: "Expert", business: "Business" };
+function usageLabel(used: number, limit: number) { return limit < 0 ? `${used} (illimité)` : `${used}/${limit}`; }
 const nav = [{ icon: LayoutDashboard, label: "Dashboard" }, { icon: ContactRound, label: "Prospects" }, { icon: Bot, label: "Assistant IA" }, { icon: BarChart3, label: "Statistiques" }, { icon: GraduationCap, label: "Académie" }, { icon: CreditCard, label: "Abonnement" }, { icon: Settings, label: "Paramètres" }];
 
 function Dashboard() {
@@ -36,6 +38,8 @@ function Dashboard() {
   const generate = useServerFn(generateProspectingContent);
   const [prospects, setProspects] = useState<Prospect[]>([]);
   const [generationCount, setGenerationCount] = useState(0);
+  const [monthlyGenerations, setMonthlyGenerations] = useState(0);
+  const [limits, setLimits] = useState<{ plan: string; prospects: number; generations: number }>({ plan: "gratuit", prospects: 10, generations: 5 });
   const [name, setName] = useState(""); const [phone, setPhone] = useState("");
   const [adding, setAdding] = useState(false); const [query, setQuery] = useState("");
   const [mode, setMode] = useState<(typeof modes)[number]>(modes[0]); const [context, setContext] = useState("");
@@ -46,6 +50,13 @@ function Dashboard() {
     supabase.from("profiles").upsert({ id: user.id, full_name: displayName });
     supabase.from("prospects").select("*").order("created_at", { ascending: false }).then(({ data }) => setProspects(data ?? []));
     supabase.from("ai_generations").select("id", { count: "exact", head: true }).then(({ count }) => setGenerationCount(count ?? 0));
+    const monthStart = new Date();
+    monthStart.setUTCDate(1);
+    monthStart.setUTCHours(0, 0, 0, 0);
+    supabase.from("ai_generations").select("id", { count: "exact", head: true }).gte("created_at", monthStart.toISOString()).then(({ count }) => setMonthlyGenerations(count ?? 0));
+    supabase.from("subscriptions").select("plan, limite_prospects, limite_generations_ia").eq("user_id", user.id).maybeSingle().then(({ data }) => {
+      if (data) setLimits({ plan: data.plan, prospects: data.limite_prospects, generations: data.limite_generations_ia });
+    });
   }, [displayName, user.id]);
 
   const filtered = useMemo(() => prospects.filter(p => p.name.toLowerCase().includes(query.toLowerCase()) || (p.phone ?? "").includes(query)), [prospects, query]);
@@ -54,6 +65,10 @@ function Dashboard() {
 
   async function addProspect(event: FormEvent) {
     event.preventDefault(); if (!name.trim()) return;
+    if (limits.prospects >= 0 && prospects.length >= limits.prospects) {
+      setError(`Vous avez atteint la limite de votre plan ${planLabels[limits.plan] ?? limits.plan} (${limits.prospects} prospects). Passez à un plan supérieur pour ajouter plus de prospects.`);
+      return;
+    }
     const { data, error: insertError } = await supabase.from("prospects").insert({ user_id: user.id, name: name.trim(), phone: phone.trim() }).select().single();
     if (insertError) setError(insertError.message); else if (data) { setProspects(p => [data, ...p]); setName(""); setPhone(""); setAdding(false); }
   }
@@ -68,7 +83,8 @@ function Dashboard() {
   async function runGeneration() {
     if (context.trim().length < 8) { setError("Ajoutez un peu plus de contexte."); return; }
     setGenerating(true); setError("");
-    try { const response = await generate({ data: { mode, context } }); setResult(response.text); setGenerationCount(value => value + 1); }
+    if (limits.generations >= 0 && monthlyGenerations >= limits.generations) { setError(`Vous avez atteint la limite de générations IA de votre plan ${planLabels[limits.plan] ?? limits.plan} pour ce mois. Passez à un plan supérieur pour continuer.`); return; }
+    try { const response = await generate({ data: { mode, context } }); setResult(response.text); setGenerationCount(value => value + 1); setMonthlyGenerations(value => value + 1); }
     catch (caught) { setError(caught instanceof Error ? caught.message : "La génération a échoué."); }
     finally { setGenerating(false); }
   }
@@ -76,8 +92,9 @@ function Dashboard() {
 
   return <main className="min-h-screen bg-background pb-20 lg:pl-64 lg:pb-0">
     <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col border-r border-border bg-card lg:flex"><div className="p-6"><Brand /></div><nav className="mt-4 flex-1 space-y-1 px-3">{nav.map(({icon:Icon,label},i)=><button key={label} className={`flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm transition-colors ${i === 0 ? "bg-primary/12 font-semibold text-primary" : "text-muted-foreground hover:bg-accent hover:text-foreground"}`}><Icon className="size-4" />{label}</button>)}</nav><button onClick={signOut} className="m-4 flex items-center gap-3 rounded-md px-3 py-3 text-sm text-muted-foreground hover:bg-accent hover:text-foreground"><LogOut className="size-4" /> Se déconnecter</button></aside>
-    <header className="sticky top-0 z-20 border-b border-border bg-background/90 backdrop-blur-xl"><div className="flex h-16 items-center justify-between px-5 lg:px-8"><div className="flex items-center gap-3 lg:hidden"><Menu className="size-5 text-muted-foreground" /><Brand compact /></div><div className="hidden lg:block"><p className="text-xs text-muted-foreground">Espace de travail</p><p className="text-sm font-bold">Dashboard</p></div><div className="flex items-center gap-3"><div className="hidden text-right sm:block"><p className="text-sm font-semibold">{displayName}</p><p className="text-xs text-muted-foreground">Compte Pro</p></div><span className="grid size-9 place-items-center rounded-full bg-primary/15 font-bold text-primary">{displayName.charAt(0).toUpperCase()}</span></div></div></header>
+    <header className="sticky top-0 z-20 border-b border-border bg-background/90 backdrop-blur-xl"><div className="flex h-16 items-center justify-between px-5 lg:px-8"><div className="flex items-center gap-3 lg:hidden"><Menu className="size-5 text-muted-foreground" /><Brand compact /></div><div className="hidden lg:block"><p className="text-xs text-muted-foreground">Espace de travail</p><p className="text-sm font-bold">Dashboard</p></div><div className="flex items-center gap-3"><div className="hidden text-right sm:block"><p className="text-sm font-semibold">{displayName}</p><p className="text-xs text-muted-foreground">Plan {planLabels[limits.plan] ?? limits.plan}</p></div><span className="grid size-9 place-items-center rounded-full bg-primary/15 font-bold text-primary">{displayName.charAt(0).toUpperCase()}</span></div></div></header>
     <div className="mx-auto max-w-[1500px] p-5 lg:p-8"><div className="flex flex-wrap items-end justify-between gap-4"><div><span className="eyebrow">Bonjour {displayName.split(" ")[0]}</span><h1 className="mt-2 text-3xl font-extrabold">Votre activité en un coup d’œil.</h1><p className="mt-2 text-sm text-muted-foreground">Gardez le rythme, une conversation à la fois.</p></div><Button onClick={() => setAdding(!adding)}><Plus /> Ajouter un prospect</Button></div>
+      <p className="mt-3 text-xs text-muted-foreground">Plan {planLabels[limits.plan] ?? limits.plan} — {usageLabel(prospects.length, limits.prospects)} prospects utilisés · {usageLabel(monthlyGenerations, limits.generations)} générations IA ce mois</p>
       {adding && <form onSubmit={addProspect} className="surface mt-5 grid gap-3 rounded-lg p-4 sm:grid-cols-[1fr_1fr_auto]"><Input value={name} onChange={e=>setName(e.target.value)} placeholder="Nom du prospect" required /><Input value={phone} onChange={e=>setPhone(e.target.value)} placeholder="Téléphone" /><Button>Enregistrer</Button></form>}
       <section className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4"><Stat icon={ContactRound} label="Prospects actifs" value={String(prospects.filter(p=>p.status!=="client"&&p.status!=="non_intéressé").length)} note="En cours de suivi"/><Stat icon={MessageSquareText} label="Messages générés" value={String(generationCount)} note="Historique sécurisé"/><Stat icon={CheckCircle2} label="Clients ce mois" value={String(clients)} note="Conversion actuelle"/><Stat icon={BarChart3} label="Taux de conversion" value={`${conversion}%`} note="Prospects devenus clients"/></section>
       <div className="mt-6 grid gap-6 xl:grid-cols-[1.12fr_.88fr]"><section className="surface min-w-0 rounded-lg"><div className="flex flex-wrap items-center justify-between gap-3 border-b border-border p-5"><div><h2 className="font-bold">Prospects récents</h2><p className="mt-1 text-xs text-muted-foreground">{prospects.length} contacts dans votre pipeline</p></div><label className="relative"><Search className="absolute left-3 top-2.5 size-4 text-muted-foreground"/><Input className="w-56 pl-9" placeholder="Rechercher…" value={query} onChange={e=>setQuery(e.target.value)} /></label></div><div className="divide-y divide-border">{filtered.length ? filtered.slice(0,8).map(p=><ProspectCard key={p.id} prospect={p} onChangeStatus={changeStatus} onUpdate={updateProspect} />) : <div className="p-10 text-center"><ContactRound className="mx-auto size-8 text-muted-foreground"/><p className="mt-3 text-sm font-semibold">Aucun prospect pour le moment</p><p className="mt-1 text-xs text-muted-foreground">Ajoutez votre premier contact pour commencer.</p></div>}</div></section>

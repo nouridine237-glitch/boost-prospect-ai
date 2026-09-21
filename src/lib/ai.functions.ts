@@ -24,6 +24,25 @@ export const generateProspectingContent = createServerFn({ method: "POST" })
     const key = process.env["LOVABLE_API_KEY"];
     if (!key) throw new Error("Le service IA n’est pas configuré.");
 
+    const { data: subscription } = await context.supabase
+      .from("subscriptions")
+      .select("limite_generations_ia")
+      .eq("user_id", context.userId)
+      .maybeSingle();
+    const limit = subscription?.limite_generations_ia ?? 5;
+    if (limit >= 0) {
+      const monthStart = new Date();
+      monthStart.setUTCDate(1);
+      monthStart.setUTCHours(0, 0, 0, 0);
+      const { count } = await context.supabase
+        .from("ai_generations")
+        .select("id", { count: "exact", head: true })
+        .gte("created_at", monthStart.toISOString());
+      if ((count ?? 0) >= limit) {
+        throw new Error("Vous avez atteint la limite de générations IA de votre plan actuel pour ce mois. Passez à un plan supérieur pour continuer à générer du contenu.");
+      }
+    }
+
     const lovable = createOpenAI({
       baseURL: "https://ai.gateway.lovable.dev/v1",
       apiKey: key,
