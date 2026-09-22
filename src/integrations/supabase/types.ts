@@ -53,6 +53,7 @@ export type Database = {
         Row: {
           avatar_url: string | null
           created_at: string
+          display_name: string
           full_name: string
           id: string
           preferences: Json
@@ -61,6 +62,7 @@ export type Database = {
         Insert: {
           avatar_url?: string | null
           created_at?: string
+          display_name?: string
           full_name?: string
           id: string
           preferences?: Json
@@ -69,6 +71,7 @@ export type Database = {
         Update: {
           avatar_url?: string | null
           created_at?: string
+          display_name?: string
           full_name?: string
           id?: string
           preferences?: Json
@@ -157,12 +160,39 @@ export type Database = {
         }
         Relationships: []
       }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
       ai_generation_type:
@@ -170,6 +200,7 @@ export type Database = {
         | "reponse_prospect"
         | "script_appel"
         | "post_reseau_social"
+      app_role: "user" | "admin"
       plan_type: "gratuit" | "pro" | "expert" | "business"
       prospect_status:
         | "nouveau"
@@ -312,6 +343,7 @@ export const Constants = {
         "script_appel",
         "post_reseau_social",
       ],
+      app_role: ["user", "admin"],
       plan_type: ["gratuit", "pro", "expert", "business"],
       prospect_status: [
         "nouveau",
