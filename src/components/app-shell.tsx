@@ -1,6 +1,6 @@
 import { Link, useLocation } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { BarChart3, Bot, ContactRound, CreditCard, GraduationCap, LayoutDashboard, LogOut, Menu, Settings, UserRound } from "lucide-react";
+import { BarChart3, Bot, ContactRound, CreditCard, GraduationCap, LayoutDashboard, LogOut, Menu, Settings } from "lucide-react";
 import { Brand } from "@/components/brand";
 import { supabase } from "@/integrations/supabase/client";
 import type { User } from "@supabase/supabase-js";
