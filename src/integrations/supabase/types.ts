@@ -49,6 +49,45 @@ export type Database = {
           },
         ]
       }
+      payment_requests: {
+        Row: {
+          capture_paiement: string | null
+          created_at: string
+          devise: string
+          id: string
+          montant: number
+          plan_demande: Database["public"]["Enums"]["paid_plan"]
+          reference_transaction: string
+          statut: Database["public"]["Enums"]["payment_request_status"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          capture_paiement?: string | null
+          created_at?: string
+          devise?: string
+          id?: string
+          montant: number
+          plan_demande: Database["public"]["Enums"]["paid_plan"]
+          reference_transaction?: string
+          statut?: Database["public"]["Enums"]["payment_request_status"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          capture_paiement?: string | null
+          created_at?: string
+          devise?: string
+          id?: string
+          montant?: number
+          plan_demande?: Database["public"]["Enums"]["paid_plan"]
+          reference_transaction?: string
+          statut?: Database["public"]["Enums"]["payment_request_status"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -201,6 +240,8 @@ export type Database = {
         | "script_appel"
         | "post_reseau_social"
       app_role: "user" | "admin"
+      paid_plan: "pro" | "expert" | "business"
+      payment_request_status: "en_attente" | "valide" | "refuse"
       plan_type: "gratuit" | "pro" | "expert" | "business"
       prospect_status:
         | "nouveau"
@@ -344,6 +385,8 @@ export const Constants = {
         "post_reseau_social",
       ],
       app_role: ["user", "admin"],
+      paid_plan: ["pro", "expert", "business"],
+      payment_request_status: ["en_attente", "valide", "refuse"],
       plan_type: ["gratuit", "pro", "expert", "business"],
       prospect_status: [
         "nouveau",
