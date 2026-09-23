@@ -9,3 +9,4 @@
   - [x] 2. Logique d'accès par plan (limites prospects / générations IA)
   - [x] 3. Page d'abonnement (4 plans, style existant, instructions de paiement manuel)
   - [~] 4. Intégration CinetPay différée : activation manuelle par l'administrateur via la base de données
+- [x] Panel Admin (/admin) : rôle admin (table user_roles + has_role), display_name, liste utilisateurs, gestion plan/statut, résumé revenus
