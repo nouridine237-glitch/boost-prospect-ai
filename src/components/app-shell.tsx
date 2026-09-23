@@ -1,6 +1,6 @@
 import { Link, useLocation } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { BarChart3, Bot, ContactRound, CreditCard, GraduationCap, LayoutDashboard, LogOut, Menu, Settings } from "lucide-react";
+import { BarChart3, Bot, ContactRound, CreditCard, GraduationCap, LayoutDashboard, LogOut, Menu, Settings, ShieldCheck } from "lucide-react";
 import { Brand } from "@/components/brand";
 import { supabase } from "@/integrations/supabase/client";
 import type { User } from "@supabase/supabase-js";
@@ -43,7 +43,7 @@ export function AppShell({ children, user, title }: { children: React.ReactNode;
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col border-r border-border bg-card lg:flex">
         <div className="p-6"><Brand /></div>
         <nav className="mt-4 flex-1 space-y-1 px-3">
-          {nav.map(({ icon: Icon, label, to }) => {
+          {items.map(({ icon: Icon, label, to }) => {
             const active = location.pathname === to;
             return (
               <Link
