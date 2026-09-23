@@ -20,11 +20,16 @@ const planLabels: Record<string, string> = { gratuit: "Gratuit", pro: "Pro", exp
 export function AppShell({ children, user, title }: { children: React.ReactNode; user: User; title: string }) {
   const location = useLocation();
   const [plan, setPlan] = useState<string>("gratuit");
+  const [isAdmin, setIsAdmin] = useState(false);
   const displayName = String(user.user_metadata?.["full_name"] ?? user.email?.split("@")[0] ?? "Networker");
+  const items = isAdmin ? [...nav, { icon: ShieldCheck, label: "Admin", to: "/admin" }] : nav;
 
   useEffect(() => {
     supabase.from("subscriptions").select("plan").eq("user_id", user.id).maybeSingle().then(({ data }) => {
       if (data?.plan) setPlan(data.plan);
+    });
+    supabase.from("user_roles").select("role").eq("user_id", user.id).eq("role", "admin").maybeSingle().then(({ data }) => {
+      setIsAdmin(!!data);
     });
   }, [user.id]);
 
