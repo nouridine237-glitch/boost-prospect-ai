@@ -67,6 +67,7 @@ function AdminPage() {
         ]);
         if (!active) return;
         setRows(users);
+        listPaymentsFn({}).then(({ requests }) => { if (active) setPayments(requests); }).catch(() => {});
         setAdminName({
           fullName: (profile.data as any)?.full_name || String(user.user_metadata?.["full_name"] ?? user.email ?? ""),
           displayName: (profile.data as any)?.display_name || "",
