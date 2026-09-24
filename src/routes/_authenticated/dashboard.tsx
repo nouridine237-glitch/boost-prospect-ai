@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { generateProspectingContent } from "@/lib/ai.functions";
+import { getMyPaymentStatus } from "@/lib/payments.functions";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
 
@@ -43,6 +44,8 @@ function Dashboard() {
   const [adding, setAdding] = useState(false); const [query, setQuery] = useState("");
   const [mode, setMode] = useState<(typeof modes)[number]>(modes[0]); const [context, setContext] = useState("");
   const [result, setResult] = useState(""); const [generating, setGenerating] = useState(false); const [error, setError] = useState("");
+  const paymentStatusFn = useServerFn(getMyPaymentStatus);
+  const [pendingPayment, setPendingPayment] = useState<any>(null);
   const displayName = String(user.user_metadata?.["full_name"] ?? user.email?.split("@")[0] ?? "Networker");
 
   useEffect(() => {
@@ -101,6 +104,12 @@ function Dashboard() {
           <Button onClick={() => setAdding(!adding)}><Plus /> Ajouter un prospect</Button>
         </div>
         <p className="mt-3 text-xs text-muted-foreground">Plan {planLabels[limits.plan] ?? limits.plan} — {usageLabel(prospects.length, limits.prospects)} prospects utilisés · {usageLabel(monthlyGenerations, limits.generations)} générations IA ce mois</p>
+        {pendingPayment && (
+          <div className="mt-4 rounded-lg border border-warning/40 bg-warning/10 p-4 text-sm">
+            <strong>Paiement en cours de vérification.</strong> Votre demande pour le plan{" "}
+            <span className="font-semibold capitalize">{pendingPayment.plan_demande}</span> est en attente de validation. Votre compte reste sur le plan Gratuit jusqu’à la confirmation.
+          </div>
+        )}
         {adding && <form onSubmit={addProspect} className="surface mt-5 grid gap-3 rounded-lg p-4 sm:grid-cols-[1fr_1fr_auto]"><Input value={name} onChange={e=>setName(e.target.value)} placeholder="Nom du prospect" required /><Input value={phone} onChange={e=>setPhone(e.target.value)} placeholder="Téléphone" /><Button>Enregistrer</Button></form>}
         <section className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4"><Stat icon={ContactRound} label="Prospects actifs" value={String(prospects.filter(p=>p.status!=="client"&&p.status!=="non_intéressé").length)} note="En cours de suivi"/><Stat icon={MessageSquareText} label="Messages générés" value={String(generationCount)} note="Historique sécurisé"/><Stat icon={CheckCircle2} label="Clients ce mois" value={String(clients)} note="Conversion actuelle"/><Stat icon={BarChart3} label="Taux de conversion" value={`${conversion}%`} note="Prospects devenus clients"/></section>
         <div className="mt-6 grid gap-6 xl:grid-cols-[1.12fr_.88fr]">
