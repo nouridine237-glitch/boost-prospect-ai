@@ -37,12 +37,18 @@ function AdminPage() {
   const isAdminFn = useServerFn(checkIsAdmin);
   const listFn = useServerFn(listAdminUsers);
   const updateFn = useServerFn(updateUserSubscription);
+  const listPaymentsFn = useServerFn(listPaymentRequests);
+  const reviewFn = useServerFn(reviewPaymentRequest);
+
 
   const [allowed, setAllowed] = useState<boolean | null>(null);
   const [rows, setRows] = useState<AdminUserRow[]>([]);
   const [adminName, setAdminName] = useState({ fullName: "", displayName: "" });
   const [savingId, setSavingId] = useState<string | null>(null);
   const [error, setError] = useState("");
+  const [payments, setPayments] = useState<AdminPaymentRow[]>([]);
+  const [reviewingId, setReviewingId] = useState<string | null>(null);
+  const [zoom, setZoom] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
