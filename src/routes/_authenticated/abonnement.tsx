@@ -1,10 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
-import { Check, CreditCard, Sparkles } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
+import { Check, CreditCard, Loader2, Sparkles, Upload } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { supabase } from "@/integrations/supabase/client";
+import { createPaymentRequest, getMyPaymentStatus, PAID_PLANS, type PaidPlanKey } from "@/lib/payments.functions";
 
 export const Route = createFileRoute("/_authenticated/abonnement")({
   head: () => ({ meta: [
@@ -18,34 +22,89 @@ export const Route = createFileRoute("/_authenticated/abonnement")({
   component: Abonnement,
 });
 
-// ← Remplacez ces deux numéros par vos vrais numéros de paiement.
-const MOBILE_MONEY_NUMBER = "+225 07 XX XX XX";
-const WHATSAPP_NUMBER = "+225 07 XX XX XX";
+// ← Remplacez ces numéros par vos vrais numéros de paiement.
+const ORANGE_MONEY_NUMBER = "+237 6XX XX XX XX";
+const MTN_MOMO_NUMBER = "+237 6XX XX XX XX";
 
 const plans = [
-  { key: "gratuit", name: "Gratuit", price: "0 FCFA", prospects: 10, generations: 5, popular: false },
-  { key: "pro", name: "Pro", price: "5 000 FCFA/mois", prospects: 50, generations: 30, popular: true },
-  { key: "expert", name: "Expert", price: "12 000 FCFA/mois", prospects: 200, generations: 100, popular: false },
-  { key: "business", name: "Business", price: "25 000 FCFA/mois", prospects: -1, generations: -1, popular: false },
-];
+  { key: "gratuit", name: "Gratuit", fcfa: 0, usd: 0, prospects: 10, generations: 5, popular: false },
+  { key: "pro", name: "Pro", fcfa: PAID_PLANS.pro.fcfa, usd: PAID_PLANS.pro.usd, prospects: 50, generations: 30, popular: true },
+  { key: "expert", name: "Expert", fcfa: PAID_PLANS.expert.fcfa, usd: PAID_PLANS.expert.usd, prospects: 200, generations: 100, popular: false },
+  { key: "business", name: "Business", fcfa: PAID_PLANS.business.fcfa, usd: PAID_PLANS.business.usd, prospects: -1, generations: -1, popular: false },
+] as const;
 
-function limitLabel(value: number) {
-  return value < 0 ? "Illimité" : `${value} / mois`;
+function priceLabel(fcfa: number, usd: number) {
+  if (fcfa === 0) return "0 FCFA";
+  return `${fcfa.toLocaleString("fr-FR")} FCFA`;
 }
 
 function Abonnement() {
   const { user } = Route.useRouteContext();
-  const [selected, setSelected] = useState<{ name: string; price: string } | null>(null);
-  const [confirmed, setConfirmed] = useState(false);
+  const createFn = useServerFn(createPaymentRequest);
+  const statusFn = useServerFn(getMyPaymentStatus);
 
-  function choose(plan: typeof plans[number]) {
-    if (plan.key === "gratuit") {
-      setSelected(null);
-      setConfirmed(true);
+  const [selected, setSelected] = useState<{ key: PaidPlanKey; name: string } | null>(null);
+  const [devise, setDevise] = useState<"FCFA" | "USD">("FCFA");
+  const [reference, setReference] = useState("");
+  const [file, setFile] = useState<File | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
+  const [banner, setBanner] = useState("");
+  const [pending, setPending] = useState<any>(null);
+
+  useEffect(() => {
+    statusFn({}).then(({ request }) => setPending(request?.statut === "en_attente" ? request : null)).catch(() => {});
+  }, []);
+
+  function choose(planKey: string, name: string) {
+    setError("");
+    if (planKey === "gratuit") {
+      setBanner("Vous utilisez déjà le plan Gratuit. Aucun paiement n’est nécessaire.");
       return;
     }
-    setSelected({ name: plan.name, price: plan.price });
+    setReference("");
+    setFile(null);
+    setDevise("FCFA");
+    setSelected({ key: planKey as PaidPlanKey, name });
   }
+
+  async function submit() {
+    if (!selected) return;
+    if (reference.trim().length < 3) {
+      setError("Indiquez la référence (ID) de votre transaction Mobile Money.");
+      return;
+    }
+    setSubmitting(true);
+    setError("");
+    try {
+      let capturePath: string | undefined;
+      if (file) {
+        const ext = file.name.split(".").pop() ?? "jpg";
+        const path = `${user.id}/${crypto.randomUUID()}.${ext}`;
+        const { error: upErr } = await supabase.storage.from("payment-proofs").upload(path, file, { upsert: false });
+        if (upErr) throw new Error("upload");
+        capturePath = path;
+      }
+      const res = await createFn({ data: { plan: selected.key, devise, reference: reference.trim(), capturePath } as any });
+      if (!res.ok) {
+        setError("Une demande est déjà en cours de vérification. Patientez jusqu’à sa validation.");
+        return;
+      }
+      setSelected(null);
+      setPending({ plan_demande: selected.key, statut: "en_attente" });
+      setBanner("Votre preuve de paiement a bien été envoyée. Votre plan sera activé après vérification (sous 24h).");
+    } catch {
+      setError("L’envoi a échoué. Vérifiez votre connexion et réessayez.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  const amount = selected
+    ? devise === "USD"
+      ? `${PAID_PLANS[selected.key].usd} USD`
+      : `${PAID_PLANS[selected.key].fcfa.toLocaleString("fr-FR")} FCFA`
+    : "";
 
   return (
     <AppShell user={user} title="Abonnement">
@@ -56,11 +115,14 @@ function Abonnement() {
           <p className="mt-2 text-sm text-muted-foreground">Évoluez en fonction de votre rythme de prospection.</p>
         </div>
 
-        {confirmed && (
-          <div className="surface mb-6 rounded-lg p-4 text-sm">
-            Votre demande a été prise en compte. Pour les plans payants, suivez les instructions de paiement affichées dans la fenêtre.
+        {pending && (
+          <div className="mb-6 rounded-lg border border-warning/40 bg-warning/10 p-4 text-sm">
+            <strong>Paiement en cours de vérification.</strong> Votre demande pour le plan{" "}
+            <span className="font-semibold capitalize">{pending.plan_demande}</span> est en attente de validation par l’administrateur.
           </div>
         )}
+
+        {banner && <div className="surface mb-6 rounded-lg p-4 text-sm">{banner}</div>}
 
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {plans.map((plan) => (
@@ -72,7 +134,8 @@ function Abonnement() {
               )}
               <CardHeader className="pb-2">
                 <p className="text-xs font-semibold text-muted-foreground">{plan.name}</p>
-                <p className="text-2xl font-extrabold">{plan.price}</p>
+                <p className="text-2xl font-extrabold">{priceLabel(plan.fcfa, plan.usd)}</p>
+                <p className="text-xs text-muted-foreground">{plan.usd === 0 ? "≈ 0 USD" : `≈ ${plan.usd} USD / mois`}</p>
               </CardHeader>
               <CardContent className="flex-1">
                 <ul className="space-y-2 text-sm text-muted-foreground">
@@ -82,7 +145,7 @@ function Abonnement() {
                 </ul>
               </CardContent>
               <div className="p-6 pt-0">
-                <Button onClick={() => choose(plan)} variant={plan.popular ? "default" : "outline"} className="w-full">
+                <Button onClick={() => choose(plan.key, plan.name)} variant={plan.popular ? "default" : "outline"} className="w-full">
                   {plan.key === "gratuit" ? "Continuer gratuitement" : "Choisir ce plan"}
                 </Button>
               </div>
@@ -92,26 +155,54 @@ function Abonnement() {
 
         <div className="mt-10 flex items-start gap-3 rounded-lg border border-border bg-secondary/40 p-4 text-sm text-muted-foreground">
           <CreditCard className="mt-0.5 size-4 text-primary" />
-          <p>Les paiements se font manuellement par Mobile Money. Votre plan sera activé sous 24h après réception de la confirmation.</p>
+          <p>Les paiements se font par Mobile Money (Orange Money ou MTN MoMo). Votre plan est activé après vérification de votre preuve de paiement, sous 24h.</p>
         </div>
       </div>
 
       <Dialog open={!!selected} onOpenChange={(open) => { if (!open) setSelected(null); }}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-h-[90vh] max-w-md overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2"><Sparkles className="size-5 text-primary" /> Paiement manuel</DialogTitle>
+            <DialogTitle className="flex items-center gap-2"><Sparkles className="size-5 text-primary" /> Paiement Mobile Money</DialogTitle>
             <DialogDescription>
-              Vous avez choisi le plan <strong>{selected?.name}</strong> ({selected?.price}).
+              Plan <strong>{selected?.name}</strong> — montant à envoyer : <strong>{amount}</strong>
             </DialogDescription>
           </DialogHeader>
+
           <div className="space-y-4 text-sm">
-            <p>Envoyez le montant au numéro Mobile Money ci-dessous, puis envoyez la capture de confirmation par WhatsApp.</p>
-            <div className="rounded-lg border border-border bg-secondary/50 p-4 space-y-2">
-              <p className="flex justify-between"><span className="text-muted-foreground">Mobile Money</span> <span className="font-semibold">{MOBILE_MONEY_NUMBER}</span></p>
-              <p className="flex justify-between"><span className="text-muted-foreground">WhatsApp</span> <span className="font-semibold">{WHATSAPP_NUMBER}</span></p>
+            <div className="flex gap-2">
+              {(["FCFA", "USD"] as const).map((d) => (
+                <Button key={d} type="button" size="sm" variant={devise === d ? "default" : "outline"} onClick={() => setDevise(d)}>
+                  {d}
+                </Button>
+              ))}
             </div>
+
+            <div className="space-y-2 rounded-lg border border-border bg-secondary/50 p-4">
+              <p className="flex justify-between"><span className="text-muted-foreground">Orange Money</span> <span className="font-semibold">{ORANGE_MONEY_NUMBER}</span></p>
+              <p className="flex justify-between"><span className="text-muted-foreground">MTN MoMo</span> <span className="font-semibold">{MTN_MOMO_NUMBER}</span></p>
+              <p className="flex justify-between border-t border-border pt-2"><span className="text-muted-foreground">Montant exact</span> <span className="font-extrabold text-primary">{amount}</span></p>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-xs font-semibold text-muted-foreground">Capture d’écran de la transaction</label>
+              <label className="flex cursor-pointer items-center gap-2 rounded-md border border-dashed border-border bg-secondary/40 px-3 py-3 text-sm text-muted-foreground hover:bg-accent">
+                <Upload className="size-4" />
+                <span className="truncate">{file ? file.name : "Choisir une image"}</span>
+                <input type="file" accept="image/*" className="hidden" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
+              </label>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-xs font-semibold text-muted-foreground" htmlFor="ref">ID / référence de la transaction</label>
+              <Input id="ref" value={reference} onChange={(e) => setReference(e.target.value)} placeholder="Ex. MP2609.1432.B45782" />
+            </div>
+
+            {error && <p className="text-sm text-destructive">{error}</p>}
+
+            <Button className="w-full" onClick={submit} disabled={submitting}>
+              {submitting ? <><Loader2 className="size-4 animate-spin" /> Envoi…</> : "J’ai effectué le paiement"}
+            </Button>
             <p className="text-xs text-muted-foreground">Votre plan sera activé sous 24h après vérification de la transaction.</p>
-            <Button className="w-full" onClick={() => setSelected(null)}>J’ai compris</Button>
           </div>
         </DialogContent>
       </Dialog>
