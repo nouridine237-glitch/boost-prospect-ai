@@ -59,6 +59,7 @@ function Dashboard() {
     supabase.from("subscriptions").select("plan, limite_prospects, limite_generations_ia").eq("user_id", user.id).maybeSingle().then(({ data }) => {
       if (data) setLimits({ plan: data.plan, prospects: data.limite_prospects, generations: data.limite_generations_ia });
     });
+    paymentStatusFn({}).then(({ request }) => setPendingPayment((request as any)?.statut === "en_attente" ? request : null)).catch(() => {});
   }, [displayName, user.id]);
 
   const filtered = useMemo(() => prospects.filter(p => p.name.toLowerCase().includes(query.toLowerCase()) || (p.phone ?? "").includes(query)), [prospects, query]);
