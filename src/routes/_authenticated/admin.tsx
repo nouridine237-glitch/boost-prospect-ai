@@ -143,7 +143,14 @@ function AdminPage() {
           </div>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <Card className={pendingCount > 0 ? "border-warning bg-card" : "border-border bg-card"}>
+            <CardHeader className="pb-2"><p className="flex items-center gap-2 text-xs font-semibold text-muted-foreground"><Clock className="size-4" /> Paiements en attente</p></CardHeader>
+            <CardContent>
+              <p className="text-3xl font-extrabold">{pendingCount}</p>
+              <a href="#paiements" className="mt-1 inline-block text-xs text-primary hover:underline">Voir les demandes</a>
+            </CardContent>
+          </Card>
           <Card className="border-border bg-card">
             <CardHeader className="pb-2"><p className="flex items-center gap-2 text-xs font-semibold text-muted-foreground"><Users className="size-4" /> Utilisateurs inscrits</p></CardHeader>
             <CardContent><p className="text-3xl font-extrabold">{summary.total}</p></CardContent>
