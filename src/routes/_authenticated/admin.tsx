@@ -172,6 +172,50 @@ function AdminPage() {
 
         {error && <p className="mt-4 text-sm text-destructive">{error}</p>}
 
+        <h2 id="paiements" className="mt-10 mb-3 text-lg font-bold">Paiements en attente</h2>
+        <div className="space-y-3">
+          {payments.map((p) => (
+            <Card key={p.id} className={p.statut === "en_attente" ? "border-warning/60 bg-card" : "border-border bg-card"}>
+              <CardContent className="flex flex-col gap-4 p-5 lg:flex-row lg:items-center lg:justify-between">
+                <div className="flex min-w-0 items-center gap-4">
+                  {p.captureUrl ? (
+                    <button type="button" onClick={() => setZoom(p.captureUrl)} className="shrink-0">
+                      <img src={p.captureUrl} alt="Capture de paiement" className="size-16 rounded-md border border-border object-cover" />
+                    </button>
+                  ) : (
+                    <span className="grid size-16 shrink-0 place-items-center rounded-md border border-dashed border-border text-[10px] text-muted-foreground">Aucune capture</span>
+                  )}
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold">{p.userName}</p>
+                    <p className="truncate text-xs text-muted-foreground">{p.email}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Plan {planLabels[p.plan] ?? p.plan} · {p.montant.toLocaleString("fr-FR")} {p.devise} · Réf. {p.reference || "—"} · {formatDate(p.createdAt)}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${p.statut === "en_attente" ? "bg-warning/15 text-warning" : p.statut === "valide" ? "bg-success/15 text-success" : "bg-destructive/15 text-destructive"}`}>
+                    {p.statut === "en_attente" ? "En attente" : p.statut === "valide" ? "Validé" : "Refusé"}
+                  </span>
+                  {p.statut === "en_attente" && (
+                    <>
+                      <Button size="sm" disabled={reviewingId === p.id} onClick={() => review(p, "valide")}>Valider</Button>
+                      <Button size="sm" variant="outline" disabled={reviewingId === p.id} onClick={() => review(p, "refuse")}>Refuser</Button>
+                    </>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+          {payments.length === 0 && <p className="text-sm text-muted-foreground">Aucune demande de paiement pour le moment.</p>}
+        </div>
+
+        {zoom && (
+          <button type="button" onClick={() => setZoom(null)} className="fixed inset-0 z-50 grid place-items-center bg-background/90 p-6">
+            <img src={zoom} alt="Capture de paiement agrandie" className="max-h-[85vh] max-w-full rounded-lg border border-border" />
+          </button>
+        )}
+
         <h2 className="mt-10 mb-3 text-lg font-bold">Utilisateurs & abonnements</h2>
         <div className="space-y-3">
           {rows.map((row) => (
