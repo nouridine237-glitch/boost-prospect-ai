@@ -102,6 +102,24 @@ function AdminPage() {
     }
   }
 
+  const pendingCount = payments.filter((p) => p.statut === "en_attente").length;
+
+  async function review(row: AdminPaymentRow, decision: "valide" | "refuse") {
+    setReviewingId(row.id);
+    setError("");
+    try {
+      await reviewFn({ data: { id: row.id, decision } as any });
+      setPayments((prev) => prev.map((p) => (p.id === row.id ? { ...p, statut: decision } : p)));
+      if (decision === "valide") {
+        setRows((prev) => prev.map((r) => (r.id === row.userId ? { ...r, plan: row.plan, status: "actif", updatedAt: new Date().toISOString() } : r)));
+      }
+    } catch {
+      setError("La décision n’a pas pu être enregistrée.");
+    } finally {
+      setReviewingId(null);
+    }
+  }
+
   if (allowed !== true) {
     return (
       <AppShell user={user} title="Admin">
