@@ -7,13 +7,13 @@ import type { User } from "@supabase/supabase-js";
 
 const nav = [
   { icon: LayoutDashboard, label: "Dashboard", to: "/dashboard" },
-  { icon: ContactRound, label: "Prospects", to: "/dashboard" },
-  { icon: Bot, label: "Assistant IA", to: "/dashboard" },
-  { icon: BarChart3, label: "Statistiques", to: "/dashboard" },
-  { icon: GraduationCap, label: "Académie", to: "/dashboard" },
+  { icon: ContactRound, label: "Prospects", to: "/prospects" },
+  { icon: Bot, label: "Assistant IA", to: "/assistant" },
+  { icon: BarChart3, label: "Statistiques", to: "/statistiques" },
+  { icon: GraduationCap, label: "Académie", to: "/academie" },
   { icon: CreditCard, label: "Abonnement", to: "/abonnement" },
-  { icon: Settings, label: "Paramètres", to: "/dashboard" },
-];
+  { icon: Settings, label: "Paramètres", to: "/parametres" },
+] as const;
 
 const planLabels: Record<string, string> = { gratuit: "Gratuit", pro: "Pro", expert: "Expert", business: "Business" };
 
