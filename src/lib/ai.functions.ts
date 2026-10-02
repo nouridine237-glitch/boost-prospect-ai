@@ -63,6 +63,15 @@ export const generateProspectingContent = createServerFn({ method: "POST" })
       },
     });
     const text = await result.text;
+    // Estimation : ~1 crédit pour 10 000 tokens, minimum 0,01 par génération.
+    const usage = await result.totalUsage.catch(() => undefined);
+    const tokens = Number(usage?.totalTokens ?? 0) || Math.ceil((data.context.length + text.length) / 3);
+    const credits = Math.max(0.01, Math.round((tokens / 10000) * 100) / 100);
+    await (context.supabase as any).from("ai_usage_log").insert({
+      user_id: context.userId,
+      generation_type: modeToType[data.mode],
+      credits_estimes: credits,
+    });
     const { error } = await context.supabase.from("ai_generations").insert({
       user_id: context.userId,
       generated_content: text,

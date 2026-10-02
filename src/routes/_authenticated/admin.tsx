@@ -8,6 +8,71 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { checkIsAdmin, listAdminUsers, updateUserSubscription, PLAN_LIMITS, type AdminUserRow } from "@/lib/admin.functions";
 import { listPaymentRequests, reviewPaymentRequest, type AdminPaymentRow } from "@/lib/payments.functions";
+import { getAiCreditUsage, setAiCreditLimit } from "@/lib/ai-usage.functions";
+
+function AiCreditsSection() {
+  const getFn = useServerFn(getAiCreditUsage);
+  const setFn = useServerFn(setAiCreditLimit);
+  const [data, setData] = useState<{ used: number; limit: number; count: number } | null>(null);
+  const [draft, setDraft] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [msg, setMsg] = useState("");
+
+  useEffect(() => {
+    getFn({}).then((d) => { setData(d); setDraft(String(d.limit)); }).catch(() => setMsg("Impossible de charger le suivi des crédits."));
+  }, []);
+
+  async function saveLimit() {
+    const n = Number(draft.replace(",", "."));
+    if (!(n > 0)) { setMsg("Entrez une limite supérieure à 0."); return; }
+    setSaving(true); setMsg("");
+    try {
+      await setFn({ data: { limit: n } });
+      setData((d) => (d ? { ...d, limit: n } : d));
+      setMsg("Limite enregistrée.");
+    } catch { setMsg("La limite n’a pas pu être enregistrée."); }
+    finally { setSaving(false); }
+  }
+
+  const pct = data && data.limit > 0 ? (data.used / data.limit) * 100 : 0;
+  const level = pct >= 95 ? "danger" : pct >= 80 ? "warn" : "ok";
+  const monthLabel = new Date().toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
+
+  return (
+    <section className="mt-10">
+      <h2 id="credits-ia" className="mb-3 text-lg font-bold">Suivi des crédits IA</h2>
+      {level !== "ok" && (
+        <div className={`mb-4 rounded-xl border px-4 py-3 text-sm font-semibold ${level === "danger" ? "border-destructive bg-destructive/15 text-destructive" : "border-warning bg-warning/15 text-warning"}`}>
+          {level === "danger"
+            ? `Alerte critique : ${pct.toFixed(0)} % de la limite mensuelle de crédits IA est consommée.`
+            : `Attention : ${pct.toFixed(0)} % de la limite mensuelle de crédits IA est consommée.`}
+        </div>
+      )}
+      <Card className="border-border bg-card">
+        <CardContent className="space-y-4 pt-6">
+          <div className="flex flex-wrap items-end justify-between gap-2">
+            <div>
+              <p className="text-xs font-semibold text-muted-foreground">Consommé depuis le 1er {monthLabel} (tous utilisateurs)</p>
+              <p className="text-3xl font-extrabold">{data ? data.used.toLocaleString("fr-FR") : "…"} <span className="text-base font-semibold text-muted-foreground">/ {data?.limit.toLocaleString("fr-FR") ?? "…"} crédits</span></p>
+              <p className="text-xs text-muted-foreground">{data?.count ?? 0} générations ce mois · remise à zéro automatique le 1er du mois</p>
+            </div>
+            <p className="text-2xl font-bold">{pct.toFixed(1)} %</p>
+          </div>
+          <div className="h-3 w-full overflow-hidden rounded-full bg-muted">
+            <div className={`h-full rounded-full transition-all ${level === "danger" ? "bg-destructive" : level === "warn" ? "bg-warning" : "bg-primary"}`} style={{ width: `${Math.min(100, pct)}%` }} />
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <label htmlFor="ai-limit" className="text-sm text-muted-foreground">Limite mensuelle du plan Lovable :</label>
+            <input id="ai-limit" type="number" min="1" step="any" value={draft} onChange={(e) => setDraft(e.target.value)}
+              className="h-9 w-32 rounded-md border border-input bg-background px-3 text-sm" />
+            <Button size="sm" onClick={saveLimit} disabled={saving}>{saving ? "Enregistrement…" : "Enregistrer"}</Button>
+            {msg && <span className="text-xs text-muted-foreground">{msg}</span>}
+          </div>
+        </CardContent>
+      </Card>
+    </section>
+  );
+}
 
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({ meta: [
@@ -171,6 +236,9 @@ function AdminPage() {
         </div>
 
         {error && <p className="mt-4 text-sm text-destructive">{error}</p>}
+
+        <AiCreditsSection />
+
 
         <h2 id="paiements" className="mt-10 mb-3 text-lg font-bold">Paiements en attente</h2>
         <div className="space-y-3">
