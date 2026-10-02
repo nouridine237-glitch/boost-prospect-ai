@@ -4,8 +4,8 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 export const PLAN_LIMITS: Record<string, { prospects: number; generations: number; price: number }> = {
   gratuit: { prospects: 10, generations: 5, price: 0 },
-  pro: { prospects: 50, generations: 30, price: 5000 },
-  expert: { prospects: 200, generations: 100, price: 12000 },
+  pro: { prospects: -1, generations: 100, price: 5000 },
+  expert: { prospects: -1, generations: -1, price: 12000 },
   business: { prospects: -1, generations: -1, price: 25000 },
 };
 
