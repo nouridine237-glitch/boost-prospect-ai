@@ -49,6 +49,48 @@ export type Database = {
           },
         ]
       }
+      ai_usage_log: {
+        Row: {
+          created_at: string
+          credits_estimes: number
+          generation_type: Database["public"]["Enums"]["ai_generation_type"]
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          credits_estimes?: number
+          generation_type: Database["public"]["Enums"]["ai_generation_type"]
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          credits_estimes?: number
+          generation_type?: Database["public"]["Enums"]["ai_generation_type"]
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      app_settings: {
+        Row: {
+          key: string
+          updated_at: string
+          value: Json
+        }
+        Insert: {
+          key: string
+          updated_at?: string
+          value?: Json
+        }
+        Update: {
+          key?: string
+          updated_at?: string
+          value?: Json
+        }
+        Relationships: []
+      }
       payment_requests: {
         Row: {
           capture_paiement: string | null
