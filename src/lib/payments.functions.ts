@@ -4,9 +4,9 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { PLAN_LIMITS } from "@/lib/admin.functions";
 
 export const PAID_PLANS = {
-  pro: { label: "Pro", fcfa: 5000, usd: 9 },
+  pro: { label: "Pro", fcfa: 5000, usd: 8 },
   expert: { label: "Expert", fcfa: 12000, usd: 20 },
-  business: { label: "Business", fcfa: 25000, usd: 42 },
+  business: { label: "Business", fcfa: 25000, usd: 41 },
 } as const;
 
 export type PaidPlanKey = keyof typeof PAID_PLANS;

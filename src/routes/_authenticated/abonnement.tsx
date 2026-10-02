@@ -27,10 +27,10 @@ const ORANGE_MONEY_NUMBER = "+237 6XX XX XX XX";
 const MTN_MOMO_NUMBER = "+237 6XX XX XX XX";
 
 const plans = [
-  { key: "gratuit", name: "Gratuit", fcfa: 0, usd: 0, prospects: 10, generations: 5, popular: false },
-  { key: "pro", name: "Pro", fcfa: PAID_PLANS.pro.fcfa, usd: PAID_PLANS.pro.usd, prospects: 50, generations: 30, popular: true },
-  { key: "expert", name: "Expert", fcfa: PAID_PLANS.expert.fcfa, usd: PAID_PLANS.expert.usd, prospects: 200, generations: 100, popular: false },
-  { key: "business", name: "Business", fcfa: PAID_PLANS.business.fcfa, usd: PAID_PLANS.business.usd, prospects: -1, generations: -1, popular: false },
+  { key: "gratuit", name: "Gratuit", fcfa: 0, usd: 0, popular: false, items: ["10 prospects maximum", "5 générations IA / mois", "1 utilisateur"] },
+  { key: "pro", name: "Pro", fcfa: PAID_PLANS.pro.fcfa, usd: PAID_PLANS.pro.usd, popular: true, items: ["Prospects illimités", "100 générations IA / mois", "Historique complet", "Relances automatiques"] },
+  { key: "expert", name: "Expert", fcfa: PAID_PLANS.expert.fcfa, usd: PAID_PLANS.expert.usd, popular: false, items: ["Tout le plan Pro", "Générations IA illimitées", "Académie complète", "Rapports hebdomadaires", "Export CSV"] },
+  { key: "business", name: "Business", fcfa: PAID_PLANS.business.fcfa, usd: PAID_PLANS.business.usd, popular: false, items: ["Tout le plan Expert", "Gestion d’équipe", "Templates par entreprise", "WhatsApp Business", "Support prioritaire"] },
 ] as const;
 
 function priceLabel(fcfa: number, usd: number) {
@@ -139,9 +139,9 @@ function Abonnement() {
               </CardHeader>
               <CardContent className="flex-1">
                 <ul className="space-y-2 text-sm text-muted-foreground">
-                  <li className="flex items-start gap-2"><Check className="mt-0.5 size-4 shrink-0 text-success" /> <span>{plan.prospects < 0 ? "Prospects illimités" : `${plan.prospects} prospects maximum`}</span></li>
-                  <li className="flex items-start gap-2"><Check className="mt-0.5 size-4 shrink-0 text-success" /> <span>{plan.generations < 0 ? "Générations IA illimitées" : `${plan.generations} générations IA / mois`}</span></li>
-                  <li className="flex items-start gap-2"><Check className="mt-0.5 size-4 shrink-0 text-success" /> <span>Support par WhatsApp</span></li>
+                  {plan.items.map((item) => (
+                    <li key={item} className="flex items-start gap-2"><Check className="mt-0.5 size-4 shrink-0 text-success" /> <span>{item}</span></li>
+                  ))}
                 </ul>
               </CardContent>
               <div className="p-6 pt-0">
