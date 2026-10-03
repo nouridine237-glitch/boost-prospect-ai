@@ -23,7 +23,7 @@ export const Route = createFileRoute("/_authenticated/abonnement")({
 });
 
 // ← Remplacez ces numéros par vos vrais numéros de paiement.
-const ORANGE_MONEY_NUMBER = "+237 6XX XX XX XX";
+const ORANGE_MONEY_NUMBER = "+237 693 91 11 79";
 const MTN_MOMO_NUMBER = "+237 6XX XX XX XX";
 
 const plans = [
