@@ -50,14 +50,31 @@ function AuthPage() {
       setLoading(false); setError(signupError?.message ?? ""); setMessage(signupError ? "" : "Compte créé. Confirmez votre adresse e-mail pour continuer."); return;
     }
     const { error: loginError } = await supabase.auth.signInWithPassword({ email, password });
-    setLoading(false); if (loginError) setError(loginError.message); else navigate({ to: "/dashboard", replace: true });
+    if (loginError) { setLoading(false); setError(loginError.message); return; }
+    await waitForSession();
+    setLoading(false);
+    navigate({ to: "/dashboard", replace: true });
+  }
+
+  // Attend que la session soit bien persistée avant de naviguer vers une route protégée.
+  async function waitForSession() {
+    for (let i = 0; i < 20; i++) {
+      const { data } = await supabase.auth.getSession();
+      if (data.session) return true;
+      await new Promise((r) => setTimeout(r, 150));
+    }
+    return false;
   }
 
   async function handleGoogle() {
     setLoading(true); setError("");
     const result = await lovable.auth.signInWithOAuth("google", { redirect_uri: window.location.origin });
     if (result.error) { setError(result.error.message); setLoading(false); return; }
-    if (!result.redirected) navigate({ to: "/dashboard", replace: true });
+    if (!result.redirected) {
+      await waitForSession();
+      setLoading(false);
+      navigate({ to: "/dashboard", replace: true });
+    }
   }
 
   return (
