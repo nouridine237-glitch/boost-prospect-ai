@@ -47,40 +47,17 @@ function AuthPage() {
     if (signup) {
       const { data, error: signupError } = await supabase.auth.signUp({ email, password, options: { emailRedirectTo: window.location.origin, data: { full_name: fullName } } });
       if (!signupError && data.user) await supabase.from("profiles").upsert({ id: data.user.id, full_name: fullName });
-      if (!signupError && data.session) {
-        await waitForSession();
-        setLoading(false);
-        navigate({ to: "/dashboard", replace: true });
-        return;
-      }
       setLoading(false); setError(signupError?.message ?? ""); setMessage(signupError ? "" : "Compte créé. Confirmez votre adresse e-mail pour continuer."); return;
     }
     const { error: loginError } = await supabase.auth.signInWithPassword({ email, password });
-    if (loginError) { setLoading(false); setError(loginError.message); return; }
-    await waitForSession();
-    setLoading(false);
-    navigate({ to: "/dashboard", replace: true });
-  }
-
-  // Attend que la session soit bien persistée avant de naviguer vers une route protégée.
-  async function waitForSession() {
-    for (let i = 0; i < 20; i++) {
-      const { data } = await supabase.auth.getSession();
-      if (data.session) return true;
-      await new Promise((r) => setTimeout(r, 150));
-    }
-    return false;
+    setLoading(false); if (loginError) setError(loginError.message); else navigate({ to: "/dashboard", replace: true });
   }
 
   async function handleGoogle() {
     setLoading(true); setError("");
     const result = await lovable.auth.signInWithOAuth("google", { redirect_uri: window.location.origin });
     if (result.error) { setError(result.error.message); setLoading(false); return; }
-    if (!result.redirected) {
-      await waitForSession();
-      setLoading(false);
-      navigate({ to: "/dashboard", replace: true });
-    }
+    if (!result.redirected) navigate({ to: "/dashboard", replace: true });
   }
 
   return (

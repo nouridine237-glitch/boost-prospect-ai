@@ -10,9 +10,3 @@
   - [x] 3. Page d'abonnement (4 plans, style existant, instructions de paiement manuel)
   - [~] 4. Intégration CinetPay différée : activation manuelle par l'administrateur via la base de données
 - [x] Panel Admin (/admin) : rôle admin (table user_roles + has_role), display_name, liste utilisateurs, gestion plan/statut, résumé revenus
-- [x] Paiement manuel : demandes + preuves, validation admin, bandeau dashboard
-- [x] Grille tarifaire landing/abonnement alignée (FCFA/USD, limites réelles)
-- [x] Suivi crédits IA admin (table ai_usage_log, barre, alertes 80/95%, limite éditable)
-- [x] BUG: redirection post-connexion corrigée (landing redirige les connectés, attente de session avant navigation, écoute des changements de session)
-- [ ] Notification e-mail admin (bloqué: domaine d'envoi non configuré)
-- [ ] Tests navigateur du flux paiement manuel (crédits workspace)
