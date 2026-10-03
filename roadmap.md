@@ -10,3 +10,7 @@
   - [x] 3. Page d'abonnement (4 plans, style existant, instructions de paiement manuel)
   - [~] 4. Intégration CinetPay différée : activation manuelle par l'administrateur via la base de données
 - [x] Panel Admin (/admin) : rôle admin (table user_roles + has_role), display_name, liste utilisateurs, gestion plan/statut, résumé revenus
+
+- [x] Suivi des crédits IA dans le Panel Admin (journal, barre de progression, limite éditable, alertes 80%/95%)
+- [x] Bug redirection post-connexion : la page d’accueil renvoie les utilisateurs connectés vers /dashboard (retour Google inclus)
+- [x] Correction du typage de l’écran d’erreur racine
