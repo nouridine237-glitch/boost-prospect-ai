@@ -47,6 +47,12 @@ function AuthPage() {
     if (signup) {
       const { data, error: signupError } = await supabase.auth.signUp({ email, password, options: { emailRedirectTo: window.location.origin, data: { full_name: fullName } } });
       if (!signupError && data.user) await supabase.from("profiles").upsert({ id: data.user.id, full_name: fullName });
+      if (!signupError && data.session) {
+        await waitForSession();
+        setLoading(false);
+        navigate({ to: "/dashboard", replace: true });
+        return;
+      }
       setLoading(false); setError(signupError?.message ?? ""); setMessage(signupError ? "" : "Compte créé. Confirmez votre adresse e-mail pour continuer."); return;
     }
     const { error: loginError } = await supabase.auth.signInWithPassword({ email, password });
