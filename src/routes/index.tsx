@@ -1,7 +1,9 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useEffect } from "react";
 import { ArrowRight, BarChart3, Bot, Check, ContactRound, MessageSquareText, ShieldCheck, Sparkles, Zap } from "lucide-react";
 import { Brand } from "@/components/brand";
 import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/")({
   head: () => ({ meta: [
@@ -30,6 +32,14 @@ const plans = [
 ];
 
 function Landing() {
+  const navigate = useNavigate();
+  // Un utilisateur déjà connecté (ex. retour de la connexion Google sur "/")
+  // est renvoyé directement vers son espace de travail.
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      if (data.session) navigate({ to: "/dashboard", replace: true });
+    });
+  }, [navigate]);
   return <main className="min-h-screen overflow-hidden bg-background">
     <header className="fixed inset-x-0 top-0 z-40 border-b border-border/70 bg-background/85 backdrop-blur-xl"><div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-5"><Brand /><nav className="hidden items-center gap-8 text-sm text-muted-foreground md:flex"><a href="#features" className="hover:text-foreground">Fonctionnalités</a><a href="#pricing" className="hover:text-foreground">Tarifs</a><Link to="/auth" className="hover:text-foreground">Connexion</Link></nav><Button asChild size="sm"><Link to="/auth">Essayer gratuitement <ArrowRight /></Link></Button></div></header>
     <section className="relative flex min-h-[760px] items-center pt-24"><div className="hero-grid absolute inset-0 opacity-60" /><div className="relative mx-auto grid w-full max-w-7xl items-center gap-14 px-5 py-20 lg:grid-cols-[1.05fr_.95fr]"><div><div className="mb-6 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1.5 text-xs font-bold text-primary"><Sparkles className="size-3.5" /> L’IA au service de relations authentiques</div><h1 className="max-w-3xl text-5xl font-extrabold leading-[1.02] sm:text-6xl lg:text-7xl">Prospectez mieux.<br/><span className="text-primary">Avancez plus vite.</span></h1><p className="mt-7 max-w-xl text-lg leading-8 text-muted-foreground">Un espace intelligent pour préparer vos conversations, suivre vos prospects et transformer votre régularité en progression.</p><div className="mt-9 flex flex-wrap gap-3"><Button asChild size="lg"><Link to="/auth">Commencer gratuitement <ArrowRight /></Link></Button><Button asChild variant="outline" size="lg"><a href="#features">Découvrir la plateforme</a></Button></div><div className="mt-7 flex flex-wrap gap-5 text-xs text-muted-foreground"><span className="flex items-center gap-2"><Check className="size-4 text-success" /> Sans carte bancaire</span><span className="flex items-center gap-2"><ShieldCheck className="size-4 text-success" /> Données privées</span></div></div><div className="relative"><div className="surface relative rounded-xl p-3"><div className="rounded-lg bg-secondary p-5"><div className="mb-5 flex items-center justify-between"><span className="text-sm font-bold">Vue d’ensemble</span><span className="rounded-full bg-success/10 px-2 py-1 text-[10px] font-bold text-success">+18% ce mois</span></div><div className="grid grid-cols-2 gap-3"><Metric label="Prospects actifs" value="48" /><Metric label="Messages créés" value="126" /></div><div className="mt-4 rounded-lg border border-border bg-card p-4"><div className="mb-4 flex items-center justify-between text-xs"><span className="font-semibold">Progression hebdomadaire</span><span className="text-muted-foreground">7 jours</span></div><div className="flex h-28 items-end gap-2">{[35,56,42,72,61,88,76].map((h,i)=><span key={i} className="flex-1 rounded-t bg-primary/80" style={{height:`${h}%`}} />)}</div></div></div></div><div className="absolute -bottom-7 -left-6 hidden rounded-lg border border-border bg-card p-4 shadow-card sm:block"><div className="flex items-center gap-3"><span className="grid size-9 place-items-center rounded-full bg-primary/15 text-primary"><Zap className="size-4" /></span><div><p className="text-xs font-bold">Message prêt</p><p className="text-[11px] text-muted-foreground">Personnalisé en 8 secondes</p></div></div></div></div></div></section>
