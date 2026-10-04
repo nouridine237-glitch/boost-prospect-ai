@@ -171,3 +171,18 @@
   .status-interesse, .status-client { background: oklch(0.72 0.17 155 / .13); color: var(--color-success); }
   .status-non-interesse { background: oklch(0.577 0.245 27.325 / .13); color: var(--color-destructive); }
 }
+
+/* Académie lesson typography */
+.lesson-prose { font-size: 0.95rem; line-height: 1.75; color: var(--foreground); }
+.lesson-prose h2 { margin: 2.25rem 0 0.75rem; font-size: 1.35rem; font-weight: 800; color: var(--foreground); }
+.lesson-prose h3 { margin: 1.5rem 0 0.5rem; font-size: 1.05rem; font-weight: 700; color: var(--primary); }
+.lesson-prose p { margin: 0.75rem 0; color: var(--muted-foreground); }
+.lesson-prose strong { color: var(--foreground); font-weight: 700; }
+.lesson-prose ul, .lesson-prose ol { margin: 0.75rem 0; padding-left: 1.25rem; color: var(--muted-foreground); }
+.lesson-prose ul { list-style: disc; } .lesson-prose ol { list-style: decimal; }
+.lesson-prose li { margin: 0.35rem 0; } .lesson-prose li::marker { color: var(--primary); }
+.lesson-prose hr { margin: 2rem 0; border-color: var(--border); }
+.lesson-prose table { width: 100%; margin: 1.25rem 0; border-collapse: collapse; font-size: 0.85rem; display: block; overflow-x: auto; }
+.lesson-prose th { background: color-mix(in oklab, var(--primary) 15%, transparent); color: var(--foreground); text-align: left; }
+.lesson-prose th, .lesson-prose td { border: 1px solid var(--border); padding: 0.6rem 0.75rem; vertical-align: top; }
+.lesson-prose td { color: var(--muted-foreground); }
