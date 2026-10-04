@@ -21,6 +21,7 @@ import { Route as AuthenticatedDashboardRouteImport } from './routes/_authentica
 import { Route as AuthenticatedParametresRouteImport } from './routes/_authenticated/parametres'
 import { Route as AuthenticatedProspectsRouteImport } from './routes/_authenticated/prospects'
 import { Route as AuthenticatedStatistiquesRouteImport } from './routes/_authenticated/statistiques'
+import { Route as AuthenticatedAcademieNiveauRouteImport } from './routes/_authenticated/academie_.$niveau'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -82,6 +83,12 @@ const AuthenticatedStatistiquesRoute =
     path: '/statistiques',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedAcademieNiveauRoute =
+  AuthenticatedAcademieNiveauRouteImport.update({
+    id: '/academie_/$niveau',
+    path: '/academie/$niveau',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -95,6 +102,7 @@ export interface FileRoutesByFullPath {
   '/parametres': typeof AuthenticatedParametresRoute
   '/prospects': typeof AuthenticatedProspectsRoute
   '/statistiques': typeof AuthenticatedStatistiquesRoute
+  '/academie/$niveau': typeof AuthenticatedAcademieNiveauRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -108,6 +116,7 @@ export interface FileRoutesByTo {
   '/parametres': typeof AuthenticatedParametresRoute
   '/prospects': typeof AuthenticatedProspectsRoute
   '/statistiques': typeof AuthenticatedStatistiquesRoute
+  '/academie/$niveau': typeof AuthenticatedAcademieNiveauRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -123,6 +132,7 @@ export interface FileRoutesById {
   '/_authenticated/parametres': typeof AuthenticatedParametresRoute
   '/_authenticated/prospects': typeof AuthenticatedProspectsRoute
   '/_authenticated/statistiques': typeof AuthenticatedStatistiquesRoute
+  '/_authenticated/academie_/$niveau': typeof AuthenticatedAcademieNiveauRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -138,6 +148,7 @@ export interface FileRouteTypes {
     | '/parametres'
     | '/prospects'
     | '/statistiques'
+    | '/academie/$niveau'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -151,6 +162,7 @@ export interface FileRouteTypes {
     | '/parametres'
     | '/prospects'
     | '/statistiques'
+    | '/academie/$niveau'
   id:
     | '__root__'
     | '/'
@@ -165,6 +177,7 @@ export interface FileRouteTypes {
     | '/_authenticated/parametres'
     | '/_authenticated/prospects'
     | '/_authenticated/statistiques'
+    | '/_authenticated/academie_/$niveau'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -260,6 +273,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedStatistiquesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/academie_/$niveau': {
+      id: '/_authenticated/academie_/$niveau'
+      path: '/academie/$niveau'
+      fullPath: '/academie/$niveau'
+      preLoaderRoute: typeof AuthenticatedAcademieNiveauRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
@@ -272,6 +292,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedParametresRoute: typeof AuthenticatedParametresRoute
   AuthenticatedProspectsRoute: typeof AuthenticatedProspectsRoute
   AuthenticatedStatistiquesRoute: typeof AuthenticatedStatistiquesRoute
+  AuthenticatedAcademieNiveauRoute: typeof AuthenticatedAcademieNiveauRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -283,6 +304,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedParametresRoute: AuthenticatedParametresRoute,
   AuthenticatedProspectsRoute: AuthenticatedProspectsRoute,
   AuthenticatedStatistiquesRoute: AuthenticatedStatistiquesRoute,
+  AuthenticatedAcademieNiveauRoute: AuthenticatedAcademieNiveauRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
