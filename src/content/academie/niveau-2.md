@@ -1,5 +1,3 @@
-# Niveau 2 — Construire ton image professionnelle
-
 ## Ce que tu vas apprendre dans cette leçon
 
 - Pourquoi ton image détermine en grande partie si un prospect te fait confiance avant même d'avoir vu le produit

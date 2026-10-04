@@ -1,5 +1,3 @@
-# Niveau 1 — Comprendre le MLM
-
 ## Ce que tu vas apprendre dans cette leçon
 
 - Ce qu'est réellement le marketing de réseau, sans discours commercial
@@ -67,15 +65,10 @@ Pour débloquer certains niveaux de commission, tu dois généralement :
 C'est la distinction la plus importante de cette leçon, et celle que la plupart des networkers n'expliquent jamais clairement à leurs prospects — souvent parce qu'ils ne la connaissent pas eux-mêmes.
 
 | Critère | MLM légitime | Système pyramidal illégal |
-
 |---|---|---|
-
 | Revenu principal | Vente de produits à de vrais consommateurs | Argent des recrutements successifs |
-
 | Produit | Réel, utilisable, avec une valeur indépendante du plan de compensation | Souvent absent, surévalué, ou accessoire |
-
 | Peut-on gagner sans recruter ? | Oui, via la vente directe | Non, ou de façon négligeable |
-
 | Durabilité | Peut fonctionner indéfiniment si le produit se vend | S'effondre mathématiquement (il faut toujours plus de nouveaux entrants) |
 
 **Pourquoi c'est important pour toi** : si tu rejoins ou recommandes une structure où l'essentiel du discours tourne autour de "deviens riche en recrutant" plutôt que "voici un produit que les gens achètent et rachètent", tu prends un risque réputationnel et parfois légal. Beaucoup de pays encadrent strictement la vente pyramidale, et la confusion entre les deux modèles coûte cher en crédibilité au secteur MLM dans son ensemble.

@@ -1,5 +1,3 @@
-# Niveau 6 — Développer et animer ton équipe
-
 ## Ce que tu vas apprendre dans cette leçon
 
 - Pourquoi recruter sans former derrière est une stratégie qui s'épuise vite

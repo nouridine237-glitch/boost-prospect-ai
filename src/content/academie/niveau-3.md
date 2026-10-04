@@ -1,5 +1,3 @@
-# Niveau 3 — Créer du contenu qui attire les bonnes personnes
-
 ## Ce que tu vas apprendre dans cette leçon
 
 - Pourquoi le contenu a remplacé le démarchage à froid pur comme porte d'entrée

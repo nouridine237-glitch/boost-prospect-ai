@@ -1,5 +1,3 @@
-# Niveau 5 — Structurer le suivi de tes prospects
-
 ## Ce que tu vas apprendre dans cette leçon
 
 - Pourquoi le suivi fait souvent plus de différence que le premier contact

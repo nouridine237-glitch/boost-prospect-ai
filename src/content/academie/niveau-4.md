@@ -1,5 +1,3 @@
-# Niveau 4 — Techniques de prospection efficaces
-
 ## Ce que tu vas apprendre dans cette leçon
 
 - Les deux grandes catégories de prospection, et quand utiliser chacune
