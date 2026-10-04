@@ -20,7 +20,7 @@ function parse(md: string) {
   // First "## Ce que tu vas apprendre" block → objectives; rest → body.
   const m = md.match(/##[^\n]*apprendre[^\n]*\n([\s\S]*?)\n---\n/);
   const objectives = m
-    ? m[1].split("\n").filter((l) => l.trim().startsWith("- ")).map((l) => l.trim().slice(2))
+    ? (m[1] ?? "").split("\n").filter((l) => l.trim().startsWith("- ")).map((l) => l.trim().slice(2))
     : [];
   const body = m ? md.slice((m.index ?? 0) + m[0].length) : md;
   return { objectives, body: body.trim() };
