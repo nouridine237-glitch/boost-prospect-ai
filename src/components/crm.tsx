@@ -10,6 +10,7 @@ import { getMyPaymentStatus } from "@/lib/payments.functions";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
 import type { User } from "@supabase/supabase-js";
+import { WhatsAppActions } from "@/components/whatsapp-actions";
 
 export type Prospect = Tables<"prospects">;
 export type Status = Prospect["status"];
@@ -27,6 +28,7 @@ export function useCrm(user: User) {
   const [limits, setLimits] = useState<{ plan: string; prospects: number; generations: number }>({ plan: "gratuit", prospects: 10, generations: 5 });
   const [pendingPayment, setPendingPayment] = useState<{ plan_demande: string } | null>(null);
   const [error, setError] = useState("");
+  const [lastMessages, setLastMessages] = useState<Record<string, string>>({});
   const paymentStatusFn = useServerFn(getMyPaymentStatus);
   const displayName = String(user.user_metadata?.["full_name"] ?? user.email?.split("@")[0] ?? "Networker");
 
@@ -34,6 +36,11 @@ export function useCrm(user: User) {
     supabase.from("profiles").upsert({ id: user.id, full_name: displayName });
     supabase.from("prospects").select("*").order("created_at", { ascending: false }).then(({ data }) => setProspects(data ?? []));
     supabase.from("ai_generations").select("id", { count: "exact", head: true }).then(({ count }) => setGenerationCount(count ?? 0));
+    supabase.from("ai_generations").select("prospect_id, generated_content").not("prospect_id", "is", null).order("created_at", { ascending: true }).then(({ data }) => {
+      const map: Record<string, string> = {};
+      (data ?? []).forEach(g => { if (g.prospect_id) map[g.prospect_id] = g.generated_content; });
+      setLastMessages(map);
+    });
     const monthStart = new Date();
     monthStart.setUTCDate(1);
     monthStart.setUTCHours(0, 0, 0, 0);
@@ -66,7 +73,13 @@ export function useCrm(user: User) {
     if (e) setError(e.message); else setProspects(items => items.map(p => p.id === id ? { ...p, ...patch } : p));
   }
 
-  return { prospects, generationCount, monthlyGenerations, setMonthlyGenerations, setGenerationCount, limits, pendingPayment, error, setError, displayName, clients, conversion, addProspect, changeStatus, updateProspect };
+  async function markContacted(id: string) {
+    const patch = { status: "contacté" as Status, last_contact_date: new Date().toISOString() };
+    const { error: e } = await supabase.from("prospects").update(patch).eq("id", id);
+    if (e) setError(e.message); else setProspects(items => items.map(p => p.id === id ? { ...p, ...patch } : p));
+  }
+
+  return { lastMessages, setLastMessages, markContacted, prospects, generationCount, monthlyGenerations, setMonthlyGenerations, setGenerationCount, limits, pendingPayment, error, setError, displayName, clients, conversion, addProspect, changeStatus, updateProspect };
 }
 
 export type Crm = ReturnType<typeof useCrm>;
@@ -115,12 +128,12 @@ export function ProspectsPanel({ crm, limit }: { crm: Crm; limit?: number }) {
       </div>
       {adding && <form onSubmit={submit} className="grid gap-3 border-b border-border p-4 sm:grid-cols-[1fr_1fr_auto]"><Input value={name} onChange={e => setName(e.target.value)} placeholder="Nom du prospect" required /><Input value={phone} onChange={e => setPhone(e.target.value)} placeholder="Téléphone" /><Button>Enregistrer</Button></form>}
       {crm.error && <p className="border-b border-border p-4 text-xs text-destructive">{crm.error}</p>}
-      <div className="divide-y divide-border">{shown.length ? shown.map(p => <ProspectCard key={p.id} prospect={p} onChangeStatus={crm.changeStatus} onUpdate={crm.updateProspect} />) : <div className="p-10 text-center"><ContactRound className="mx-auto size-8 text-muted-foreground" /><p className="mt-3 text-sm font-semibold">Aucun prospect pour le moment</p><p className="mt-1 text-xs text-muted-foreground">Ajoutez votre premier contact pour commencer.</p></div>}</div>
+      <div className="divide-y divide-border">{shown.length ? shown.map(p => <ProspectCard key={p.id} prospect={p} onChangeStatus={crm.changeStatus} onUpdate={crm.updateProspect} message={crm.lastMessages[p.id] ?? ""} onMarkContacted={() => crm.markContacted(p.id)} />) : <div className="p-10 text-center"><ContactRound className="mx-auto size-8 text-muted-foreground" /><p className="mt-3 text-sm font-semibold">Aucun prospect pour le moment</p><p className="mt-1 text-xs text-muted-foreground">Ajoutez votre premier contact pour commencer.</p></div>}</div>
     </section>
   );
 }
 
-export function ProspectCard({ prospect: p, onChangeStatus, onUpdate }: { prospect: Prospect; onChangeStatus: (id: string, status: Status) => void; onUpdate: (id: string, patch: { notes?: string; next_followup_date?: string | null }) => Promise<void> }) {
+export function ProspectCard({ prospect: p, onChangeStatus, onUpdate, message = "", onMarkContacted }: { message?: string; onMarkContacted?: () => Promise<void>; prospect: Prospect; onChangeStatus: (id: string, status: Status) => void; onUpdate: (id: string, patch: { notes?: string; next_followup_date?: string | null }) => Promise<void> }) {
   const [open, setOpen] = useState(false);
   const [notes, setNotes] = useState(p.notes ?? "");
   const [followup, setFollowup] = useState(p.next_followup_date ?? "");
@@ -135,6 +148,7 @@ export function ProspectCard({ prospect: p, onChangeStatus, onUpdate }: { prospe
       <label className="relative"><select aria-label={`Changer le statut de ${p.name}`} value={p.status} onChange={e => onChangeStatus(p.id, e.target.value as Status)} className="h-8 appearance-none rounded-md border border-input bg-background pl-3 pr-8 text-xs outline-none focus:ring-1 focus:ring-ring">{statuses.map(s => <option key={s} value={s}>{statusLabels[s]}</option>)}</select><ChevronDown className="pointer-events-none absolute right-2 top-2 size-3 text-muted-foreground" /></label>
       <Button variant="ghost" size="icon" aria-label={`Notes et relance pour ${p.name}`} onClick={() => setOpen(!open)} className={open ? "text-primary" : "text-muted-foreground"}><NotebookPen /></Button>
     </div>
+    <WhatsAppActions message={message} phone={p.phone} prospectStatus={p.status} onMarkContacted={onMarkContacted} />
     {open && <div className="mt-4 grid gap-3 rounded-md border border-border bg-secondary/50 p-3">
       <label className="grid gap-1.5"><span className="text-xs font-semibold text-muted-foreground">Notes</span><Textarea className="min-h-20 resize-none bg-background" placeholder="Contexte, échanges, prochaines étapes…" value={notes} onChange={e => setNotes(e.target.value)} /></label>
       <label className="grid gap-1.5"><span className="text-xs font-semibold text-muted-foreground">Prochaine relance</span><Input type="date" className="w-44 bg-background" value={followup} onChange={e => setFollowup(e.target.value)} /></label>
@@ -150,6 +164,9 @@ export function AiAssistantPanel({ crm }: { crm: Crm }) {
   const [result, setResult] = useState("");
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState("");
+  const [prospectId, setProspectId] = useState("");
+  const [resultProspectId, setResultProspectId] = useState("");
+  const target = crm.prospects.find(p => p.id === resultProspectId);
 
   async function runGeneration() {
     if (context.trim().length < 8) { setError("Ajoutez un peu plus de contexte."); return; }
@@ -159,8 +176,10 @@ export function AiAssistantPanel({ crm }: { crm: Crm }) {
       setGenerating(false); return;
     }
     try {
-      const response = await generate({ data: { mode, context } });
+      const response = await generate({ data: { mode, context, ...(prospectId ? { prospectId } : {}) } });
       setResult(response.text);
+      setResultProspectId(prospectId);
+      if (prospectId) crm.setLastMessages(m => ({ ...m, [prospectId]: response.text }));
       crm.setGenerationCount(v => v + 1);
       crm.setMonthlyGenerations(v => v + 1);
     } catch (caught) { setError(caught instanceof Error ? caught.message : "La génération a échoué."); }
@@ -171,10 +190,12 @@ export function AiAssistantPanel({ crm }: { crm: Crm }) {
     <section className="surface rounded-lg p-5">
       <div className="flex items-center gap-3"><span className="grid size-10 place-items-center rounded-lg bg-primary/15 text-primary"><Sparkles className="size-5" /></span><div><h2 className="font-bold">Assistant IA</h2><p className="text-xs text-muted-foreground">Créez un contenu adapté à votre situation.</p></div></div>
       <div className="mt-5 grid grid-cols-2 gap-2">{modes.map(item => <button key={item} onClick={() => setMode(item)} className={`min-h-12 rounded-md border px-3 text-left text-xs font-semibold transition-colors ${mode === item ? "border-primary bg-primary/12 text-primary" : "border-border bg-secondary text-muted-foreground hover:text-foreground"}`}>{item}</button>)}</div>
-      <Textarea className="mt-4 min-h-32 resize-none" placeholder="Décrivez le prospect, le contexte et le ton souhaité…" value={context} onChange={e => setContext(e.target.value)} />
+      <label className="relative mt-4 block"><select aria-label="Prospect concerné" value={prospectId} onChange={e => setProspectId(e.target.value)} className="h-9 w-full appearance-none rounded-md border border-input bg-background pl-3 pr-8 text-sm outline-none focus:ring-1 focus:ring-ring"><option value="">Aucun prospect (message général)</option>{crm.prospects.map(p => <option key={p.id} value={p.id}>{p.name}{p.phone ? ` — ${p.phone}` : ""}</option>)}</select><ChevronDown className="pointer-events-none absolute right-2 top-3 size-3 text-muted-foreground" /></label>
+      <Textarea className="mt-3 min-h-32 resize-none" placeholder="Décrivez le prospect, le contexte et le ton souhaité…" value={context} onChange={e => setContext(e.target.value)} />
       <Button className="mt-3 w-full" onClick={runGeneration} disabled={generating}><Sparkles />{generating ? "Génération…" : "Générer"}</Button>
       {error && <p className="mt-3 text-xs text-destructive">{error}</p>}
       {result && <div className="prose prose-invert mt-4 max-h-72 overflow-y-auto rounded-md border border-border bg-secondary p-4 text-sm leading-6"><ReactMarkdown>{result}</ReactMarkdown></div>}
+      {result && <WhatsAppActions message={result} phone={target?.phone} prospectStatus={target?.status} onMarkContacted={target ? () => crm.markContacted(target.id) : undefined} />}
     </section>
   );
 }
