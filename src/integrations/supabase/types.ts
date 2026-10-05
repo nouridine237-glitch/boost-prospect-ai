@@ -165,6 +165,7 @@ export type Database = {
           created_at: string
           id: string
           interest_level: number | null
+          last_contact_date: string | null
           name: string
           next_followup_date: string | null
           notes: string | null
@@ -178,6 +179,7 @@ export type Database = {
           created_at?: string
           id?: string
           interest_level?: number | null
+          last_contact_date?: string | null
           name: string
           next_followup_date?: string | null
           notes?: string | null
@@ -191,6 +193,7 @@ export type Database = {
           created_at?: string
           id?: string
           interest_level?: number | null
+          last_contact_date?: string | null
           name?: string
           next_followup_date?: string | null
           notes?: string | null
