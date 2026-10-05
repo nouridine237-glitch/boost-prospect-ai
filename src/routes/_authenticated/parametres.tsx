@@ -5,6 +5,7 @@ import { AppShell } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
+import { countryCodes, setCachedCountryCode } from "@/components/whatsapp-actions";
 
 export const Route = createFileRoute("/_authenticated/parametres")({
   head: () => ({ meta: [
@@ -23,17 +24,25 @@ function SettingsPage() {
   const navigate = useNavigate();
   const [fullName, setFullName] = useState(String(user.user_metadata?.["full_name"] ?? ""));
   const [plan, setPlan] = useState("gratuit");
+  const [countryCode, setCountryCode] = useState("237");
+  const [prefs, setPrefs] = useState<Record<string, unknown>>({});
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
     supabase.from("subscriptions").select("plan").eq("user_id", user.id).maybeSingle().then(({ data }) => { if (data?.plan) setPlan(data.plan); });
+    supabase.from("profiles").select("preferences").eq("id", user.id).maybeSingle().then(({ data }) => {
+      const pr = (data?.preferences ?? {}) as Record<string, unknown>;
+      setPrefs(pr);
+      if (typeof pr["default_country_code"] === "string") setCountryCode(pr["default_country_code"] as string);
+    });
   }, [user.id]);
 
   async function save() {
     setSaving(true); setSaved(false);
     await supabase.auth.updateUser({ data: { full_name: fullName.trim() } });
-    await supabase.from("profiles").upsert({ id: user.id, full_name: fullName.trim() });
+    await supabase.from("profiles").upsert({ id: user.id, full_name: fullName.trim(), preferences: { ...prefs, default_country_code: countryCode } as never });
+    setCachedCountryCode(countryCode);
     setSaving(false); setSaved(true);
   }
 
@@ -53,6 +62,7 @@ function SettingsPage() {
           <h2 className="font-bold">Profil</h2>
           <label className="mt-4 grid gap-1.5"><span className="text-xs font-semibold text-muted-foreground">Nom affiché</span><Input value={fullName} onChange={e => setFullName(e.target.value)} placeholder="Votre nom" /></label>
           <label className="mt-4 grid gap-1.5"><span className="text-xs font-semibold text-muted-foreground">Adresse e-mail</span><Input value={user.email ?? ""} readOnly disabled /></label>
+          <label className="mt-4 grid gap-1.5"><span className="text-xs font-semibold text-muted-foreground">Indicatif pays par défaut</span><select value={countryCode} onChange={e => setCountryCode(e.target.value)} className="h-9 rounded-md border border-input bg-background px-3 text-sm outline-none focus:ring-1 focus:ring-ring">{countryCodes.map(c => <option key={c.label} value={c.value}>{c.label}</option>)}</select></label>
           <div className="mt-4 flex items-center gap-3">
             <Button onClick={save} disabled={saving}>{saving ? "Enregistrement…" : "Enregistrer"}</Button>
             {saved && <span className="text-xs text-primary">Modifications enregistrées.</span>}
