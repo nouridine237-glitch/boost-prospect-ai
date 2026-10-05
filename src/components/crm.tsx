@@ -133,7 +133,7 @@ export function ProspectsPanel({ crm, limit }: { crm: Crm; limit?: number }) {
   );
 }
 
-export function ProspectCard({ prospect: p, onChangeStatus, onUpdate, message = "", onMarkContacted }: { message?: string; onMarkContacted?: () => Promise<void>; prospect: Prospect; onChangeStatus: (id: string, status: Status) => void; onUpdate: (id: string, patch: { notes?: string; next_followup_date?: string | null }) => Promise<void> }) {
+export function ProspectCard({ prospect: p, onChangeStatus, onUpdate, message = "", onMarkContacted }: { message?: string; onMarkContacted?: (() => Promise<void>) | undefined; prospect: Prospect; onChangeStatus: (id: string, status: Status) => void; onUpdate: (id: string, patch: { notes?: string; next_followup_date?: string | null }) => Promise<void> }) {
   const [open, setOpen] = useState(false);
   const [notes, setNotes] = useState(p.notes ?? "");
   const [followup, setFollowup] = useState(p.next_followup_date ?? "");
