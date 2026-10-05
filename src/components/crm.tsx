@@ -128,12 +128,12 @@ export function ProspectsPanel({ crm, limit }: { crm: Crm; limit?: number }) {
       </div>
       {adding && <form onSubmit={submit} className="grid gap-3 border-b border-border p-4 sm:grid-cols-[1fr_1fr_auto]"><Input value={name} onChange={e => setName(e.target.value)} placeholder="Nom du prospect" required /><Input value={phone} onChange={e => setPhone(e.target.value)} placeholder="Téléphone" /><Button>Enregistrer</Button></form>}
       {crm.error && <p className="border-b border-border p-4 text-xs text-destructive">{crm.error}</p>}
-      <div className="divide-y divide-border">{shown.length ? shown.map(p => <ProspectCard key={p.id} prospect={p} onChangeStatus={crm.changeStatus} onUpdate={crm.updateProspect} message={crm.lastMessages[p.id] ?? ""} onMarkContacted={() => crm.markContacted(p.id)} />) : <div className="p-10 text-center"><ContactRound className="mx-auto size-8 text-muted-foreground" /><p className="mt-3 text-sm font-semibold">Aucun prospect pour le moment</p><p className="mt-1 text-xs text-muted-foreground">Ajoutez votre premier contact pour commencer.</p></div>}</div>
+      <div className="divide-y divide-border">{shown.length ? shown.map(p => <ProspectCard key={p.id} prospect={p} onChangeStatus={crm.changeStatus} onUpdate={crm.updateProspect} />) : <div className="p-10 text-center"><ContactRound className="mx-auto size-8 text-muted-foreground" /><p className="mt-3 text-sm font-semibold">Aucun prospect pour le moment</p><p className="mt-1 text-xs text-muted-foreground">Ajoutez votre premier contact pour commencer.</p></div>}</div>
     </section>
   );
 }
 
-export function ProspectCard({ prospect: p, onChangeStatus, onUpdate, message = "", onMarkContacted }: { message?: string; onMarkContacted?: (() => Promise<void>) | undefined; prospect: Prospect; onChangeStatus: (id: string, status: Status) => void; onUpdate: (id: string, patch: { notes?: string; next_followup_date?: string | null }) => Promise<void> }) {
+export function ProspectCard({ prospect: p, onChangeStatus, onUpdate }: { prospect: Prospect; onChangeStatus: (id: string, status: Status) => void; onUpdate: (id: string, patch: { notes?: string; next_followup_date?: string | null }) => Promise<void> }) {
   const [open, setOpen] = useState(false);
   const [notes, setNotes] = useState(p.notes ?? "");
   const [followup, setFollowup] = useState(p.next_followup_date ?? "");
@@ -148,7 +148,6 @@ export function ProspectCard({ prospect: p, onChangeStatus, onUpdate, message = 
       <label className="relative"><select aria-label={`Changer le statut de ${p.name}`} value={p.status} onChange={e => onChangeStatus(p.id, e.target.value as Status)} className="h-8 appearance-none rounded-md border border-input bg-background pl-3 pr-8 text-xs outline-none focus:ring-1 focus:ring-ring">{statuses.map(s => <option key={s} value={s}>{statusLabels[s]}</option>)}</select><ChevronDown className="pointer-events-none absolute right-2 top-2 size-3 text-muted-foreground" /></label>
       <Button variant="ghost" size="icon" aria-label={`Notes et relance pour ${p.name}`} onClick={() => setOpen(!open)} className={open ? "text-primary" : "text-muted-foreground"}><NotebookPen /></Button>
     </div>
-    <WhatsAppActions message={message} phone={p.phone} prospectStatus={p.status} onMarkContacted={onMarkContacted} />
     {open && <div className="mt-4 grid gap-3 rounded-md border border-border bg-secondary/50 p-3">
       <label className="grid gap-1.5"><span className="text-xs font-semibold text-muted-foreground">Notes</span><Textarea className="min-h-20 resize-none bg-background" placeholder="Contexte, échanges, prochaines étapes…" value={notes} onChange={e => setNotes(e.target.value)} /></label>
       <label className="grid gap-1.5"><span className="text-xs font-semibold text-muted-foreground">Prochaine relance</span><Input type="date" className="w-44 bg-background" value={followup} onChange={e => setFollowup(e.target.value)} /></label>
