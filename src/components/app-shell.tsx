@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { BarChart3, Bot, ContactRound, CreditCard, GraduationCap, LayoutDashboard, LogOut, Menu, Settings, ShieldCheck, Users } from "lucide-react";
 import { Brand } from "@/components/brand";
 import { supabase } from "@/integrations/supabase/client";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import type { User } from "@supabase/supabase-js";
 
 const nav = [
@@ -22,6 +23,7 @@ export function AppShell({ children, user, title }: { children: React.ReactNode;
   const location = useLocation();
   const [plan, setPlan] = useState<string>("gratuit");
   const [isAdmin, setIsAdmin] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const displayName = String(user.user_metadata?.["full_name"] ?? user.email?.split("@")[0] ?? "Networker");
   const items = isAdmin ? [...nav, { icon: ShieldCheck, label: "Admin", to: "/admin" }] : nav;
 
