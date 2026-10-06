@@ -12,12 +12,14 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as FormationRouteImport } from './routes/formation'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as AuthenticatedAbonnementRouteImport } from './routes/_authenticated/abonnement'
 import { Route as AuthenticatedAcademieRouteImport } from './routes/_authenticated/academie'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedAssistantRouteImport } from './routes/_authenticated/assistant'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedFormerEquipeRouteImport } from './routes/_authenticated/former-equipe'
 import { Route as AuthenticatedParametresRouteImport } from './routes/_authenticated/parametres'
 import { Route as AuthenticatedProspectsRouteImport } from './routes/_authenticated/prospects'
 import { Route as AuthenticatedStatistiquesRouteImport } from './routes/_authenticated/statistiques'
@@ -35,6 +37,11 @@ const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FormationRoute = FormationRouteImport.update({
+  id: '/formation',
+  path: '/formation',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
@@ -67,6 +74,12 @@ const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedFormerEquipeRoute =
+  AuthenticatedFormerEquipeRouteImport.update({
+    id: '/former-equipe',
+    path: '/former-equipe',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedParametresRoute = AuthenticatedParametresRouteImport.update({
   id: '/parametres',
   path: '/parametres',
@@ -93,12 +106,14 @@ const AuthenticatedAcademieNiveauRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/formation': typeof FormationRoute
   '/reset-password': typeof ResetPasswordRoute
   '/abonnement': typeof AuthenticatedAbonnementRoute
   '/academie': typeof AuthenticatedAcademieRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/assistant': typeof AuthenticatedAssistantRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/former-equipe': typeof AuthenticatedFormerEquipeRoute
   '/parametres': typeof AuthenticatedParametresRoute
   '/prospects': typeof AuthenticatedProspectsRoute
   '/statistiques': typeof AuthenticatedStatistiquesRoute
@@ -107,12 +122,14 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/formation': typeof FormationRoute
   '/reset-password': typeof ResetPasswordRoute
   '/abonnement': typeof AuthenticatedAbonnementRoute
   '/academie': typeof AuthenticatedAcademieRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/assistant': typeof AuthenticatedAssistantRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/former-equipe': typeof AuthenticatedFormerEquipeRoute
   '/parametres': typeof AuthenticatedParametresRoute
   '/prospects': typeof AuthenticatedProspectsRoute
   '/statistiques': typeof AuthenticatedStatistiquesRoute
@@ -123,12 +140,14 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
+  '/formation': typeof FormationRoute
   '/reset-password': typeof ResetPasswordRoute
   '/_authenticated/abonnement': typeof AuthenticatedAbonnementRoute
   '/_authenticated/academie': typeof AuthenticatedAcademieRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/assistant': typeof AuthenticatedAssistantRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/former-equipe': typeof AuthenticatedFormerEquipeRoute
   '/_authenticated/parametres': typeof AuthenticatedParametresRoute
   '/_authenticated/prospects': typeof AuthenticatedProspectsRoute
   '/_authenticated/statistiques': typeof AuthenticatedStatistiquesRoute
@@ -139,12 +158,14 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/auth'
+    | '/formation'
     | '/reset-password'
     | '/abonnement'
     | '/academie'
     | '/admin'
     | '/assistant'
     | '/dashboard'
+    | '/former-equipe'
     | '/parametres'
     | '/prospects'
     | '/statistiques'
@@ -153,12 +174,14 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/auth'
+    | '/formation'
     | '/reset-password'
     | '/abonnement'
     | '/academie'
     | '/admin'
     | '/assistant'
     | '/dashboard'
+    | '/former-equipe'
     | '/parametres'
     | '/prospects'
     | '/statistiques'
@@ -168,12 +191,14 @@ export interface FileRouteTypes {
     | '/'
     | '/_authenticated'
     | '/auth'
+    | '/formation'
     | '/reset-password'
     | '/_authenticated/abonnement'
     | '/_authenticated/academie'
     | '/_authenticated/admin'
     | '/_authenticated/assistant'
     | '/_authenticated/dashboard'
+    | '/_authenticated/former-equipe'
     | '/_authenticated/parametres'
     | '/_authenticated/prospects'
     | '/_authenticated/statistiques'
@@ -184,6 +209,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
+  FormationRoute: typeof FormationRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
 }
 
@@ -208,6 +234,13 @@ declare module '@tanstack/react-router' {
       path: '/auth'
       fullPath: '/auth'
       preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/formation': {
+      id: '/formation'
+      path: '/formation'
+      fullPath: '/formation'
+      preLoaderRoute: typeof FormationRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/reset-password': {
@@ -252,6 +285,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/former-equipe': {
+      id: '/_authenticated/former-equipe'
+      path: '/former-equipe'
+      fullPath: '/former-equipe'
+      preLoaderRoute: typeof AuthenticatedFormerEquipeRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/parametres': {
       id: '/_authenticated/parametres'
       path: '/parametres'
@@ -289,6 +329,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
   AuthenticatedAssistantRoute: typeof AuthenticatedAssistantRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedFormerEquipeRoute: typeof AuthenticatedFormerEquipeRoute
   AuthenticatedParametresRoute: typeof AuthenticatedParametresRoute
   AuthenticatedProspectsRoute: typeof AuthenticatedProspectsRoute
   AuthenticatedStatistiquesRoute: typeof AuthenticatedStatistiquesRoute
@@ -301,6 +342,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRoute,
   AuthenticatedAssistantRoute: AuthenticatedAssistantRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedFormerEquipeRoute: AuthenticatedFormerEquipeRoute,
   AuthenticatedParametresRoute: AuthenticatedParametresRoute,
   AuthenticatedProspectsRoute: AuthenticatedProspectsRoute,
   AuthenticatedStatistiquesRoute: AuthenticatedStatistiquesRoute,
@@ -314,6 +356,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
+  FormationRoute: FormationRoute,
   ResetPasswordRoute: ResetPasswordRoute,
 }
 export const routeTree = rootRouteImport
