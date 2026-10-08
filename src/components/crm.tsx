@@ -12,6 +12,7 @@ import type { Tables } from "@/integrations/supabase/types";
 import type { User } from "@supabase/supabase-js";
 import { WhatsAppActions } from "@/components/whatsapp-actions";
 import { toast } from "sonner";
+import { FilterBar, ImportExportButtons, applyFilters, emptyFilters, type Filters, type ImportRow } from "@/components/prospect-io";
 
 export type Prospect = Tables<"prospects"> & { joined_team_at?: string | null };
 export type Status = Prospect["status"];
@@ -68,6 +69,13 @@ export function useCrm(user: User, opts?: { onJoinTeam?: (p: Prospect) => void }
     if (data) setProspects(p => [data, ...p]);
     return true;
   }
+  async function importProspects(rows: ImportRow[]) {
+    if (!rows.length) return 0;
+    const { data, error: e } = await supabase.from("prospects").insert(rows.map(r => ({ user_id: user.id, name: r.name, phone: r.phone, source: r.source, notes: r.notes }))).select();
+    if (e) { setError(e.message); return -1; }
+    setProspects(p => [...(data ?? []), ...p]);
+    return data?.length ?? 0;
+  }
   async function changeStatus(id: string, status: Status) {
     const before = prospects.find(p => p.id === id);
     const { error: e } = await supabase.from("prospects").update({ status }).eq("id", id);
@@ -90,7 +98,7 @@ export function useCrm(user: User, opts?: { onJoinTeam?: (p: Prospect) => void }
     if (e) setError(e.message); else setProspects(items => items.map(p => p.id === id ? { ...p, ...patch } : p));
   }
 
-  return { lastMessages, setLastMessages, markContacted, prospects, generationCount, monthlyGenerations, setMonthlyGenerations, setGenerationCount, limits, pendingPayment, error, setError, displayName, clients, conversion, addProspect, changeStatus, updateProspect };
+  return { lastMessages, setLastMessages, markContacted, prospects, generationCount, monthlyGenerations, setMonthlyGenerations, setGenerationCount, limits, pendingPayment, error, setError, displayName, clients, conversion, addProspect, importProspects, changeStatus, updateProspect };
 }
 
 export type Crm = ReturnType<typeof useCrm>;
@@ -118,7 +126,8 @@ export function ProspectsPanel({ crm, limit, excludeClients, onOpen }: { crm: Cr
   const [adding, setAdding] = useState(false);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
-  const filtered = useMemo(() => crm.prospects.filter(p => (!excludeClients || p.status !== "client") && (p.name.toLowerCase().includes(query.toLowerCase()) || (p.phone ?? "").includes(query))), [crm.prospects, query, excludeClients]);
+  const [filters, setFilters] = useState<Filters>(emptyFilters);
+  const filtered = useMemo(() => applyFilters(crm.prospects.filter(p => (!excludeClients || p.status !== "client") && (p.name.toLowerCase().includes(query.toLowerCase()) || (p.phone ?? "").includes(query))), limit ? emptyFilters : filters), [crm.prospects, query, excludeClients, filters, limit]);
   const shown = limit ? filtered.slice(0, limit) : filtered;
 
   async function submit(event: FormEvent) {
@@ -132,11 +141,13 @@ export function ProspectsPanel({ crm, limit, excludeClients, onOpen }: { crm: Cr
     <section className="surface min-w-0 rounded-lg">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border p-5">
         <div><h2 className="font-bold">Prospects</h2><p className="mt-1 text-xs text-muted-foreground">{crm.prospects.length} contacts dans votre pipeline</p></div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <label className="relative"><Search className="absolute left-3 top-2.5 size-4 text-muted-foreground" /><Input className="w-48 pl-9" placeholder="Rechercher…" value={query} onChange={e => setQuery(e.target.value)} /></label>
+          {!limit && <ImportExportButtons crm={crm} />}
           <Button size="sm" onClick={() => setAdding(!adding)}><Plus /> Ajouter</Button>
         </div>
       </div>
+      {!limit && <FilterBar f={filters} set={setFilters} statuses={excludeClients ? statuses.filter(s => s !== "client") : statuses} />}
       {adding && <form onSubmit={submit} className="grid gap-3 border-b border-border p-4 sm:grid-cols-[1fr_1fr_auto]"><Input value={name} onChange={e => setName(e.target.value)} placeholder="Nom du prospect" required /><Input value={phone} onChange={e => setPhone(e.target.value)} placeholder="Téléphone" /><Button>Enregistrer</Button></form>}
       {crm.error && <p className="border-b border-border p-4 text-xs text-destructive">{crm.error}</p>}
       <div className="divide-y divide-border">{shown.length ? shown.map(p => <ProspectCard key={p.id} prospect={p} onOpen={onOpen} onChangeStatus={crm.changeStatus} onUpdate={crm.updateProspect} />) : <div className="p-10 text-center"><ContactRound className="mx-auto size-8 text-muted-foreground" /><p className="mt-3 text-sm font-semibold">Aucun prospect pour le moment</p><p className="mt-1 text-xs text-muted-foreground">Ajoutez votre premier contact pour commencer.</p></div>}</div>
