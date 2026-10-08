@@ -11,17 +11,21 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
 import type { User } from "@supabase/supabase-js";
 import { WhatsAppActions } from "@/components/whatsapp-actions";
+import { toast } from "sonner";
+import { fireConfetti } from "@/lib/confetti";
 
-export type Prospect = Tables<"prospects">;
+export type Prospect = Tables<"prospects"> & { joined_team_at?: string | null };
 export type Status = Prospect["status"];
 export const statuses = ["nouveau", "contacté", "discussion", "intéressé", "client", "non_intéressé"] as const satisfies readonly Status[];
 export const statusLabels: Record<Status, string> = { nouveau: "Nouveau", "contacté": "Contacté", discussion: "Discussion", "intéressé": "Intéressé", client: "Client", "non_intéressé": "Non intéressé" };
-export const modes = ["Message de prospection", "Réponse à un prospect", "Script d'appel", "Post réseau social"] as const;
+export const baseModes = ["Message de prospection", "Réponse à un prospect", "Script d'appel", "Post réseau social"] as const;
+export const welcomeMode = "Message d'accueil / encouragement";
+export const modes = [...baseModes, welcomeMode] as const;
 export const planLabels: Record<string, string> = { gratuit: "Gratuit", pro: "Pro", expert: "Expert", business: "Business" };
 export function usageLabel(used: number, limit: number) { return limit < 0 ? `${used} (illimité)` : `${used}/${limit}`; }
 export function slugStatus(status: string) { return status.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replaceAll(" ", "-").replaceAll("_", "-"); }
 
-export function useCrm(user: User) {
+export function useCrm(user: User, opts?: { onJoinTeam?: (p: Prospect) => void }) {
   const [prospects, setProspects] = useState<Prospect[]>([]);
   const [generationCount, setGenerationCount] = useState(0);
   const [monthlyGenerations, setMonthlyGenerations] = useState(0);
@@ -65,8 +69,16 @@ export function useCrm(user: User) {
     return true;
   }
   async function changeStatus(id: string, status: Status) {
+    const before = prospects.find(p => p.id === id);
     const { error: e } = await supabase.from("prospects").update({ status }).eq("id", id);
-    if (e) setError(e.message); else setProspects(items => items.map(p => p.id === id ? { ...p, status } : p));
+    if (e) { setError(e.message); return; }
+    const joining = status === "client" && before?.status !== "client";
+    setProspects(items => items.map(p => p.id === id ? { ...p, status, ...(joining ? { joined_team_at: new Date().toISOString() } : {}) } : p));
+    if (joining && before) {
+      fireConfetti();
+      if (opts?.onJoinTeam) opts.onJoinTeam(before);
+      else toast.success(`🎉 ${before.name} a rejoint ton équipe !`);
+    }
   }
   async function updateProspect(id: string, patch: { notes?: string; next_followup_date?: string | null }) {
     const { error: e } = await supabase.from("prospects").update(patch).eq("id", id);
