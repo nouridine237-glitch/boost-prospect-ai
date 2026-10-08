@@ -196,17 +196,12 @@
 .team-count span { -webkit-text-fill-color: var(--muted-foreground); }
 .team-progress { height: 10px; border-radius: 9999px; background: var(--secondary); overflow: hidden; }
 .team-progress-bar { position: relative; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--primary), oklch(0.78 0.14 210)); transition: width 300ms ease; overflow: hidden; }
-.team-progress-bar::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, transparent, oklch(1 0 0 / .45), transparent); transform: translateX(-100%); animation: team-shine 2.4s ease-in-out infinite; }
-@keyframes team-shine { to { transform: translateX(100%); } }
-.member-card { border-radius: 20px; padding: 1.25rem; background: var(--card); border: 1px solid var(--border); box-shadow: 0 10px 30px -14px hsl(var(--member-hue) 80% 55% / .45); transition: transform 220ms ease, box-shadow 220ms ease; animation: member-in 300ms ease both; }
+.member-card { border-radius: 20px; padding: 1.25rem; background: var(--card); border: 1px solid var(--border); box-shadow: 0 10px 30px -14px hsl(var(--member-hue) 80% 55% / .45); transition: transform 220ms ease, box-shadow 220ms ease; }
 .member-card:hover, .member-card:active { transform: translateY(-3px); box-shadow: 0 16px 36px -14px hsl(var(--member-hue) 80% 55% / .6); }
-@keyframes member-in { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
 .member-avatar { display: grid; place-items: center; flex: none; width: 3.25rem; height: 3.25rem; border-radius: 9999px; font-size: 1.25rem; font-weight: 800; color: #fff; background: linear-gradient(135deg, hsl(var(--member-hue) 85% 58%), hsl(calc(var(--member-hue) + 50) 85% 48%)); box-shadow: 0 0 0 3px var(--card), 0 0 0 5px hsl(var(--member-hue) 85% 60% / .55), 0 0 18px hsl(var(--member-hue) 85% 60% / .5); }
 .member-badge { display: inline-flex; align-items: center; gap: .3rem; padding: .2rem .6rem; border-radius: 9999px; font-size: 11px; font-weight: 600; color: oklch(0.85 0.15 90); background: oklch(0.85 0.15 90 / .12); }
-.team-empty-icon { display: grid; place-items: center; width: 4.5rem; height: 4.5rem; border-radius: 9999px; color: var(--primary); background: color-mix(in oklab, var(--primary) 14%, transparent); animation: team-halo 2.2s ease-in-out infinite; }
-@keyframes team-halo { 0%,100% { box-shadow: 0 0 0 0 color-mix(in oklab, var(--primary) 45%, transparent); } 50% { box-shadow: 0 0 0 16px transparent; } }
+.team-empty-icon { display: grid; place-items: center; width: 4.5rem; height: 4.5rem; border-radius: 9999px; color: var(--primary); background: color-mix(in oklab, var(--primary) 14%, transparent); }
 @media (prefers-reduced-motion: reduce) {
   .team-tab-indicator, .team-progress-bar, .member-card { transition: none; }
-  .member-card, .team-empty-icon, .team-progress-bar::after { animation: none; }
   .member-card:hover, .member-card:active { transform: none; }
 }

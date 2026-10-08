@@ -4,26 +4,9 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { prefersReducedMotion } from "@/lib/confetti";
 import { statuses, statusLabels, type Crm, type Prospect, type Status } from "@/components/crm";
 
 const GOAL_KEY = "mlm-team-goal";
-
-function useCountUp(target: number) {
-  const [value, setValue] = useState(target);
-  useEffect(() => {
-    if (prefersReducedMotion()) { setValue(target); return; }
-    const from = 0; const start = performance.now(); let raf = 0;
-    const tick = (now: number) => {
-      const t = Math.min(1, (now - start) / 700);
-      setValue(Math.round(from + (target - from) * (1 - Math.pow(1 - t, 3))));
-      if (t < 1) raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, [target]);
-  return value;
-}
 
 function hueFor(id: string) { let h = 0; for (const c of id) h = (h * 31 + c.charCodeAt(0)) % 360; return h; }
 
@@ -32,7 +15,7 @@ export function TeamTabs({ tab, onChange, count }: { tab: "prospects" | "team"; 
     <div role="tablist" className="team-tabs relative inline-grid grid-cols-2 rounded-full border border-border bg-secondary/60 p-1">
       <span aria-hidden className="team-tab-indicator" style={{ transform: tab === "team" ? "translateX(100%)" : "translateX(0)" }} />
       <button role="tab" aria-selected={tab === "prospects"} onClick={() => onChange("prospects")} className={`relative z-10 min-h-11 rounded-full px-5 text-sm font-semibold transition-colors duration-200 ${tab === "prospects" ? "text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}>Prospects</button>
-      <button role="tab" aria-selected={tab === "team"} onClick={() => onChange("team")} className={`relative z-10 flex min-h-11 items-center justify-center gap-2 rounded-full px-5 text-sm font-semibold transition-colors duration-200 ${tab === "team" ? "text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}>Mon équipe <span className="team-badge">{count}</span></button>
+      <button role="tab" aria-selected={tab === "team"} onClick={() => onChange("team")} className={`relative z-10 flex min-h-11 items-center justify-center gap-2 rounded-full px-5 text-sm font-semibold transition-colors duration-200 ${tab === "team" ? "text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}>Mes recrues <span className="team-badge">{count}</span></button>
     </div>
   );
 }
@@ -42,7 +25,7 @@ export function TeamPanel({ crm }: { crm: Crm }) {
   const [goal, setGoal] = useState(10);
   const [editing, setEditing] = useState(false);
   useEffect(() => { const v = Number(localStorage.getItem(GOAL_KEY)); if (v > 0) setGoal(v); }, []);
-  const count = useCountUp(members.length);
+  const count = members.length;
   const pct = Math.min(100, Math.round((members.length / goal) * 100));
   function saveGoal(v: number) { const g = Math.max(1, Math.min(10000, Math.round(v) || 10)); setGoal(g); localStorage.setItem(GOAL_KEY, String(g)); setEditing(false); }
 
@@ -51,8 +34,8 @@ export function TeamPanel({ crm }: { crm: Crm }) {
       <section className="team-hero">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
-            <span className="eyebrow">Mon équipe</span>
-            <h2 className="mt-2 text-2xl font-extrabold">Ton équipe</h2>
+            <span className="eyebrow">Mes recrues</span>
+            <h2 className="mt-2 text-2xl font-extrabold">Tes recrues</h2>
           </div>
           <p className="team-count" aria-live="polite">{count}<span className="ml-2 text-base font-semibold text-muted-foreground">{members.length > 1 ? "membres" : "membre"}</span></p>
         </div>
@@ -75,18 +58,18 @@ export function TeamPanel({ crm }: { crm: Crm }) {
       {members.length === 0 ? (
         <div className="surface rounded-[20px] px-6 py-14 text-center">
           <div className="team-empty-icon mx-auto"><Users className="size-8" /></div>
-          <p className="mx-auto mt-6 max-w-sm text-sm text-muted-foreground">Ton équipe est vide. Quand un prospect devient Client, il apparaît ici.</p>
+          <p className="mx-auto mt-6 max-w-sm text-sm text-muted-foreground">Aucune recrue pour l'instant. Quand un prospect devient Client, il apparaît ici.</p>
         </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2">
-          {members.map((m, i) => <MemberCard key={m.id} member={m} index={i} crm={crm} />)}
+          {members.map(m => <MemberCard key={m.id} member={m} crm={crm} />)}
         </div>
       )}
     </div>
   );
 }
 
-function MemberCard({ member: m, index, crm }: { member: Prospect; index: number; crm: Crm }) {
+function MemberCard({ member: m, crm }: { member: Prospect; crm: Crm }) {
   const [notes, setNotes] = useState(m.notes ?? "");
   const [saving, setSaving] = useState(false);
   const hue = hueFor(m.id);
@@ -101,7 +84,7 @@ function MemberCard({ member: m, index, crm }: { member: Prospect; index: number
   async function save() { setSaving(true); await crm.updateProspect(m.id, { notes: notes.trim() }); setSaving(false); toast.success("Notes enregistrées"); }
 
   return (
-    <article className="member-card" style={{ animationDelay: `${index * 60}ms`, ["--member-hue" as string]: hue }}>
+    <article className="member-card" style={{ ["--member-hue" as string]: hue }}>
       <div className="flex items-center gap-4">
         <span className="member-avatar">{m.name.charAt(0).toUpperCase()}</span>
         <div className="min-w-0 flex-1">

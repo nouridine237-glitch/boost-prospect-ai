@@ -32,7 +32,7 @@ function ProspectsPage() {
     <AppShell user={user} title="Prospects">
       <div className="mx-auto max-w-[1100px] p-5 lg:p-8">
         <span className="eyebrow">CRM</span>
-        <h1 className="mt-2 text-3xl font-extrabold">{tab === "team" ? "Ton équipe." : "Vos prospects."}</h1>
+        <h1 className="mt-2 text-3xl font-extrabold">{tab === "team" ? "Tes recrues." : "Vos prospects."}</h1>
         <p className="mt-2 text-sm text-muted-foreground">{tab === "team" ? "Les prospects devenus Clients, à accompagner." : "Statut, notes et prochaine relance pour chaque contact."}</p>
         <UsageLine crm={crm} />
         <PendingPaymentBanner crm={crm} />
