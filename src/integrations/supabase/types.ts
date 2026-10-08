@@ -163,45 +163,57 @@ export type Database = {
       prospects: {
         Row: {
           created_at: string
+          first_contact_at: string | null
           id: string
           interest_level: number | null
           joined_team_at: string | null
           last_contact_date: string | null
+          main_objection: string
           name: string
           next_followup_date: string | null
           notes: string | null
           phone: string | null
+          product_interest: string
           social_network: string | null
+          source: string
           status: Database["public"]["Enums"]["prospect_status"]
           updated_at: string
           user_id: string
         }
         Insert: {
           created_at?: string
+          first_contact_at?: string | null
           id?: string
           interest_level?: number | null
           joined_team_at?: string | null
           last_contact_date?: string | null
+          main_objection?: string
           name: string
           next_followup_date?: string | null
           notes?: string | null
           phone?: string | null
+          product_interest?: string
           social_network?: string | null
+          source?: string
           status?: Database["public"]["Enums"]["prospect_status"]
           updated_at?: string
           user_id: string
         }
         Update: {
           created_at?: string
+          first_contact_at?: string | null
           id?: string
           interest_level?: number | null
           joined_team_at?: string | null
           last_contact_date?: string | null
+          main_objection?: string
           name?: string
           next_followup_date?: string | null
           notes?: string | null
           phone?: string | null
+          product_interest?: string
           social_network?: string | null
+          source?: string
           status?: Database["public"]["Enums"]["prospect_status"]
           updated_at?: string
           user_id?: string

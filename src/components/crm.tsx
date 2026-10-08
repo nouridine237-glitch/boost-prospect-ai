@@ -16,6 +16,7 @@ import { fireConfetti } from "@/lib/confetti";
 
 export type Prospect = Tables<"prospects"> & { joined_team_at?: string | null };
 export type Status = Prospect["status"];
+export type ProspectPatch = Partial<Pick<Prospect, "name" | "phone" | "notes" | "next_followup_date" | "source" | "product_interest" | "main_objection" | "interest_level" | "first_contact_at">>;
 export const statuses = ["nouveau", "contacté", "discussion", "intéressé", "client", "non_intéressé"] as const satisfies readonly Status[];
 export const statusLabels: Record<Status, string> = { nouveau: "Nouveau", "contacté": "Contacté", discussion: "Discussion", "intéressé": "Intéressé", client: "Client", "non_intéressé": "Non intéressé" };
 export const baseModes = ["Message de prospection", "Réponse à un prospect", "Script d'appel", "Post réseau social"] as const;
@@ -80,7 +81,7 @@ export function useCrm(user: User, opts?: { onJoinTeam?: (p: Prospect) => void }
       else toast.success(`🎉 ${before.name} a rejoint ton équipe !`);
     }
   }
-  async function updateProspect(id: string, patch: { notes?: string; next_followup_date?: string | null }) {
+  async function updateProspect(id: string, patch: ProspectPatch) {
     const { error: e } = await supabase.from("prospects").update(patch).eq("id", id);
     if (e) setError(e.message); else setProspects(items => items.map(p => p.id === id ? { ...p, ...patch } : p));
   }
@@ -114,7 +115,7 @@ export function Stat({ icon: Icon, label, value, note }: { icon: typeof UserRoun
   return <article className="surface rounded-lg p-5"><div className="flex items-center justify-between"><span className="text-xs font-semibold text-muted-foreground">{label}</span><span className="grid size-8 place-items-center rounded-md bg-primary/12 text-primary"><Icon className="size-4" /></span></div><p className="mt-4 text-3xl font-extrabold">{value}</p><p className="mt-1 text-[11px] text-muted-foreground">{note}</p></article>;
 }
 
-export function ProspectsPanel({ crm, limit, excludeClients }: { crm: Crm; limit?: number; excludeClients?: boolean }) {
+export function ProspectsPanel({ crm, limit, excludeClients, onOpen }: { crm: Crm; limit?: number; excludeClients?: boolean; onOpen?: (p: Prospect) => void }) {
   const [query, setQuery] = useState("");
   const [adding, setAdding] = useState(false);
   const [name, setName] = useState("");
@@ -140,12 +141,12 @@ export function ProspectsPanel({ crm, limit, excludeClients }: { crm: Crm; limit
       </div>
       {adding && <form onSubmit={submit} className="grid gap-3 border-b border-border p-4 sm:grid-cols-[1fr_1fr_auto]"><Input value={name} onChange={e => setName(e.target.value)} placeholder="Nom du prospect" required /><Input value={phone} onChange={e => setPhone(e.target.value)} placeholder="Téléphone" /><Button>Enregistrer</Button></form>}
       {crm.error && <p className="border-b border-border p-4 text-xs text-destructive">{crm.error}</p>}
-      <div className="divide-y divide-border">{shown.length ? shown.map(p => <ProspectCard key={p.id} prospect={p} onChangeStatus={crm.changeStatus} onUpdate={crm.updateProspect} />) : <div className="p-10 text-center"><ContactRound className="mx-auto size-8 text-muted-foreground" /><p className="mt-3 text-sm font-semibold">Aucun prospect pour le moment</p><p className="mt-1 text-xs text-muted-foreground">Ajoutez votre premier contact pour commencer.</p></div>}</div>
+      <div className="divide-y divide-border">{shown.length ? shown.map(p => <ProspectCard key={p.id} prospect={p} onOpen={onOpen} onChangeStatus={crm.changeStatus} onUpdate={crm.updateProspect} />) : <div className="p-10 text-center"><ContactRound className="mx-auto size-8 text-muted-foreground" /><p className="mt-3 text-sm font-semibold">Aucun prospect pour le moment</p><p className="mt-1 text-xs text-muted-foreground">Ajoutez votre premier contact pour commencer.</p></div>}</div>
     </section>
   );
 }
 
-export function ProspectCard({ prospect: p, onChangeStatus, onUpdate }: { prospect: Prospect; onChangeStatus: (id: string, status: Status) => void; onUpdate: (id: string, patch: { notes?: string; next_followup_date?: string | null }) => Promise<void> }) {
+export function ProspectCard({ prospect: p, onChangeStatus, onUpdate, onOpen }: { prospect: Prospect; onChangeStatus: (id: string, status: Status) => void; onUpdate: (id: string, patch: ProspectPatch) => Promise<void>; onOpen?: ((p: Prospect) => void) | undefined }) {
   const [open, setOpen] = useState(false);
   const [notes, setNotes] = useState(p.notes ?? "");
   const [followup, setFollowup] = useState(p.next_followup_date ?? "");
@@ -155,7 +156,7 @@ export function ProspectCard({ prospect: p, onChangeStatus, onUpdate }: { prospe
   return <div className="p-4">
     <div className="flex flex-wrap items-center gap-3">
       <span className="grid size-10 place-items-center rounded-full bg-secondary font-bold text-primary">{p.name.charAt(0).toUpperCase()}</span>
-      <div className="min-w-32 flex-1"><p className="text-sm font-semibold">{p.name}</p><p className="text-xs text-muted-foreground">{p.phone || "Téléphone non renseigné"}</p>{p.next_followup_date && <p className={`mt-1 flex items-center gap-1 text-[11px] ${overdue ? "text-destructive" : "text-primary"}`}><CalendarClock className="size-3" /> Relance le {new Date(p.next_followup_date + "T00:00:00").toLocaleDateString("fr-FR", { day: "numeric", month: "long" })}</p>}</div>
+      <div className={`min-w-32 flex-1 ${onOpen ? "cursor-pointer" : ""}`} onClick={onOpen ? () => onOpen(p) : undefined} role={onOpen ? "button" : undefined} aria-label={onOpen ? `Ouvrir la fiche de ${p.name}` : undefined}><p className={`text-sm font-semibold ${onOpen ? "hover:text-primary" : ""}`}>{p.name}</p><p className="text-xs text-muted-foreground">{p.phone || "Téléphone non renseigné"}</p>{p.next_followup_date && <p className={`mt-1 flex items-center gap-1 text-[11px] ${overdue ? "text-destructive" : "text-primary"}`}><CalendarClock className="size-3" /> Relance le {new Date(p.next_followup_date + "T00:00:00").toLocaleDateString("fr-FR", { day: "numeric", month: "long" })}</p>}</div>
       <span className={`status status-${slugStatus(p.status)}`}>{statusLabels[p.status]}</span>
       <label className="relative"><select aria-label={`Changer le statut de ${p.name}`} value={p.status} onChange={e => onChangeStatus(p.id, e.target.value as Status)} className="h-8 appearance-none rounded-md border border-input bg-background pl-3 pr-8 text-xs outline-none focus:ring-1 focus:ring-ring">{statuses.map(s => <option key={s} value={s}>{statusLabels[s]}</option>)}</select><ChevronDown className="pointer-events-none absolute right-2 top-2 size-3 text-muted-foreground" /></label>
       <Button variant="ghost" size="icon" aria-label={`Notes et relance pour ${p.name}`} onClick={() => setOpen(!open)} className={open ? "text-primary" : "text-muted-foreground"}><NotebookPen /></Button>
