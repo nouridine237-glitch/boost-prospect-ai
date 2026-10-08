@@ -178,6 +178,8 @@ export function AiAssistantPanel({ crm }: { crm: Crm }) {
   const [prospectId, setProspectId] = useState("");
   const [resultProspectId, setResultProspectId] = useState("");
   const target = crm.prospects.find(p => p.id === resultProspectId);
+  const selected = crm.prospects.find(p => p.id === prospectId);
+  const availableModes: readonly (typeof modes)[number][] = selected?.status === "client" ? modes : baseModes;
 
   async function runGeneration() {
     if (context.trim().length < 8) { setError("Ajoutez un peu plus de contexte."); return; }

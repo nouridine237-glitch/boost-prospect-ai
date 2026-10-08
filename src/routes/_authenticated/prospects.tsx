@@ -1,6 +1,9 @@
+import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
+import { toast } from "sonner";
 import { AppShell } from "@/components/app-shell";
 import { PendingPaymentBanner, ProspectsPanel, UsageLine, useCrm } from "@/components/crm";
+import { TeamPanel, TeamTabs } from "@/components/team";
 
 export const Route = createFileRoute("/_authenticated/prospects")({
   head: () => ({ meta: [
@@ -16,17 +19,22 @@ export const Route = createFileRoute("/_authenticated/prospects")({
 
 function ProspectsPage() {
   const { user } = Route.useRouteContext();
-  const crm = useCrm(user);
+  const [tab, setTab] = useState<"prospects" | "team">("prospects");
+  const crm = useCrm(user, {
+    onJoinTeam: p => toast.success(`🎉 ${p.name} a rejoint ton équipe !`, { duration: 6000, action: { label: "Voir l'équipe", onClick: () => setTab("team") } }),
+  });
+  const teamCount = crm.prospects.filter(p => p.status === "client").length;
 
   return (
     <AppShell user={user} title="Prospects">
       <div className="mx-auto max-w-[1100px] p-5 lg:p-8">
         <span className="eyebrow">CRM</span>
-        <h1 className="mt-2 text-3xl font-extrabold">Vos prospects.</h1>
-        <p className="mt-2 text-sm text-muted-foreground">Statut, notes et prochaine relance pour chaque contact.</p>
+        <h1 className="mt-2 text-3xl font-extrabold">{tab === "team" ? "Ton équipe." : "Vos prospects."}</h1>
+        <p className="mt-2 text-sm text-muted-foreground">{tab === "team" ? "Les prospects devenus Clients, à accompagner." : "Statut, notes et prochaine relance pour chaque contact."}</p>
         <UsageLine crm={crm} />
         <PendingPaymentBanner crm={crm} />
-        <div className="mt-6"><ProspectsPanel crm={crm} /></div>
+        <div className="mt-6"><TeamTabs tab={tab} onChange={setTab} count={teamCount} /></div>
+        <div className="mt-6">{tab === "team" ? <TeamPanel crm={crm} /> : <ProspectsPanel crm={crm} excludeClients />}</div>
       </div>
     </AppShell>
   );

@@ -32,7 +32,7 @@ function Dashboard() {
         <section className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <Stat icon={ContactRound} label="Prospects actifs" value={String(crm.prospects.filter(p => p.status !== "client" && p.status !== "non_intéressé").length)} note="En cours de suivi" />
           <Stat icon={MessageSquareText} label="Messages générés" value={String(crm.generationCount)} note="Historique sécurisé" />
-          <Stat icon={CheckCircle2} label="Clients ce mois" value={String(crm.clients)} note="Conversion actuelle" />
+          <Stat icon={CheckCircle2} label="Membres d'équipe" value={String(crm.clients)} note="Prospects devenus Clients" />
           <Stat icon={BarChart3} label="Taux de conversion" value={`${crm.conversion}%`} note="Prospects devenus clients" />
         </section>
         <div className="mt-6 grid gap-6 xl:grid-cols-[1.12fr_.88fr]">
