@@ -25,7 +25,7 @@ export function TeamPanel({ crm }: { crm: Crm }) {
   const [goal, setGoal] = useState(10);
   const [editing, setEditing] = useState(false);
   useEffect(() => { const v = Number(localStorage.getItem(GOAL_KEY)); if (v > 0) setGoal(v); }, []);
-  const count = useCountUp(members.length);
+  const count = members.length;
   const pct = Math.min(100, Math.round((members.length / goal) * 100));
   function saveGoal(v: number) { const g = Math.max(1, Math.min(10000, Math.round(v) || 10)); setGoal(g); localStorage.setItem(GOAL_KEY, String(g)); setEditing(false); }
 
@@ -34,8 +34,8 @@ export function TeamPanel({ crm }: { crm: Crm }) {
       <section className="team-hero">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
-            <span className="eyebrow">Mon équipe</span>
-            <h2 className="mt-2 text-2xl font-extrabold">Ton équipe</h2>
+            <span className="eyebrow">Mes recrues</span>
+            <h2 className="mt-2 text-2xl font-extrabold">Tes recrues</h2>
           </div>
           <p className="team-count" aria-live="polite">{count}<span className="ml-2 text-base font-semibold text-muted-foreground">{members.length > 1 ? "membres" : "membre"}</span></p>
         </div>
@@ -58,18 +58,18 @@ export function TeamPanel({ crm }: { crm: Crm }) {
       {members.length === 0 ? (
         <div className="surface rounded-[20px] px-6 py-14 text-center">
           <div className="team-empty-icon mx-auto"><Users className="size-8" /></div>
-          <p className="mx-auto mt-6 max-w-sm text-sm text-muted-foreground">Ton équipe est vide. Quand un prospect devient Client, il apparaît ici.</p>
+          <p className="mx-auto mt-6 max-w-sm text-sm text-muted-foreground">Aucune recrue pour l'instant. Quand un prospect devient Client, il apparaît ici.</p>
         </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2">
-          {members.map((m, i) => <MemberCard key={m.id} member={m} index={i} crm={crm} />)}
+          {members.map(m => <MemberCard key={m.id} member={m} crm={crm} />)}
         </div>
       )}
     </div>
   );
 }
 
-function MemberCard({ member: m, index, crm }: { member: Prospect; index: number; crm: Crm }) {
+function MemberCard({ member: m, crm }: { member: Prospect; crm: Crm }) {
   const [notes, setNotes] = useState(m.notes ?? "");
   const [saving, setSaving] = useState(false);
   const hue = hueFor(m.id);
@@ -84,7 +84,7 @@ function MemberCard({ member: m, index, crm }: { member: Prospect; index: number
   async function save() { setSaving(true); await crm.updateProspect(m.id, { notes: notes.trim() }); setSaving(false); toast.success("Notes enregistrées"); }
 
   return (
-    <article className="member-card" style={{ animationDelay: `${index * 60}ms`, ["--member-hue" as string]: hue }}>
+    <article className="member-card" style={{ ["--member-hue" as string]: hue }}>
       <div className="flex items-center gap-4">
         <span className="member-avatar">{m.name.charAt(0).toUpperCase()}</span>
         <div className="min-w-0 flex-1">
