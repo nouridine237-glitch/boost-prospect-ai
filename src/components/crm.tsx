@@ -12,7 +12,6 @@ import type { Tables } from "@/integrations/supabase/types";
 import type { User } from "@supabase/supabase-js";
 import { WhatsAppActions } from "@/components/whatsapp-actions";
 import { toast } from "sonner";
-import { fireConfetti } from "@/lib/confetti";
 
 export type Prospect = Tables<"prospects"> & { joined_team_at?: string | null };
 export type Status = Prospect["status"];
@@ -76,7 +75,6 @@ export function useCrm(user: User, opts?: { onJoinTeam?: (p: Prospect) => void }
     const joining = status === "client" && before?.status !== "client";
     setProspects(items => items.map(p => p.id === id ? { ...p, status, ...(joining ? { joined_team_at: new Date().toISOString() } : {}) } : p));
     if (joining && before) {
-      fireConfetti();
       if (opts?.onJoinTeam) opts.onJoinTeam(before);
       else toast.success(`🎉 ${before.name} a rejoint ton équipe !`);
     }
