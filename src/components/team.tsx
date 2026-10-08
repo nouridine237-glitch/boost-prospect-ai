@@ -4,26 +4,9 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { prefersReducedMotion } from "@/lib/confetti";
 import { statuses, statusLabels, type Crm, type Prospect, type Status } from "@/components/crm";
 
 const GOAL_KEY = "mlm-team-goal";
-
-function useCountUp(target: number) {
-  const [value, setValue] = useState(target);
-  useEffect(() => {
-    if (prefersReducedMotion()) { setValue(target); return; }
-    const from = 0; const start = performance.now(); let raf = 0;
-    const tick = (now: number) => {
-      const t = Math.min(1, (now - start) / 700);
-      setValue(Math.round(from + (target - from) * (1 - Math.pow(1 - t, 3))));
-      if (t < 1) raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, [target]);
-  return value;
-}
 
 function hueFor(id: string) { let h = 0; for (const c of id) h = (h * 31 + c.charCodeAt(0)) % 360; return h; }
 
@@ -32,7 +15,7 @@ export function TeamTabs({ tab, onChange, count }: { tab: "prospects" | "team"; 
     <div role="tablist" className="team-tabs relative inline-grid grid-cols-2 rounded-full border border-border bg-secondary/60 p-1">
       <span aria-hidden className="team-tab-indicator" style={{ transform: tab === "team" ? "translateX(100%)" : "translateX(0)" }} />
       <button role="tab" aria-selected={tab === "prospects"} onClick={() => onChange("prospects")} className={`relative z-10 min-h-11 rounded-full px-5 text-sm font-semibold transition-colors duration-200 ${tab === "prospects" ? "text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}>Prospects</button>
-      <button role="tab" aria-selected={tab === "team"} onClick={() => onChange("team")} className={`relative z-10 flex min-h-11 items-center justify-center gap-2 rounded-full px-5 text-sm font-semibold transition-colors duration-200 ${tab === "team" ? "text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}>Mon équipe <span className="team-badge">{count}</span></button>
+      <button role="tab" aria-selected={tab === "team"} onClick={() => onChange("team")} className={`relative z-10 flex min-h-11 items-center justify-center gap-2 rounded-full px-5 text-sm font-semibold transition-colors duration-200 ${tab === "team" ? "text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}>Mes recrues <span className="team-badge">{count}</span></button>
     </div>
   );
 }
