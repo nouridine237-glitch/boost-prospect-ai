@@ -114,12 +114,12 @@ export function Stat({ icon: Icon, label, value, note }: { icon: typeof UserRoun
   return <article className="surface rounded-lg p-5"><div className="flex items-center justify-between"><span className="text-xs font-semibold text-muted-foreground">{label}</span><span className="grid size-8 place-items-center rounded-md bg-primary/12 text-primary"><Icon className="size-4" /></span></div><p className="mt-4 text-3xl font-extrabold">{value}</p><p className="mt-1 text-[11px] text-muted-foreground">{note}</p></article>;
 }
 
-export function ProspectsPanel({ crm, limit }: { crm: Crm; limit?: number }) {
+export function ProspectsPanel({ crm, limit, excludeClients }: { crm: Crm; limit?: number; excludeClients?: boolean }) {
   const [query, setQuery] = useState("");
   const [adding, setAdding] = useState(false);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
-  const filtered = useMemo(() => crm.prospects.filter(p => p.name.toLowerCase().includes(query.toLowerCase()) || (p.phone ?? "").includes(query)), [crm.prospects, query]);
+  const filtered = useMemo(() => crm.prospects.filter(p => (!excludeClients || p.status !== "client") && (p.name.toLowerCase().includes(query.toLowerCase()) || (p.phone ?? "").includes(query))), [crm.prospects, query, excludeClients]);
   const shown = limit ? filtered.slice(0, limit) : filtered;
 
   async function submit(event: FormEvent) {
@@ -200,8 +200,8 @@ export function AiAssistantPanel({ crm }: { crm: Crm }) {
   return (
     <section className="surface rounded-lg p-5">
       <div className="flex items-center gap-3"><span className="grid size-10 place-items-center rounded-lg bg-primary/15 text-primary"><Sparkles className="size-5" /></span><div><h2 className="font-bold">Assistant IA</h2><p className="text-xs text-muted-foreground">Créez un contenu adapté à votre situation.</p></div></div>
-      <div className="mt-5 grid grid-cols-2 gap-2">{modes.map(item => <button key={item} onClick={() => setMode(item)} className={`min-h-12 rounded-md border px-3 text-left text-xs font-semibold transition-colors ${mode === item ? "border-primary bg-primary/12 text-primary" : "border-border bg-secondary text-muted-foreground hover:text-foreground"}`}>{item}</button>)}</div>
-      <label className="relative mt-4 block"><select aria-label="Prospect concerné" value={prospectId} onChange={e => setProspectId(e.target.value)} className="h-9 w-full appearance-none rounded-md border border-input bg-background pl-3 pr-8 text-sm outline-none focus:ring-1 focus:ring-ring"><option value="">Aucun prospect (message général)</option>{crm.prospects.map(p => <option key={p.id} value={p.id}>{p.name}{p.phone ? ` — ${p.phone}` : ""}</option>)}</select><ChevronDown className="pointer-events-none absolute right-2 top-3 size-3 text-muted-foreground" /></label>
+      <div className="mt-5 grid grid-cols-2 gap-2">{availableModes.map(item => <button key={item} onClick={() => setMode(item)} className={`min-h-12 rounded-md border px-3 text-left text-xs font-semibold transition-colors ${mode === item ? "border-primary bg-primary/12 text-primary" : "border-border bg-secondary text-muted-foreground hover:text-foreground"}`}>{item}</button>)}</div>
+      <label className="relative mt-4 block"><select aria-label="Prospect concerné" value={prospectId} onChange={e => { const id = e.target.value; setProspectId(id); const s = crm.prospects.find(p => p.id === id); if (s?.status === "client") setMode(welcomeMode); else if (mode === welcomeMode) setMode(modes[0]); }} className="h-9 w-full appearance-none rounded-md border border-input bg-background pl-3 pr-8 text-sm outline-none focus:ring-1 focus:ring-ring"><option value="">Aucun prospect (message général)</option><optgroup label="Prospects">{crm.prospects.filter(p => p.status !== "client").map(p => <option key={p.id} value={p.id}>{p.name}{p.phone ? ` — ${p.phone}` : ""}</option>)}</optgroup><optgroup label="Mon équipe">{crm.prospects.filter(p => p.status === "client").map(p => <option key={p.id} value={p.id}>{p.name}{p.phone ? ` — ${p.phone}` : ""}</option>)}</optgroup></select><ChevronDown className="pointer-events-none absolute right-2 top-3 size-3 text-muted-foreground" /></label>
       <Textarea className="mt-3 min-h-32 resize-none" placeholder="Décrivez le prospect, le contexte et le ton souhaité…" value={context} onChange={e => setContext(e.target.value)} />
       <Button className="mt-3 w-full" onClick={runGeneration} disabled={generating}><Sparkles />{generating ? "Génération…" : "Générer"}</Button>
       {error && <p className="mt-3 text-xs text-destructive">{error}</p>}

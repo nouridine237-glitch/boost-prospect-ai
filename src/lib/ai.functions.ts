@@ -9,10 +9,11 @@ const modeToType = {
   "Réponse à un prospect": "reponse_prospect",
   "Script d'appel": "script_appel",
   "Post réseau social": "post_reseau_social",
+  "Message d'accueil / encouragement": "message_prospection",
 } as const;
 
 const inputSchema = z.object({
-  mode: z.enum(["Message de prospection", "Réponse à un prospect", "Script d'appel", "Post réseau social"]),
+  mode: z.enum(["Message de prospection", "Réponse à un prospect", "Script d'appel", "Post réseau social", "Message d'accueil / encouragement"]),
   context: z.string().min(8).max(4000),
   prospectId: z.string().uuid().optional(),
 });
