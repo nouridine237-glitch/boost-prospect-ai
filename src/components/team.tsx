@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { prefersReducedMotion } from "@/lib/confetti";
-import type { Crm, Prospect } from "@/components/crm";
+import { statuses, statusLabels, type Crm, type Prospect, type Status } from "@/components/crm";
 
 const GOAL_KEY = "mlm-team-goal";
 
@@ -109,6 +109,7 @@ function MemberCard({ member: m, index, crm }: { member: Prospect; index: number
           <p className="text-xs text-muted-foreground">{m.phone || "Téléphone non renseigné"}</p>
           <span className="member-badge mt-2"><Star className="size-3 fill-current" /> Membre depuis {since}</span>
         </div>
+        <select aria-label={`Changer le statut de ${m.name}`} value={m.status} onChange={e => crm.changeStatus(m.id, e.target.value as Status)} className="h-11 rounded-full border border-input bg-background px-3 text-xs outline-none focus:ring-1 focus:ring-ring">{statuses.map(s => <option key={s} value={s}>{statusLabels[s]}</option>)}</select>
       </div>
       <label className="mt-4 grid gap-1.5"><span className="text-xs font-semibold text-muted-foreground">Notes</span>
         <Textarea className="min-h-20 resize-none bg-background/60" value={notes} onChange={e => setNotes(e.target.value)} placeholder="Objectifs, besoins, points d'accompagnement…" />
