@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
+import { getPaymentNumbers, type PaymentNumbers } from "@/lib/payment-settings.functions";
 import { createPaymentRequest, getMyPaymentStatus, PAID_PLANS, type PaidPlanKey } from "@/lib/payments.functions";
 
 export const Route = createFileRoute("/_authenticated/abonnement")({
@@ -22,9 +23,6 @@ export const Route = createFileRoute("/_authenticated/abonnement")({
   component: Abonnement,
 });
 
-// ← Remplacez ces numéros par vos vrais numéros de paiement.
-const ORANGE_MONEY_NUMBER = "+237 693 91 11 79";
-const MTN_MOMO_NUMBER = "+237 6XX XX XX XX";
 
 const plans = [
   { key: "gratuit", name: "Gratuit", fcfa: 0, usd: 0, popular: false, items: ["10 prospects maximum", "5 générations IA / mois", "1 utilisateur"] },
@@ -51,6 +49,9 @@ function Abonnement() {
   const [error, setError] = useState("");
   const [banner, setBanner] = useState("");
   const [pending, setPending] = useState<any>(null);
+  const numbersFn = useServerFn(getPaymentNumbers);
+  const [numbers, setNumbers] = useState<PaymentNumbers | null>(null);
+  useEffect(() => { numbersFn({}).then(setNumbers).catch(() => {}); }, []);
 
   useEffect(() => {
     statusFn({}).then(({ request }) => setPending(request?.statut === "en_attente" ? request : null)).catch(() => {});
@@ -178,8 +179,13 @@ function Abonnement() {
             </div>
 
             <div className="space-y-2 rounded-lg border border-border bg-secondary/50 p-4">
-              <p className="flex justify-between"><span className="text-muted-foreground">Orange Money</span> <span className="font-semibold">{ORANGE_MONEY_NUMBER}</span></p>
-              <p className="flex justify-between"><span className="text-muted-foreground">MTN MoMo</span> <span className="font-semibold">{MTN_MOMO_NUMBER}</span></p>
+              {numbers?.orangeNumber && (
+                <div className="flex justify-between gap-2"><span className="text-muted-foreground">Orange Money</span> <span className="text-right"><span className="block font-semibold">{numbers.orangeNumber}</span>{numbers.orangeName && <span className="block text-xs text-muted-foreground">Nom : {numbers.orangeName}</span>}</span></div>
+              )}
+              {numbers?.mtnNumber && (
+                <div className="flex justify-between gap-2"><span className="text-muted-foreground">MTN Mobile Money</span> <span className="text-right"><span className="block font-semibold">{numbers.mtnNumber}</span>{numbers.mtnName && <span className="block text-xs text-muted-foreground">Nom : {numbers.mtnName}</span>}</span></div>
+              )}
+              {!numbers && <p className="text-xs text-muted-foreground">Chargement des numéros…</p>}
               <p className="flex justify-between border-t border-border pt-2"><span className="text-muted-foreground">Montant exact</span> <span className="font-extrabold text-primary">{amount}</span></p>
             </div>
 
