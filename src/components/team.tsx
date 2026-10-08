@@ -115,7 +115,7 @@ function MemberCard({ member: m, index, crm }: { member: Prospect; index: number
       </label>
       {notes !== (m.notes ?? "") && <div className="mt-2 flex justify-end"><Button size="sm" className="min-h-11" onClick={save} disabled={saving}>{saving ? "Enregistrement…" : "Enregistrer"}</Button></div>}
       <div className="mt-4 grid grid-cols-2 gap-2">
-        <Button asChild className="min-h-11 bg-success text-success-foreground hover:bg-success/90">
+        <Button asChild className="min-h-11 bg-success font-bold text-background hover:bg-success/90">
           <a href={waUrl} target="_blank" rel="noreferrer" onClick={e => { if (digits.length < 8) { e.preventDefault(); toast.error("Numéro invalide"); } }}><MessageCircle /> Envoyer via WhatsApp</a>
         </Button>
         <Button variant="outline" className="min-h-11" onClick={copy}><Copy /> Copier</Button>
