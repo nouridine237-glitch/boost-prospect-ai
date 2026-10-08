@@ -3,6 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { AppShell } from "@/components/app-shell";
 import { PendingPaymentBanner, ProspectsPanel, UsageLine, useCrm } from "@/components/crm";
+import { FollowupQueue, ProspectSheet } from "@/components/prospect-tools";
 import { TeamPanel, TeamTabs } from "@/components/team";
 
 export const Route = createFileRoute("/_authenticated/prospects")({
@@ -23,6 +24,8 @@ function ProspectsPage() {
   const crm = useCrm(user, {
     onJoinTeam: p => toast.success(`🎉 ${p.name} a rejoint ton équipe !`, { duration: 6000, action: { label: "Voir l'équipe", onClick: () => setTab("team") } }),
   });
+  const [openId, setOpenId] = useState<string | null>(null);
+  const opened = crm.prospects.find(p => p.id === openId) ?? null;
   const teamCount = crm.prospects.filter(p => p.status === "client").length;
 
   return (
@@ -33,8 +36,10 @@ function ProspectsPage() {
         <p className="mt-2 text-sm text-muted-foreground">{tab === "team" ? "Les prospects devenus Clients, à accompagner." : "Statut, notes et prochaine relance pour chaque contact."}</p>
         <UsageLine crm={crm} />
         <PendingPaymentBanner crm={crm} />
-        <div className="mt-6"><TeamTabs tab={tab} onChange={setTab} count={teamCount} /></div>
-        <div className="mt-6">{tab === "team" ? <TeamPanel crm={crm} /> : <ProspectsPanel crm={crm} excludeClients />}</div>
+        <div className="mt-6"><FollowupQueue crm={crm} /></div>
+        <div><TeamTabs tab={tab} onChange={setTab} count={teamCount} /></div>
+        <div className="mt-6">{tab === "team" ? <TeamPanel crm={crm} /> : <ProspectsPanel crm={crm} excludeClients onOpen={p => setOpenId(p.id)} />}</div>
+        <ProspectSheet prospect={opened} crm={crm} onClose={() => setOpenId(null)} />
       </div>
     </AppShell>
   );
