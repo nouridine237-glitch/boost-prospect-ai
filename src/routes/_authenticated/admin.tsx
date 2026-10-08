@@ -9,6 +9,52 @@ import { supabase } from "@/integrations/supabase/client";
 import { checkIsAdmin, listAdminUsers, updateUserSubscription, PLAN_LIMITS, type AdminUserRow } from "@/lib/admin.functions";
 import { listPaymentRequests, reviewPaymentRequest, type AdminPaymentRow } from "@/lib/payments.functions";
 import { getAiCreditUsage, setAiCreditLimit } from "@/lib/ai-usage.functions";
+import { getPaymentNumbers, savePaymentNumbers, type PaymentNumbers } from "@/lib/payment-settings.functions";
+
+function PaymentNumbersSection() {
+  const getFn = useServerFn(getPaymentNumbers);
+  const saveFn = useServerFn(savePaymentNumbers);
+  const [form, setForm] = useState<PaymentNumbers>({ orangeNumber: "", orangeName: "", mtnNumber: "", mtnName: "" });
+  const [saving, setSaving] = useState(false);
+  const [msg, setMsg] = useState("");
+
+  useEffect(() => { getFn({}).then(setForm).catch(() => setMsg("Impossible de charger les numéros.")); }, []);
+
+  async function save() {
+    setSaving(true); setMsg("");
+    try { await saveFn({ data: form }); setMsg("Numéros enregistrés."); }
+    catch { setMsg("Les numéros n’ont pas pu être enregistrés."); }
+    finally { setSaving(false); }
+  }
+
+  const field = (k: keyof PaymentNumbers, label: string, ph: string) => (
+    <label className="space-y-1 text-xs font-semibold text-muted-foreground">
+      <span>{label}</span>
+      <input value={form[k]} placeholder={ph} onChange={(e) => setForm((f) => ({ ...f, [k]: e.target.value }))}
+        className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground" />
+    </label>
+  );
+
+  return (
+    <section className="mt-10">
+      <h2 className="mb-3 text-lg font-bold">Numéros de paiement Mobile Money</h2>
+      <Card className="border-border bg-card">
+        <CardContent className="space-y-4 pt-6">
+          <div className="grid gap-3 sm:grid-cols-2">
+            {field("orangeNumber", "Orange Money — numéro", "237…")}
+            {field("orangeName", "Orange Money — nom du titulaire", "Nom")}
+            {field("mtnNumber", "MTN MoMo — numéro (vide = masqué)", "237…")}
+            {field("mtnName", "MTN MoMo — nom du titulaire", "Nom")}
+          </div>
+          <div className="flex items-center gap-2">
+            <Button size="sm" onClick={save} disabled={saving}>{saving ? "Enregistrement…" : "Enregistrer"}</Button>
+            {msg && <span className="text-xs text-muted-foreground">{msg}</span>}
+          </div>
+        </CardContent>
+      </Card>
+    </section>
+  );
+}
 
 function AiCreditsSection() {
   const getFn = useServerFn(getAiCreditUsage);
@@ -237,6 +283,7 @@ function AdminPage() {
 
         {error && <p className="mt-4 text-sm text-destructive">{error}</p>}
 
+        <PaymentNumbersSection />
         <AiCreditsSection />
 
 
