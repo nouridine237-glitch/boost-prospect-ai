@@ -294,6 +294,30 @@ export type Database = {
         }
         Relationships: []
       }
+      user_goals_weekly: {
+        Row: {
+          contacts_goal: number
+          recrues_goal: number
+          relances_goal: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          contacts_goal?: number
+          recrues_goal?: number
+          relances_goal?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          contacts_goal?: number
+          recrues_goal?: number
+          relances_goal?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
