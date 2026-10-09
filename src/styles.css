@@ -205,3 +205,6 @@
   .team-tab-indicator, .team-progress-bar, .member-card { transition: none; }
   .member-card:hover, .member-card:active { transform: none; }
 }
+
+.goal-ring { transition: stroke-dashoffset 1s cubic-bezier(.22,1,.36,1), filter .3s; }
+@media (prefers-reduced-motion: reduce) { .goal-ring { transition: none; } }
