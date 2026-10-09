@@ -238,7 +238,7 @@
 .lp-primary-cta { position: relative; isolation: isolate; }
 .lp-primary-cta::before { content: ''; position: absolute; inset: -3px; border-radius: inherit; box-shadow: 0 0 24px var(--lp-halo); z-index: -1; animation: lp-pulse 4s ease-in-out infinite; }
 .lp-float { animation: lp-float 7s ease-in-out infinite; }
-.lp-phone { position: relative; width: 282px; max-width: 100%; height: 548px; overflow: hidden; border: 5px solid var(--lp-phone-border); border-radius: 38px; padding: 14px 14px 45px; background: var(--background); box-shadow: var(--lp-phone-shadow); }
+.lp-phone { position: relative; width: 282px; max-width: 100%; height: 580px; overflow: hidden; border: 5px solid var(--lp-phone-border); border-radius: 38px; padding: 14px 14px 45px; background: var(--background); box-shadow: var(--lp-phone-shadow); }
 .lp-phone-compact { width: 250px; height: 400px; }
 .lp-island { position: absolute; width: 82px; height: 20px; top: 7px; left: calc(50% - 41px); border-radius: 20px; background: var(--background); z-index: 2; }
 .lp-phone-status { display: flex; justify-content: space-between; padding: 0 5px 14px; font-size: 9px; font-weight: 700; }
