@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { BarChart3, CheckCircle2, ContactRound, MessageSquareText } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { WeeklyGoalsCard } from "@/components/weekly-goals";
+import { GettingStartedCard } from "@/components/onboarding";
 import { AiAssistantPanel, PendingPaymentBanner, ProspectsPanel, Stat, UsageLine, useCrm } from "@/components/crm";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
@@ -23,6 +24,7 @@ function Dashboard() {
   return (
     <AppShell user={user} title="Dashboard">
       <div className="mx-auto max-w-[1500px] p-5 lg:p-8">
+        <GettingStartedCard />
         <div>
           <span className="eyebrow">Bonjour {crm.displayName.split(" ")[0]}</span>
           <h1 className="mt-2 text-3xl font-extrabold">Votre activité en un coup d’œil.</h1>

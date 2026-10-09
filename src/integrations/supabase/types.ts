@@ -137,6 +137,8 @@ export type Database = {
           display_name: string
           full_name: string
           id: string
+          onboarded: boolean
+          onboarding_dismissed: boolean
           preferences: Json
           updated_at: string
         }
@@ -146,6 +148,8 @@ export type Database = {
           display_name?: string
           full_name?: string
           id: string
+          onboarded?: boolean
+          onboarding_dismissed?: boolean
           preferences?: Json
           updated_at?: string
         }
@@ -155,6 +159,8 @@ export type Database = {
           display_name?: string
           full_name?: string
           id?: string
+          onboarded?: boolean
+          onboarding_dismissed?: boolean
           preferences?: Json
           updated_at?: string
         }

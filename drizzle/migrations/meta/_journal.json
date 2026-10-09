@@ -29,6 +29,13 @@
       "when": 1791554483161,
       "tag": "0003_user_goals_weekly",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1791556996337,
+      "tag": "0004_profile_onboarding",
+      "breakpoints": true
     }
   ]
 }
