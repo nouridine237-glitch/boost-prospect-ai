@@ -11,3 +11,4 @@
 
 - Keep onboarding in a shared authenticated-layout provider with profile-backed flags and user-scoped activity reads, so welcome appears across entry pages and dismissal persists across devices.
 - Store the shared scripts library in public.scripts with authenticated reads and admin-only writes enforced by RLS; load it with user-scoped query options and pass script IDs to the existing AI function so personalization shares quota enforcement and uses owner-scoped prospect context.
+- Keep public landing visuals and motion scoped to lp-prefixed classes and illustrative phone components, preserving authenticated screens and pricing logic; use CSS transform/opacity with one IntersectionObserver and a static optimized share image for lightweight rendering.
