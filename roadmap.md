@@ -1,5 +1,7 @@
 # Roadmap
 
+- [ ] Refonte de la page publique : neuf sections, aperçus téléphone, animations accessibles, tarifs inchangés, FAQ et partage ; vérifier mobile et performance.
+
 - [x] Scripts : table partagée protégée, 12 modèles, recherche et catégories, menu et personnalisation IA ; copie, filtres, génération enregistrée et navigation mobile vérifiés.
 
 - [x] Guide de démarrage : accueil unique, trois étapes Dashboard, masquage par utilisateur ; liens, mobile, persistance et disparition à 3/3 vérifiés.
