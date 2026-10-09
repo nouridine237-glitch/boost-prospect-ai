@@ -12,6 +12,7 @@ import type { Tables } from "@/integrations/supabase/types";
 import type { User } from "@supabase/supabase-js";
 import { WhatsAppActions } from "@/components/whatsapp-actions";
 import { toast } from "sonner";
+import { logProspectEvent } from "@/lib/prospect-events";
 import { FilterBar, ImportExportButtons, applyFilters, emptyFilters, type Filters, type ImportRow } from "@/components/prospect-io";
 
 export type Prospect = Tables<"prospects"> & { joined_team_at?: string | null };
@@ -80,6 +81,7 @@ export function useCrm(user: User, opts?: { onJoinTeam?: (p: Prospect) => void }
     const before = prospects.find(p => p.id === id);
     const { error: e } = await supabase.from("prospects").update({ status }).eq("id", id);
     if (e) { setError(e.message); return; }
+    if (before && before.status !== status) void logProspectEvent(id, "changement_statut", `${statusLabels[before.status]} → ${statusLabels[status]}`);
     const joining = status === "client" && before?.status !== "client";
     setProspects(items => items.map(p => p.id === id ? { ...p, status, ...(joining ? { joined_team_at: new Date().toISOString() } : {}) } : p));
     if (joining && before) {
@@ -161,7 +163,7 @@ export function ProspectCard({ prospect: p, onChangeStatus, onUpdate, onOpen }: 
   const [followup, setFollowup] = useState(p.next_followup_date ?? "");
   const [saving, setSaving] = useState(false);
   const overdue = p.next_followup_date && p.next_followup_date < new Date().toISOString().slice(0, 10);
-  async function save() { setSaving(true); await onUpdate(p.id, { notes: notes.trim(), next_followup_date: followup || null }); setSaving(false); }
+  async function save() { setSaving(true); await onUpdate(p.id, { notes: notes.trim(), next_followup_date: followup || null }); if (notes.trim() !== (p.notes ?? "").trim()) void logProspectEvent(p.id, "note_modifiée", notes.trim()); setSaving(false); }
   return <div className="p-4">
     <div className="flex flex-wrap items-center gap-3">
       <span className="grid size-10 place-items-center rounded-full bg-secondary font-bold text-primary">{p.name.charAt(0).toUpperCase()}</span>
@@ -218,7 +220,7 @@ export function AiAssistantPanel({ crm }: { crm: Crm }) {
       <Button className="mt-3 w-full" onClick={runGeneration} disabled={generating}><Sparkles />{generating ? "Génération…" : "Générer"}</Button>
       {error && <p className="mt-3 text-xs text-destructive">{error}</p>}
       {result && <div className="prose prose-invert mt-4 max-h-72 overflow-y-auto rounded-md border border-border bg-secondary p-4 text-sm leading-6"><ReactMarkdown>{result}</ReactMarkdown></div>}
-      {result && <WhatsAppActions message={result} phone={target?.phone} prospectStatus={target?.status} onMarkContacted={target ? () => crm.markContacted(target.id) : undefined} />}
+      {result && <WhatsAppActions prospectId={target?.id} message={result} phone={target?.phone} prospectStatus={target?.status} onMarkContacted={target ? () => crm.markContacted(target.id) : undefined} />}
     </section>
   );
 }

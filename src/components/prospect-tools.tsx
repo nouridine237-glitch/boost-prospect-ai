@@ -2,6 +2,9 @@ import { useEffect, useRef, useState } from "react";
 import { BellRing, CalendarClock, Check, Loader2, RefreshCw, Sparkles } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { suggestNextAction } from "@/lib/ai.functions";
+import { logProspectEvent, onProspectEvent, type ProspectEventType } from "@/lib/prospect-events";
+import { supabase } from "@/integrations/supabase/client";
+import { ArrowRightLeft, Clock, Copy, MessageCircle, StickyNote } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -48,12 +51,12 @@ export function FollowupQueue({ crm }: { crm: Crm }) {
                   </span>
                 </div>
                 <div className="flex flex-wrap items-start gap-2">
-                  <div className="min-w-0 flex-1"><WhatsAppActions message={msg} phone={p.phone} prospectStatus={p.status} onMarkContacted={() => crm.markContacted(p.id)} /></div>
+                  <div className="min-w-0 flex-1"><WhatsAppActions prospectId={p.id} message={msg} phone={p.phone} prospectStatus={p.status} onMarkContacted={() => crm.markContacted(p.id)} /></div>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild><Button size="sm" variant="outline" className="mt-3"><CalendarClock /> Reporter</Button></DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       {[["Demain", 1], ["+3 jours", 3], ["+7 jours", 7]].map(([l, n]) => (
-                        <DropdownMenuItem key={l} onClick={() => crm.updateProspect(p.id, { next_followup_date: addDays(n as number) })}>{l}</DropdownMenuItem>
+                        <DropdownMenuItem key={l} onClick={() => { const nd = addDays(n as number); void crm.updateProspect(p.id, { next_followup_date: nd }); void logProspectEvent(p.id, "relance_reportée", `Reportée au ${new Date(nd + "T00:00:00").toLocaleDateString("fr-FR", { day: "numeric", month: "long" })} (${l})`); }}>{l}</DropdownMenuItem>
                       ))}
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -85,6 +88,8 @@ export function ProspectSheet({ prospect, crm, onClose }: { prospect: Prospect |
 function SheetBody({ prospect, crm }: { prospect: Prospect; crm: Crm }) {
   const [d, setD] = useState<Draft>(() => toDraft(prospect));
   const [state, setState] = useState<"idle" | "saving" | "saved">("idle");
+  const [tab, setTab] = useState<"fiche" | "historique">("fiche");
+  const notesAtFocus = useRef(prospect.notes ?? "");
   const first = useRef(true);
 
   useEffect(() => {
@@ -111,7 +116,10 @@ function SheetBody({ prospect, crm }: { prospect: Prospect; crm: Crm }) {
           {state === "saving" ? <><Loader2 className="size-3 animate-spin" /> Enregistrement…</> : state === "saved" ? <><Check className="size-3 text-success" /> Enregistré automatiquement</> : "Les modifications sont enregistrées automatiquement."}
         </SheetDescription>
       </SheetHeader>
-      <div className="mt-5 grid gap-4">
+      <div className="mt-4 flex gap-1 rounded-full border border-border bg-secondary/50 p-1" role="tablist">
+        {(["fiche", "historique"] as const).map(t => <button key={t} role="tab" aria-selected={tab === t} onClick={() => setTab(t)} className={`min-h-9 flex-1 rounded-full text-sm font-semibold transition-colors ${tab === t ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}>{t === "fiche" ? "Fiche" : "Historique"}</button>)}
+      </div>
+      {tab === "historique" ? <ProspectHistory prospectId={prospect.id} /> : <div className="mt-5 grid gap-4">
         <label className={label}>Nom<Input value={d.name} onChange={e => set("name", e.target.value)} /></label>
         <label className={label}>Téléphone<Input value={d.phone} onChange={e => set("phone", e.target.value)} /></label>
         <label className={label}>Source
@@ -133,9 +141,9 @@ function SheetBody({ prospect, crm }: { prospect: Prospect; crm: Crm }) {
           <label className={label}>Premier contact<Input type="date" value={d.first_contact_at} onChange={e => set("first_contact_at", e.target.value)} /></label>
           <label className={label}>Prochaine relance<Input type="date" value={d.next_followup_date} onChange={e => set("next_followup_date", e.target.value)} /></label>
         </div>
-        <label className={label}>Notes<Textarea className="min-h-28 resize-none" value={d.notes} onChange={e => set("notes", e.target.value)} /></label>
+        <label className={label}>Notes<Textarea className="min-h-28 resize-none" value={d.notes} onFocus={() => { notesAtFocus.current = d.notes; }} onBlur={() => { if (d.notes.trim() !== notesAtFocus.current.trim()) { notesAtFocus.current = d.notes; void logProspectEvent(prospect.id, "note_modifiée", d.notes.trim()); } }} onChange={e => set("notes", e.target.value)} /></label>
         <NextActionCard prospect={prospect} crm={crm} />
-      </div>
+      </div>}
     </>
   );
 }
@@ -171,10 +179,52 @@ function NextActionCard({ prospect, crm }: { prospect: Prospect; crm: Crm }) {
           <p className="mt-2 text-sm font-semibold text-foreground">{res.action}</p>
           {res.moment && <p className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground"><CalendarClock className="size-3.5" /> {res.moment}</p>}
           <p className="mt-3 whitespace-pre-wrap rounded-md bg-secondary/60 p-3 text-sm text-foreground">{res.message}</p>
-          <WhatsAppActions message={res.message} phone={prospect.phone} prospectStatus={prospect.status} onMarkContacted={() => crm.markContacted(prospect.id)} />
+          <WhatsAppActions prospectId={prospect.id} message={res.message} phone={prospect.phone} prospectStatus={prospect.status} onMarkContacted={() => crm.markContacted(prospect.id)} />
           <Button type="button" size="sm" variant="ghost" onClick={run} disabled={loading} className="mt-2 min-h-11">{loading ? <><Loader2 className="animate-spin" /> Génération…</> : <><RefreshCw /> Régénérer</>}</Button>
         </div>
       )}
     </div>
+  );
+}
+
+type ProspectEvent = { id: string; type: string; content: string; created_at: string };
+const eventMeta: Record<ProspectEventType, { label: string; icon: typeof Clock; cls: string }> = {
+  "message_envoyé": { label: "Message envoyé via WhatsApp", icon: MessageCircle, cls: "bg-success/15 text-success" },
+  "message_copié": { label: "Message copié", icon: Copy, cls: "bg-primary/15 text-primary" },
+  "changement_statut": { label: "Changement de statut", icon: ArrowRightLeft, cls: "bg-warning/15 text-warning" },
+  "relance_reportée": { label: "Relance reportée", icon: CalendarClock, cls: "bg-primary/15 text-primary" },
+  "note_modifiée": { label: "Note modifiée", icon: StickyNote, cls: "bg-secondary text-foreground" },
+};
+function relativeTime(iso: string) {
+  const s = Math.round((Date.now() - new Date(iso).getTime()) / 1000);
+  if (s < 60) return "à l'instant";
+  const m = Math.round(s / 60); if (m < 60) return `il y a ${m} min`;
+  const h = Math.round(m / 60); if (h < 24) return `il y a ${h} h`;
+  const d = Math.round(h / 24); if (d < 30) return `il y a ${d} j`;
+  return new Date(iso).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" });
+}
+function ProspectHistory({ prospectId }: { prospectId: string }) {
+  const [events, setEvents] = useState<ProspectEvent[] | null>(null);
+  useEffect(() => {
+    const load = () => supabase.from("prospect_events").select("id, type, content, created_at").eq("prospect_id", prospectId).order("created_at", { ascending: false }).limit(100).then(({ data }) => setEvents(data ?? []));
+    load();
+    return onProspectEvent(id => { if (id === prospectId) load(); });
+  }, [prospectId]);
+  if (!events) return <p className="mt-6 flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="size-4 animate-spin" /> Chargement…</p>;
+  if (!events.length) return <div className="mt-8 text-center"><Clock className="mx-auto size-8 text-muted-foreground" /><p className="mt-3 text-sm font-semibold">Aucune activité pour l'instant.</p></div>;
+  return (
+    <ol className="relative mt-6 ml-4 border-l border-border">
+      {events.map(e => {
+        const meta = eventMeta[e.type as ProspectEventType] ?? { label: e.type, icon: Clock, cls: "bg-secondary text-foreground" };
+        const Icon = meta.icon;
+        return (
+          <li key={e.id} className="mb-5 ml-6">
+            <span className={`absolute -left-4 grid size-8 place-items-center rounded-full ring-4 ring-background ${meta.cls}`}><Icon className="size-4" /></span>
+            <div className="flex flex-wrap items-baseline justify-between gap-2"><p className="text-sm font-semibold">{meta.label}</p><time className="text-[11px] text-muted-foreground" dateTime={e.created_at} title={new Date(e.created_at).toLocaleString("fr-FR")}>{relativeTime(e.created_at)}</time></div>
+            {e.content && <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{e.content}</p>}
+          </li>
+        );
+      })}
+    </ol>
   );
 }
