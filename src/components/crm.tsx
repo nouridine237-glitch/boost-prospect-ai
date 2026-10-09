@@ -181,7 +181,7 @@ export function ProspectCard({ prospect: p, onChangeStatus, onUpdate, onOpen }: 
   </div>;
 }
 
-export function AiAssistantPanel({ crm, initialScript }: { crm: Crm; initialScript?: Tables<"scripts"> }) {
+export function AiAssistantPanel({ crm, initialScript }: { crm: Crm; initialScript?: Tables<"scripts"> | undefined }) {
   const generate = useServerFn(generateProspectingContent);
   const [mode, setMode] = useState<(typeof modes)[number]>(modes[0]);
   const [context, setContext] = useState(initialScript?.content ?? "");

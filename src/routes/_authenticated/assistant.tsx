@@ -5,7 +5,7 @@ import { scriptsOptions } from "@/lib/scripts";
 import { z } from "zod";
 
 export const Route = createFileRoute("/_authenticated/assistant")({
-  validateSearch: (search: Record<string, unknown>): { script?: string } => ({ script: z.string().uuid().optional().catch(undefined).parse(search.script) }),
+  validateSearch: (search: Record<string, unknown>): { script?: string | undefined } => ({ script: z.string().uuid().optional().catch(undefined).parse(search["script"]) }),
   loaderDeps: ({ search }) => ({ script: search.script }),
   loader: async ({ context, deps }) => {
     if (!deps.script) return { script: undefined };

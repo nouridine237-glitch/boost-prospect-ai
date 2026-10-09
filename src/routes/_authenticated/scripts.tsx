@@ -50,7 +50,7 @@ function ScriptsPage() {
   </AppShell>;
 }
 
-function ScriptCard({ script: s, onEdit }: { script: Tables<"scripts">; onEdit?: () => void }) {
+function ScriptCard({ script: s, onEdit }: { script: Tables<"scripts">; onEdit?: (() => void) | undefined }) {
   const [copied, setCopied] = useState(false);
   async function copy() {
     try { await navigator.clipboard.writeText(s.content); setCopied(true); toast.success("Script copié"); }
