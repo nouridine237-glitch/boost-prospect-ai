@@ -1,6 +1,6 @@
 # Roadmap
 
-- [ ] Guide de démarrage : accueil unique, trois étapes Dashboard, masquage par utilisateur et vérification.
+- [x] Guide de démarrage : accueil unique, trois étapes Dashboard, masquage par utilisateur ; liens, mobile, persistance et disparition à 3/3 vérifiés.
 
 - [x] Étape 1 : structure de données définitive (enums, relance, niveau d'intérêt, prospect_id, RLS stricte)
 - [x] Étape 2 : dashboard branché sur les vraies tables
