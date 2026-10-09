@@ -36,6 +36,13 @@
       "when": 1791556996337,
       "tag": "0004_profile_onboarding",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1791557320084,
+      "tag": "0005_create_scripts_library",
+      "breakpoints": true
     }
   ]
 }
