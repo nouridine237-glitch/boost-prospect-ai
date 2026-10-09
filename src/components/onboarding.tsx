@@ -46,7 +46,7 @@ export function OnboardingProvider({ userId, children }: { userId: string; child
     <OnboardingContext.Provider value={{ steps: data.steps, dismissed: data.dismissed, saving, dismiss: () => save({ onboarding_dismissed: true }) }}>
       {children}
       <Dialog open={!data.onboarded}>
-        <DialogContent className="max-w-[calc(100%-2rem)] rounded-lg sm:max-w-lg motion-reduce:animate-none [&>button]:hidden" onEscapeKeyDown={event => event.preventDefault()} onPointerDownOutside={event => event.preventDefault()}>
+        <DialogContent className="max-w-[calc(100%-2rem)] rounded-lg sm:max-w-lg motion-reduce:animate-none [&>button:last-child]:hidden" onEscapeKeyDown={event => event.preventDefault()} onPointerDownOutside={event => event.preventDefault()}>
           <span className="flex size-12 items-center justify-center rounded-lg bg-primary/15 text-primary"><Sparkles className="size-6" /></span>
           <DialogHeader>
             <DialogTitle className="text-2xl leading-snug">Bienvenue sur MLM Boost AI</DialogTitle>
