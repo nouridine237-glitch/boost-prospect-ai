@@ -229,7 +229,8 @@
 .lp-hero::after { content: ''; position: absolute; inset: 0; z-index: -1; background: linear-gradient(180deg, transparent 50%, var(--background)); pointer-events: none; }
 .lp-ambient { position: absolute; inset: -10%; z-index: -2; background: linear-gradient(125deg, transparent, color-mix(in oklab, var(--primary) 7%, transparent), color-mix(in oklab, var(--info) 7%, transparent), transparent); animation: lp-background 24s ease-in-out infinite alternate; pointer-events: none; }
 .lp-headline { font-size: 56px; line-height: 1.13; font-weight: 800; letter-spacing: 0; }
-.lp-word { display: inline-block; animation: lp-enter 550ms both; animation-delay: var(--lp-delay, 0ms); }
+.lp-word { display: inline-block; margin-right: .22em; animation: lp-enter 550ms both; animation-delay: var(--lp-delay, 0ms); }
+.lp-word:last-child { margin-right: 0; }
 .lp-hero-intro { animation: lp-enter 450ms both; }
 .lp-hero-sub { animation: lp-enter 550ms 320ms both; }
 .lp-hero-actions { animation: lp-enter 550ms 480ms both; }
