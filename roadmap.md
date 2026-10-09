@@ -1,6 +1,6 @@
 # Roadmap
 
-- [ ] Scripts : table partagée protégée, 12 modèles, recherche et catégories, menu et personnalisation IA ; vérifier le parcours.
+- [x] Scripts : table partagée protégée, 12 modèles, recherche et catégories, menu et personnalisation IA ; copie, filtres, génération enregistrée et navigation mobile vérifiés.
 
 - [x] Guide de démarrage : accueil unique, trois étapes Dashboard, masquage par utilisateur ; liens, mobile, persistance et disparition à 3/3 vérifiés.
 
