@@ -1,8 +1,17 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { AppShell } from "@/components/app-shell";
 import { AiAssistantPanel, PendingPaymentBanner, UsageLine, useCrm } from "@/components/crm";
+import { scriptsOptions } from "@/lib/scripts";
+import { z } from "zod";
 
 export const Route = createFileRoute("/_authenticated/assistant")({
+  validateSearch: (search: Record<string, unknown>): { script?: string | undefined } => ({ script: z.string().uuid().optional().catch(undefined).parse(search["script"]) }),
+  loaderDeps: ({ search }) => ({ script: search.script }),
+  loader: async ({ context, deps }) => {
+    if (!deps.script) return { script: undefined };
+    const library = await context.queryClient.ensureQueryData(scriptsOptions(context.user.id));
+    return { script: library.scripts.find(s => s.id === deps.script) };
+  },
   head: () => ({ meta: [
     { title: "Assistant IA — MLM Boost AI" },
     { name: "description", content: "Générez messages de prospection, réponses, scripts d'appel et posts." },
@@ -17,6 +26,7 @@ export const Route = createFileRoute("/_authenticated/assistant")({
 function AssistantPage() {
   const { user } = Route.useRouteContext();
   const crm = useCrm(user);
+  const { script } = Route.useLoaderData();
 
   return (
     <AppShell user={user} title="Assistant IA">
@@ -26,7 +36,7 @@ function AssistantPage() {
         <p className="mt-2 text-sm text-muted-foreground">Choisissez un mode, décrivez le contexte, générez.</p>
         <UsageLine crm={crm} />
         <PendingPaymentBanner crm={crm} />
-        <div className="mt-6"><AiAssistantPanel crm={crm} /></div>
+        <div className="mt-6"><AiAssistantPanel key={script?.id ?? "general"} crm={crm} initialScript={script} /></div>
       </div>
     </AppShell>
   );

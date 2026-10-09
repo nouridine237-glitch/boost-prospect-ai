@@ -181,10 +181,10 @@ export function ProspectCard({ prospect: p, onChangeStatus, onUpdate, onOpen }: 
   </div>;
 }
 
-export function AiAssistantPanel({ crm }: { crm: Crm }) {
+export function AiAssistantPanel({ crm, initialScript }: { crm: Crm; initialScript?: Tables<"scripts"> | undefined }) {
   const generate = useServerFn(generateProspectingContent);
   const [mode, setMode] = useState<(typeof modes)[number]>(modes[0]);
-  const [context, setContext] = useState("");
+  const [context, setContext] = useState(initialScript?.content ?? "");
   const [result, setResult] = useState("");
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState("");
@@ -202,7 +202,7 @@ export function AiAssistantPanel({ crm }: { crm: Crm }) {
       setGenerating(false); return;
     }
     try {
-      const response = await generate({ data: { mode, context, ...(prospectId ? { prospectId } : {}) } });
+      const response = await generate({ data: { mode, context, ...(prospectId ? { prospectId } : {}), ...(initialScript ? { scriptId: initialScript.id } : {}) } });
       setResult(response.text);
       setResultProspectId(prospectId);
       if (prospectId) crm.setLastMessages(m => ({ ...m, [prospectId]: response.text }));
@@ -217,8 +217,9 @@ export function AiAssistantPanel({ crm }: { crm: Crm }) {
       <div className="flex items-center gap-3"><span className="grid size-10 place-items-center rounded-lg bg-primary/15 text-primary"><Sparkles className="size-5" /></span><div><h2 className="font-bold">Assistant IA</h2><p className="text-xs text-muted-foreground">Créez un contenu adapté à votre situation.</p></div></div>
       <div className="mt-5 grid grid-cols-2 gap-2">{availableModes.map(item => <button key={item} onClick={() => setMode(item)} className={`min-h-12 rounded-md border px-3 text-left text-xs font-semibold transition-colors ${mode === item ? "border-primary bg-primary/12 text-primary" : "border-border bg-secondary text-muted-foreground hover:text-foreground"}`}>{item}</button>)}</div>
       <label className="relative mt-4 block"><select aria-label="Prospect concerné" value={prospectId} onChange={e => { const id = e.target.value; setProspectId(id); const s = crm.prospects.find(p => p.id === id); if (s?.status === "client") setMode(welcomeMode); else if (mode === welcomeMode) setMode(modes[0]); }} className="h-9 w-full appearance-none rounded-md border border-input bg-background pl-3 pr-8 text-sm outline-none focus:ring-1 focus:ring-ring"><option value="">Aucun prospect (message général)</option><optgroup label="Prospects">{crm.prospects.filter(p => p.status !== "client").map(p => <option key={p.id} value={p.id}>{p.name}{p.phone ? ` — ${p.phone}` : ""}</option>)}</optgroup><optgroup label="Mes recrues">{crm.prospects.filter(p => p.status === "client").map(p => <option key={p.id} value={p.id}>{p.name}{p.phone ? ` — ${p.phone}` : ""}</option>)}</optgroup></select><ChevronDown className="pointer-events-none absolute right-2 top-3 size-3 text-muted-foreground" /></label>
-      <Textarea className="mt-3 min-h-32 resize-none" placeholder="Décrivez le prospect, le contexte et le ton souhaité…" value={context} onChange={e => setContext(e.target.value)} />
-      <Button className="mt-3 w-full" onClick={runGeneration} disabled={generating}><Sparkles />{generating ? "Génération…" : "Générer"}</Button>
+      {initialScript && <p className="mt-4 text-sm font-semibold text-primary">{initialScript.title}</p>}
+      <Textarea aria-label={initialScript ? "Script à personnaliser" : "Contexte du message"} className="mt-3 min-h-32 resize-none" placeholder="Décrivez le prospect, le contexte et le ton souhaité…" value={context} onChange={e => setContext(e.target.value)} />
+      <Button className={`mt-3 w-full ${initialScript ? "min-h-11" : ""}`} onClick={runGeneration} disabled={generating}><Sparkles />{generating ? "Génération…" : initialScript ? "Personnaliser le script" : "Générer"}</Button>
       {error && <p className="mt-3 text-xs text-destructive">{error}</p>}
       {result && <div className="prose prose-invert mt-4 max-h-72 overflow-y-auto rounded-md border border-border bg-secondary p-4 text-sm leading-6"><ReactMarkdown>{result}</ReactMarkdown></div>}
       {result && <WhatsAppActions prospectId={target?.id} message={result} phone={target?.phone} prospectStatus={target?.status} onMarkContacted={target ? () => crm.markContacted(target.id) : undefined} />}
