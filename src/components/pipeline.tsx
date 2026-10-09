@@ -1,4 +1,4 @@
-import { CalendarClock, MoreHorizontal } from "lucide-react";
+import { CalendarClock, MoreHorizontal, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { slugStatus, statusLabels, statuses, type Crm, type Prospect } from "@/components/crm";
@@ -22,7 +22,7 @@ export function ViewToggle({ view, onChange }: { view: "liste" | "pipeline"; onC
   );
 }
 
-function PipelineCard({ p, crm, onOpen }: { p: Prospect; crm: Crm; onOpen: (p: Prospect) => void }) {
+function PipelineCard({ p, crm, onOpen }: { p: Prospect; crm: Crm; onOpen: (p: Prospect, suggest?: boolean) => void }) {
   const lvl = interestLevels.find(l => l.value === p.interest_level);
   const d = p.next_followup_date ? daysUntil(p.next_followup_date) : null;
   const followTxt = d === null ? "Pas de relance" : d < 0 ? `${-d} j de retard` : d === 0 ? "Relance aujourd'hui" : `Relance dans ${d} j`;
@@ -31,6 +31,7 @@ function PipelineCard({ p, crm, onOpen }: { p: Prospect; crm: Crm; onOpen: (p: P
     <article className="rounded-md border border-border bg-background p-3">
       <div className="flex items-start gap-2">
         <button className="min-w-0 flex-1 text-left text-sm font-semibold hover:text-primary" onClick={() => onOpen(p)} aria-label={`Ouvrir la fiche de ${p.name}`}>{p.name}</button>
+        <Button size="icon" variant="ghost" className="size-8 shrink-0 text-primary" title="Suggérer la prochaine action" aria-label={`Suggérer la prochaine action pour ${p.name}`} onClick={() => onOpen(p, true)}><Sparkles /></Button>
         <DropdownMenu>
           <DropdownMenuTrigger asChild><Button size="icon" variant="ghost" className="size-8 shrink-0" aria-label={`Déplacer ${p.name} vers…`}><MoreHorizontal /></Button></DropdownMenuTrigger>
           <DropdownMenuContent align="end">

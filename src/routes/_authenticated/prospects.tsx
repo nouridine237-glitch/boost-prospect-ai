@@ -27,6 +27,8 @@ function ProspectsPage() {
   });
   const [view, setView] = useState<"liste" | "pipeline">("liste");
   const [openId, setOpenId] = useState<string | null>(null);
+  const [autoSuggest, setAutoSuggest] = useState(false);
+  const openSheet = (p: { id: string }, s?: boolean) => { setAutoSuggest(!!s); setOpenId(p.id); };
   const opened = crm.prospects.find(p => p.id === openId) ?? null;
   const teamCount = crm.prospects.filter(p => p.status === "client").length;
 
@@ -41,8 +43,8 @@ function ProspectsPage() {
         <PendingPaymentBanner crm={crm} />
         <div className="mt-6"><FollowupQueue crm={crm} /></div>
         <div><TeamTabs tab={tab} onChange={setTab} count={teamCount} /></div>
-        <div className="mt-6">{view === "pipeline" && tab === "prospects" ? <PipelineBoard crm={crm} onOpen={p => setOpenId(p.id)} /> : tab === "team" ? <TeamPanel crm={crm} /> : <ProspectsPanel crm={crm} excludeClients onOpen={p => setOpenId(p.id)} />}</div>
-        <ProspectSheet prospect={opened} crm={crm} onClose={() => setOpenId(null)} />
+        <div className="mt-6">{view === "pipeline" && tab === "prospects" ? <PipelineBoard crm={crm} onOpen={openSheet} /> : tab === "team" ? <TeamPanel crm={crm} /> : <ProspectsPanel crm={crm} excludeClients onOpen={openSheet} />}</div>
+        <ProspectSheet prospect={opened} autoSuggest={autoSuggest} crm={crm} onClose={() => setOpenId(null)} />
       </div>
     </AppShell>
   );

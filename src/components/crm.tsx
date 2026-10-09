@@ -123,7 +123,7 @@ export function Stat({ icon: Icon, label, value, note }: { icon: typeof UserRoun
   return <article className="surface rounded-lg p-5"><div className="flex items-center justify-between"><span className="text-xs font-semibold text-muted-foreground">{label}</span><span className="grid size-8 place-items-center rounded-md bg-primary/12 text-primary"><Icon className="size-4" /></span></div><p className="mt-4 text-3xl font-extrabold">{value}</p><p className="mt-1 text-[11px] text-muted-foreground">{note}</p></article>;
 }
 
-export function ProspectsPanel({ crm, limit, excludeClients, onOpen }: { crm: Crm; limit?: number; excludeClients?: boolean; onOpen?: (p: Prospect) => void }) {
+export function ProspectsPanel({ crm, limit, excludeClients, onOpen }: { crm: Crm; limit?: number; excludeClients?: boolean; onOpen?: (p: Prospect, suggest?: boolean) => void }) {
   const [query, setQuery] = useState("");
   const [adding, setAdding] = useState(false);
   const [name, setName] = useState("");
@@ -157,7 +157,7 @@ export function ProspectsPanel({ crm, limit, excludeClients, onOpen }: { crm: Cr
   );
 }
 
-export function ProspectCard({ prospect: p, onChangeStatus, onUpdate, onOpen }: { prospect: Prospect; onChangeStatus: (id: string, status: Status) => void; onUpdate: (id: string, patch: ProspectPatch) => Promise<void>; onOpen?: ((p: Prospect) => void) | undefined }) {
+export function ProspectCard({ prospect: p, onChangeStatus, onUpdate, onOpen }: { prospect: Prospect; onChangeStatus: (id: string, status: Status) => void; onUpdate: (id: string, patch: ProspectPatch) => Promise<void>; onOpen?: ((p: Prospect, suggest?: boolean) => void) | undefined }) {
   const [open, setOpen] = useState(false);
   const [notes, setNotes] = useState(p.notes ?? "");
   const [followup, setFollowup] = useState(p.next_followup_date ?? "");
@@ -170,6 +170,7 @@ export function ProspectCard({ prospect: p, onChangeStatus, onUpdate, onOpen }: 
       <div className={`min-w-32 flex-1 ${onOpen ? "cursor-pointer" : ""}`} onClick={onOpen ? () => onOpen(p) : undefined} role={onOpen ? "button" : undefined} aria-label={onOpen ? `Ouvrir la fiche de ${p.name}` : undefined}><p className={`text-sm font-semibold ${onOpen ? "hover:text-primary" : ""}`}>{p.name}</p><p className="text-xs text-muted-foreground">{p.phone || "Téléphone non renseigné"}</p>{p.next_followup_date && <p className={`mt-1 flex items-center gap-1 text-[11px] ${overdue ? "text-destructive" : "text-primary"}`}><CalendarClock className="size-3" /> Relance le {new Date(p.next_followup_date + "T00:00:00").toLocaleDateString("fr-FR", { day: "numeric", month: "long" })}</p>}</div>
       <span className={`status status-${slugStatus(p.status)}`}>{statusLabels[p.status]}</span>
       <label className="relative"><select aria-label={`Changer le statut de ${p.name}`} value={p.status} onChange={e => onChangeStatus(p.id, e.target.value as Status)} className="h-8 appearance-none rounded-md border border-input bg-background pl-3 pr-8 text-xs outline-none focus:ring-1 focus:ring-ring">{statuses.map(s => <option key={s} value={s}>{statusLabels[s]}</option>)}</select><ChevronDown className="pointer-events-none absolute right-2 top-2 size-3 text-muted-foreground" /></label>
+      {onOpen && <Button variant="ghost" size="icon" title="Suggérer la prochaine action" aria-label={`Suggérer la prochaine action pour ${p.name}`} onClick={() => onOpen(p, true)} className="text-primary"><Sparkles /></Button>}
       <Button variant="ghost" size="icon" aria-label={`Notes et relance pour ${p.name}`} onClick={() => setOpen(!open)} className={open ? "text-primary" : "text-muted-foreground"}><NotebookPen /></Button>
     </div>
     {open && <div className="mt-4 grid gap-3 rounded-md border border-border bg-secondary/50 p-3">
