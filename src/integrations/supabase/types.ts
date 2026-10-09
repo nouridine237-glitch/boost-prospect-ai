@@ -160,6 +160,41 @@ export type Database = {
         }
         Relationships: []
       }
+      prospect_events: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          prospect_id: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          content?: string
+          created_at?: string
+          id?: string
+          prospect_id: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          prospect_id?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prospect_events_prospect_id_fkey"
+            columns: ["prospect_id"]
+            isOneToOne: false
+            referencedRelation: "prospects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       prospects: {
         Row: {
           created_at: string
