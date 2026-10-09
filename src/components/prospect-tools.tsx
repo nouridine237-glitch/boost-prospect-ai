@@ -75,17 +75,17 @@ function toDraft(p: Prospect): Draft {
   return { name: p.name, phone: p.phone ?? "", source: p.source ?? "", product_interest: p.product_interest ?? "", main_objection: p.main_objection ?? "", interest_level: p.interest_level ?? null, first_contact_at: p.first_contact_at ?? "", next_followup_date: p.next_followup_date ?? "", notes: p.notes ?? "" };
 }
 
-export function ProspectSheet({ prospect, crm, onClose }: { prospect: Prospect | null; crm: Crm; onClose: () => void }) {
+export function ProspectSheet({ prospect, crm, onClose, autoSuggest }: { prospect: Prospect | null; crm: Crm; onClose: () => void; autoSuggest?: boolean }) {
   return (
     <Sheet open={!!prospect} onOpenChange={o => { if (!o) onClose(); }}>
       <SheetContent side="right" className="w-full overflow-y-auto sm:max-w-md">
-        {prospect && <SheetBody key={prospect.id} prospect={prospect} crm={crm} />}
+        {prospect && <SheetBody key={prospect.id} prospect={prospect} crm={crm} autoSuggest={!!autoSuggest} />}
       </SheetContent>
     </Sheet>
   );
 }
 
-function SheetBody({ prospect, crm }: { prospect: Prospect; crm: Crm }) {
+function SheetBody({ prospect, crm, autoSuggest }: { prospect: Prospect; crm: Crm; autoSuggest: boolean }) {
   const [d, setD] = useState<Draft>(() => toDraft(prospect));
   const [state, setState] = useState<"idle" | "saving" | "saved">("idle");
   const [tab, setTab] = useState<"fiche" | "historique">("fiche");
@@ -120,6 +120,7 @@ function SheetBody({ prospect, crm }: { prospect: Prospect; crm: Crm }) {
         {(["fiche", "historique"] as const).map(t => <button key={t} role="tab" aria-selected={tab === t} onClick={() => setTab(t)} className={`min-h-9 flex-1 rounded-full text-sm font-semibold transition-colors ${tab === t ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}>{t === "fiche" ? "Fiche" : "Historique"}</button>)}
       </div>
       {tab === "historique" ? <ProspectHistory prospectId={prospect.id} /> : <div className="mt-5 grid gap-4">
+        <NextActionCard prospect={prospect} crm={crm} autoRun={autoSuggest} />
         <label className={label}>Nom<Input value={d.name} onChange={e => set("name", e.target.value)} /></label>
         <label className={label}>Téléphone<Input value={d.phone} onChange={e => set("phone", e.target.value)} /></label>
         <label className={label}>Source
@@ -142,14 +143,13 @@ function SheetBody({ prospect, crm }: { prospect: Prospect; crm: Crm }) {
           <label className={label}>Prochaine relance<Input type="date" value={d.next_followup_date} onChange={e => set("next_followup_date", e.target.value)} /></label>
         </div>
         <label className={label}>Notes<Textarea className="min-h-28 resize-none" value={d.notes} onFocus={() => { notesAtFocus.current = d.notes; }} onBlur={() => { if (d.notes.trim() !== notesAtFocus.current.trim()) { notesAtFocus.current = d.notes; void logProspectEvent(prospect.id, "note_modifiée", d.notes.trim()); } }} onChange={e => set("notes", e.target.value)} /></label>
-        <NextActionCard prospect={prospect} crm={crm} />
       </div>}
     </>
   );
 }
 
 type Suggestion = { action: string; moment: string; message: string };
-function NextActionCard({ prospect, crm }: { prospect: Prospect; crm: Crm }) {
+function NextActionCard({ prospect, crm, autoRun }: { prospect: Prospect; crm: Crm; autoRun?: boolean }) {
   const suggest = useServerFn(suggestNextAction);
   const [res, setRes] = useState<Suggestion | null>(null);
   const [loading, setLoading] = useState(false);
@@ -169,6 +169,8 @@ function NextActionCard({ prospect, crm }: { prospect: Prospect; crm: Crm }) {
       setError(m.includes("LIMIT_REACHED") ? limitMsg : m || "La suggestion a échoué. Réessaie dans un instant.");
     } finally { setLoading(false); }
   }
+  const started = useRef(false);
+  useEffect(() => { if (autoRun && !started.current) { started.current = true; void run(); } }, [autoRun]);
   return (
     <div className="grid gap-3">
       {!res && <Button type="button" onClick={run} disabled={loading} className="min-h-11">{loading ? <><Loader2 className="animate-spin" /> Analyse en cours…</> : <><Sparkles /> Suggérer la prochaine action</>}</Button>}
