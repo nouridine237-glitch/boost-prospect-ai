@@ -10,3 +10,4 @@
 <!-- LOVABLE:END -->
 
 - Keep onboarding in a shared authenticated-layout provider with profile-backed flags and user-scoped activity reads, so welcome appears across entry pages and dismissal persists across devices.
+- Store the shared scripts library in public.scripts with authenticated reads and admin-only writes enforced by RLS; load it with user-scoped query options and pass script IDs to the existing AI function so personalization shares quota enforcement and uses owner-scoped prospect context.

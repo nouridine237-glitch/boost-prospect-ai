@@ -1,6 +1,6 @@
 import { Link, useLocation } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { BarChart3, Bot, ContactRound, CreditCard, GraduationCap, LayoutDashboard, LogOut, Menu, Settings, ShieldCheck, Users } from "lucide-react";
+import { BarChart3, Bot, ContactRound, CreditCard, FileText, GraduationCap, LayoutDashboard, LogOut, Menu, Settings, ShieldCheck, Users } from "lucide-react";
 import { Brand } from "@/components/brand";
 import { supabase } from "@/integrations/supabase/client";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
@@ -10,6 +10,7 @@ const nav = [
   { icon: LayoutDashboard, label: "Dashboard", to: "/dashboard" },
   { icon: ContactRound, label: "Prospects", to: "/prospects" },
   { icon: Bot, label: "Assistant IA", to: "/assistant" },
+  { icon: FileText, label: "Scripts", to: "/scripts" },
   { icon: BarChart3, label: "Statistiques", to: "/statistiques" },
   { icon: GraduationCap, label: "Académie", to: "/academie" },
   { icon: Users, label: "Former mon équipe", to: "/former-equipe" },
@@ -115,10 +116,10 @@ export function AppShell({ children, user, title }: { children: React.ReactNode;
       {children}
 
       <nav className="fixed inset-x-0 bottom-0 z-40 flex h-16 items-center justify-around border-t border-border bg-card/95 backdrop-blur-xl lg:hidden">
-        {nav.slice(0, 5).map(({ icon: Icon, label, to }) => {
+        {nav.slice(0, 6).map(({ icon: Icon, label, to }) => {
           const active = location.pathname === to;
           return (
-            <Link key={label} to={to} aria-label={label} className={`flex w-16 flex-col items-center gap-1 text-[10px] ${active ? "text-primary" : "text-muted-foreground"}`}>
+            <Link key={label} to={to} aria-label={label} className={`flex min-h-11 min-w-0 flex-1 flex-col items-center justify-center gap-1 text-[10px] ${active ? "text-primary" : "text-muted-foreground"}`}>
               <Icon className="size-5" />
               <span>{label === "Assistant IA" ? "Assistant" : label}</span>
             </Link>
