@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-import { BellRing, CalendarClock, Check, Loader2 } from "lucide-react";
+import { BellRing, CalendarClock, Check, Loader2, RefreshCw, Sparkles } from "lucide-react";
+import { useServerFn } from "@tanstack/react-start";
+import { suggestNextAction } from "@/lib/ai.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -132,7 +134,47 @@ function SheetBody({ prospect, crm }: { prospect: Prospect; crm: Crm }) {
           <label className={label}>Prochaine relance<Input type="date" value={d.next_followup_date} onChange={e => set("next_followup_date", e.target.value)} /></label>
         </div>
         <label className={label}>Notes<Textarea className="min-h-28 resize-none" value={d.notes} onChange={e => set("notes", e.target.value)} /></label>
+        <NextActionCard prospect={prospect} crm={crm} />
       </div>
     </>
+  );
+}
+
+type Suggestion = { action: string; moment: string; message: string };
+function NextActionCard({ prospect, crm }: { prospect: Prospect; crm: Crm }) {
+  const suggest = useServerFn(suggestNextAction);
+  const [res, setRes] = useState<Suggestion | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const limitMsg = "Tu as atteint la limite de générations IA de ton plan pour ce mois. Passe à un plan supérieur pour continuer.";
+  async function run() {
+    setError("");
+    if (crm.limits.generations >= 0 && crm.monthlyGenerations >= crm.limits.generations) { setError(limitMsg); return; }
+    setLoading(true);
+    try {
+      const r = await suggest({ data: { prospectId: prospect.id } });
+      setRes(r);
+      crm.setLastMessages(m => ({ ...m, [prospect.id]: r.message }));
+      crm.setGenerationCount(v => v + 1); crm.setMonthlyGenerations(v => v + 1);
+    } catch (e) {
+      const m = e instanceof Error ? e.message : "";
+      setError(m.includes("LIMIT_REACHED") ? limitMsg : m || "La suggestion a échoué. Réessaie dans un instant.");
+    } finally { setLoading(false); }
+  }
+  return (
+    <div className="grid gap-3">
+      {!res && <Button type="button" onClick={run} disabled={loading} className="min-h-11">{loading ? <><Loader2 className="animate-spin" /> Analyse en cours…</> : <><Sparkles /> Suggérer la prochaine action</>}</Button>}
+      {error && <p className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-xs text-destructive">{error}</p>}
+      {res && (
+        <div className="surface rounded-lg border border-primary/30 p-4">
+          <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-primary"><Sparkles className="size-3.5" /> Prochaine action</p>
+          <p className="mt-2 text-sm font-semibold text-foreground">{res.action}</p>
+          {res.moment && <p className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground"><CalendarClock className="size-3.5" /> {res.moment}</p>}
+          <p className="mt-3 whitespace-pre-wrap rounded-md bg-secondary/60 p-3 text-sm text-foreground">{res.message}</p>
+          <WhatsAppActions message={res.message} phone={prospect.phone} prospectStatus={prospect.status} onMarkContacted={() => crm.markContacted(prospect.id)} />
+          <Button type="button" size="sm" variant="ghost" onClick={run} disabled={loading} className="mt-2 min-h-11">{loading ? <><Loader2 className="animate-spin" /> Génération…</> : <><RefreshCw /> Régénérer</>}</Button>
+        </div>
+      )}
+    </div>
   );
 }
