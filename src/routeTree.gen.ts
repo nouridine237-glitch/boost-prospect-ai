@@ -22,6 +22,7 @@ import { Route as AuthenticatedDashboardRouteImport } from './routes/_authentica
 import { Route as AuthenticatedFormerEquipeRouteImport } from './routes/_authenticated/former-equipe'
 import { Route as AuthenticatedParametresRouteImport } from './routes/_authenticated/parametres'
 import { Route as AuthenticatedProspectsRouteImport } from './routes/_authenticated/prospects'
+import { Route as AuthenticatedScriptsRouteImport } from './routes/_authenticated/scripts'
 import { Route as AuthenticatedStatistiquesRouteImport } from './routes/_authenticated/statistiques'
 import { Route as AuthenticatedAcademieNiveauRouteImport } from './routes/_authenticated/academie_.$niveau'
 
@@ -90,6 +91,11 @@ const AuthenticatedProspectsRoute = AuthenticatedProspectsRouteImport.update({
   path: '/prospects',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedScriptsRoute = AuthenticatedScriptsRouteImport.update({
+  id: '/scripts',
+  path: '/scripts',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedStatistiquesRoute =
   AuthenticatedStatistiquesRouteImport.update({
     id: '/statistiques',
@@ -116,6 +122,7 @@ export interface FileRoutesByFullPath {
   '/former-equipe': typeof AuthenticatedFormerEquipeRoute
   '/parametres': typeof AuthenticatedParametresRoute
   '/prospects': typeof AuthenticatedProspectsRoute
+  '/scripts': typeof AuthenticatedScriptsRoute
   '/statistiques': typeof AuthenticatedStatistiquesRoute
   '/academie/$niveau': typeof AuthenticatedAcademieNiveauRoute
 }
@@ -132,6 +139,7 @@ export interface FileRoutesByTo {
   '/former-equipe': typeof AuthenticatedFormerEquipeRoute
   '/parametres': typeof AuthenticatedParametresRoute
   '/prospects': typeof AuthenticatedProspectsRoute
+  '/scripts': typeof AuthenticatedScriptsRoute
   '/statistiques': typeof AuthenticatedStatistiquesRoute
   '/academie/$niveau': typeof AuthenticatedAcademieNiveauRoute
 }
@@ -150,6 +158,7 @@ export interface FileRoutesById {
   '/_authenticated/former-equipe': typeof AuthenticatedFormerEquipeRoute
   '/_authenticated/parametres': typeof AuthenticatedParametresRoute
   '/_authenticated/prospects': typeof AuthenticatedProspectsRoute
+  '/_authenticated/scripts': typeof AuthenticatedScriptsRoute
   '/_authenticated/statistiques': typeof AuthenticatedStatistiquesRoute
   '/_authenticated/academie_/$niveau': typeof AuthenticatedAcademieNiveauRoute
 }
@@ -168,6 +177,7 @@ export interface FileRouteTypes {
     | '/former-equipe'
     | '/parametres'
     | '/prospects'
+    | '/scripts'
     | '/statistiques'
     | '/academie/$niveau'
   fileRoutesByTo: FileRoutesByTo
@@ -184,6 +194,7 @@ export interface FileRouteTypes {
     | '/former-equipe'
     | '/parametres'
     | '/prospects'
+    | '/scripts'
     | '/statistiques'
     | '/academie/$niveau'
   id:
@@ -201,6 +212,7 @@ export interface FileRouteTypes {
     | '/_authenticated/former-equipe'
     | '/_authenticated/parametres'
     | '/_authenticated/prospects'
+    | '/_authenticated/scripts'
     | '/_authenticated/statistiques'
     | '/_authenticated/academie_/$niveau'
   fileRoutesById: FileRoutesById
@@ -306,6 +318,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedProspectsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/scripts': {
+      id: '/_authenticated/scripts'
+      path: '/scripts'
+      fullPath: '/scripts'
+      preLoaderRoute: typeof AuthenticatedScriptsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/statistiques': {
       id: '/_authenticated/statistiques'
       path: '/statistiques'
@@ -332,6 +351,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedFormerEquipeRoute: typeof AuthenticatedFormerEquipeRoute
   AuthenticatedParametresRoute: typeof AuthenticatedParametresRoute
   AuthenticatedProspectsRoute: typeof AuthenticatedProspectsRoute
+  AuthenticatedScriptsRoute: typeof AuthenticatedScriptsRoute
   AuthenticatedStatistiquesRoute: typeof AuthenticatedStatistiquesRoute
   AuthenticatedAcademieNiveauRoute: typeof AuthenticatedAcademieNiveauRoute
 }
@@ -345,6 +365,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedFormerEquipeRoute: AuthenticatedFormerEquipeRoute,
   AuthenticatedParametresRoute: AuthenticatedParametresRoute,
   AuthenticatedProspectsRoute: AuthenticatedProspectsRoute,
+  AuthenticatedScriptsRoute: AuthenticatedScriptsRoute,
   AuthenticatedStatistiquesRoute: AuthenticatedStatistiquesRoute,
   AuthenticatedAcademieNiveauRoute: AuthenticatedAcademieNiveauRoute,
 }
