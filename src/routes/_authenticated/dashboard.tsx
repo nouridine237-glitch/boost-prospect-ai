@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { BarChart3, CheckCircle2, ContactRound, MessageSquareText } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
+import { WeeklyGoalsCard } from "@/components/weekly-goals";
 import { AiAssistantPanel, PendingPaymentBanner, ProspectsPanel, Stat, UsageLine, useCrm } from "@/components/crm";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
@@ -29,7 +30,8 @@ function Dashboard() {
         </div>
         <UsageLine crm={crm} />
         <PendingPaymentBanner crm={crm} />
-        <section className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <WeeklyGoalsCard crm={crm} userId={user.id} />
+        <section className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <Stat icon={ContactRound} label="Prospects actifs" value={String(crm.prospects.filter(p => p.status !== "client" && p.status !== "non_intéressé").length)} note="En cours de suivi" />
           <Stat icon={MessageSquareText} label="Messages générés" value={String(crm.generationCount)} note="Historique sécurisé" />
           <Stat icon={CheckCircle2} label="Recrues" value={String(crm.clients)} note="Prospects devenus Clients" />
