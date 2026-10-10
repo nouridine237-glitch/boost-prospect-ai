@@ -43,6 +43,13 @@
       "when": 1791557320084,
       "tag": "0005_create_scripts_library",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1791591711422,
+      "tag": "0006_saspay_payments",
+      "breakpoints": true
     }
   ]
 }
