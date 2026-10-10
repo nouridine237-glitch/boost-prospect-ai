@@ -107,7 +107,7 @@ function Abonnement() {
   }, []);
 
   useEffect(() => {
-    statusFn({}).then(({ request }) => setPending(request?.statut === "en_attente" ? request : null)).catch(() => {});
+    statusFn({}).then(({ request }) => setPending(request?.statut === "en_attente" && request?.method !== "saspay" ? request : null)).catch(() => {});
   }, []);
 
   function choose(planKey: string, name: string) {
