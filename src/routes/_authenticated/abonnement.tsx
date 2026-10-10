@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { getPaymentNumbers, type PaymentNumbers } from "@/lib/payment-settings.functions";
-import { createPaymentRequest, getMyPaymentStatus, PAID_PLANS, type PaidPlanKey } from "@/lib/payments.functions";
+import { checkSaspayStatus, createPaymentRequest, getMyPaymentStatus, startSaspayCheckout, PAID_PLANS, type PaidPlanKey } from "@/lib/payments.functions";
 
 export const Route = createFileRoute("/_authenticated/abonnement")({
   head: () => ({ meta: [
@@ -52,6 +52,59 @@ function Abonnement() {
   const numbersFn = useServerFn(getPaymentNumbers);
   const [numbers, setNumbers] = useState<PaymentNumbers | null>(null);
   useEffect(() => { numbersFn({}).then(setNumbers).catch(() => {}); }, []);
+
+  const startOnline = useServerFn(startSaspayCheckout);
+  const checkOnline = useServerFn(checkSaspayStatus);
+  const [onlineLoading, setOnlineLoading] = useState<string | null>(null);
+  const [onlineMsg, setOnlineMsg] = useState("");
+  const [verifying, setVerifying] = useState(false);
+
+  async function payOnline(planKey: PaidPlanKey) {
+    if (onlineLoading) return;
+    setOnlineLoading(planKey);
+    setOnlineMsg("");
+    try {
+      const { url } = await startOnline({ data: { plan: planKey } });
+      window.location.href = url;
+    } catch (e: any) {
+      setOnlineMsg(e?.message || "Le paiement en ligne a échoué. Réessayez.");
+      setOnlineLoading(null);
+    }
+  }
+
+  useEffect(() => {
+    const isReturn = new URLSearchParams(window.location.search).get("saspay") === "retour";
+    let stopped = false;
+    let tries = 0;
+    async function tick() {
+      try {
+        const res = await checkOnline({});
+        const st = res.request?.statut;
+        if (st === "valide") {
+          setVerifying(false);
+          setPending(null);
+          setOnlineMsg(`Paiement confirmé : votre plan ${res.plan} est activé. 🎉`);
+          return;
+        }
+        if (st === "echoue") {
+          setVerifying(false);
+          if (isReturn) setOnlineMsg("Le paiement n’a pas abouti. Aucun changement de plan — vous pouvez réessayer.");
+          return;
+        }
+        if (st !== "en_attente" || !isReturn) { setVerifying(false); return; }
+      } catch { /* on réessaie */ }
+      tries += 1;
+      if (tries >= 15 || stopped) {
+        setVerifying(false);
+        setOnlineMsg("Vérification toujours en cours. Revenez sur cette page dans quelques minutes.");
+        return;
+      }
+      setTimeout(() => { if (!stopped) tick(); }, 4000);
+    }
+    if (isReturn) setVerifying(true);
+    tick();
+    return () => { stopped = true; };
+  }, []);
 
   useEffect(() => {
     statusFn({}).then(({ request }) => setPending(request?.statut === "en_attente" ? request : null)).catch(() => {});
@@ -123,6 +176,13 @@ function Abonnement() {
           </div>
         )}
 
+        {verifying && (
+          <div className="mb-6 flex items-center gap-2 rounded-lg border border-warning/40 bg-warning/10 p-4 text-sm">
+            <Loader2 className="size-4 animate-spin" /> <strong>Paiement en cours de vérification…</strong>
+          </div>
+        )}
+        {onlineMsg && !verifying && <div className="surface mb-6 rounded-lg p-4 text-sm">{onlineMsg}</div>}
+
         {banner && <div className="surface mb-6 rounded-lg p-4 text-sm">{banner}</div>}
 
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -145,9 +205,14 @@ function Abonnement() {
                   ))}
                 </ul>
               </CardContent>
-              <div className="p-6 pt-0">
-                <Button onClick={() => choose(plan.key, plan.name)} variant={plan.popular ? "default" : "outline"} className="w-full">
-                  {plan.key === "gratuit" ? "Continuer gratuitement" : "Choisir ce plan"}
+              <div className="space-y-2 p-6 pt-0">
+                {plan.key !== "gratuit" && (
+                  <Button onClick={() => payOnline(plan.key as PaidPlanKey)} disabled={!!onlineLoading} variant={plan.popular ? "default" : "outline"} className="min-h-11 w-full">
+                    {onlineLoading === plan.key ? <><Loader2 className="size-4 animate-spin" /> Redirection…</> : <><CreditCard className="size-4" /> Payer en ligne (Mobile Money / carte)</>}
+                  </Button>
+                )}
+                <Button onClick={() => choose(plan.key, plan.name)} variant="outline" className="min-h-11 w-full">
+                  {plan.key === "gratuit" ? "Continuer gratuitement" : "Payer par Mobile Money manuel"}
                 </Button>
               </div>
             </Card>
