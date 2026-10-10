@@ -309,10 +309,13 @@ function AdminPage() {
                   </div>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${p.statut === "en_attente" ? "bg-warning/15 text-warning" : p.statut === "valide" ? "bg-success/15 text-success" : "bg-destructive/15 text-destructive"}`}>
-                    {p.statut === "en_attente" ? "En attente" : p.statut === "valide" ? "Validé" : "Refusé"}
+                  <span className="rounded-full border border-border px-2.5 py-1 text-[11px] font-bold text-muted-foreground">
+                    Méthode : {p.method === "saspay" ? "SasPay" : "Manuel"}
                   </span>
-                  {p.statut === "en_attente" && (
+                  <span className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${p.statut === "en_attente" ? "bg-warning/15 text-warning" : p.statut === "valide" ? "bg-success/15 text-success" : "bg-destructive/15 text-destructive"}`}>
+                    {p.statut === "en_attente" ? "En attente" : p.statut === "valide" ? (p.method === "saspay" ? "Validé automatiquement" : "Validé") : p.statut === "echoue" ? "Échoué" : "Refusé"}
+                  </span>
+                  {p.statut === "en_attente" && p.method !== "saspay" && (
                     <>
                       <Button size="sm" disabled={reviewingId === p.id} onClick={() => review(p, "valide")}>Valider</Button>
                       <Button size="sm" variant="outline" disabled={reviewingId === p.id} onClick={() => review(p, "refuse")}>Refuser</Button>

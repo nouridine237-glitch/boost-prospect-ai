@@ -25,6 +25,7 @@ import { Route as AuthenticatedProspectsRouteImport } from './routes/_authentica
 import { Route as AuthenticatedScriptsRouteImport } from './routes/_authenticated/scripts'
 import { Route as AuthenticatedStatistiquesRouteImport } from './routes/_authenticated/statistiques'
 import { Route as AuthenticatedAcademieNiveauRouteImport } from './routes/_authenticated/academie_.$niveau'
+import { Route as ApiPublicSaspayWebhookRouteImport } from './routes/api/public/saspay-webhook'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -108,6 +109,11 @@ const AuthenticatedAcademieNiveauRoute =
     path: '/academie/$niveau',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const ApiPublicSaspayWebhookRoute = ApiPublicSaspayWebhookRouteImport.update({
+  id: '/api/public/saspay-webhook',
+  path: '/api/public/saspay-webhook',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -125,6 +131,7 @@ export interface FileRoutesByFullPath {
   '/scripts': typeof AuthenticatedScriptsRoute
   '/statistiques': typeof AuthenticatedStatistiquesRoute
   '/academie/$niveau': typeof AuthenticatedAcademieNiveauRoute
+  '/api/public/saspay-webhook': typeof ApiPublicSaspayWebhookRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -142,6 +149,7 @@ export interface FileRoutesByTo {
   '/scripts': typeof AuthenticatedScriptsRoute
   '/statistiques': typeof AuthenticatedStatistiquesRoute
   '/academie/$niveau': typeof AuthenticatedAcademieNiveauRoute
+  '/api/public/saspay-webhook': typeof ApiPublicSaspayWebhookRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -161,6 +169,7 @@ export interface FileRoutesById {
   '/_authenticated/scripts': typeof AuthenticatedScriptsRoute
   '/_authenticated/statistiques': typeof AuthenticatedStatistiquesRoute
   '/_authenticated/academie_/$niveau': typeof AuthenticatedAcademieNiveauRoute
+  '/api/public/saspay-webhook': typeof ApiPublicSaspayWebhookRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -180,6 +189,7 @@ export interface FileRouteTypes {
     | '/scripts'
     | '/statistiques'
     | '/academie/$niveau'
+    | '/api/public/saspay-webhook'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -197,6 +207,7 @@ export interface FileRouteTypes {
     | '/scripts'
     | '/statistiques'
     | '/academie/$niveau'
+    | '/api/public/saspay-webhook'
   id:
     | '__root__'
     | '/'
@@ -215,6 +226,7 @@ export interface FileRouteTypes {
     | '/_authenticated/scripts'
     | '/_authenticated/statistiques'
     | '/_authenticated/academie_/$niveau'
+    | '/api/public/saspay-webhook'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -223,6 +235,7 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   FormationRoute: typeof FormationRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
+  ApiPublicSaspayWebhookRoute: typeof ApiPublicSaspayWebhookRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -339,6 +352,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAcademieNiveauRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/api/public/saspay-webhook': {
+      id: '/api/public/saspay-webhook'
+      path: '/api/public/saspay-webhook'
+      fullPath: '/api/public/saspay-webhook'
+      preLoaderRoute: typeof ApiPublicSaspayWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -379,6 +399,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   FormationRoute: FormationRoute,
   ResetPasswordRoute: ResetPasswordRoute,
+  ApiPublicSaspayWebhookRoute: ApiPublicSaspayWebhookRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

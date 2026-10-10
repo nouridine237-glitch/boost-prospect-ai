@@ -94,36 +94,45 @@ export type Database = {
       payment_requests: {
         Row: {
           capture_paiement: string | null
+          checkout_url: string | null
           created_at: string
           devise: string
           id: string
+          method: string
           montant: number
           plan_demande: Database["public"]["Enums"]["paid_plan"]
           reference_transaction: string
+          saspay_session_id: string | null
           statut: Database["public"]["Enums"]["payment_request_status"]
           updated_at: string
           user_id: string
         }
         Insert: {
           capture_paiement?: string | null
+          checkout_url?: string | null
           created_at?: string
           devise?: string
           id?: string
+          method?: string
           montant: number
           plan_demande: Database["public"]["Enums"]["paid_plan"]
           reference_transaction?: string
+          saspay_session_id?: string | null
           statut?: Database["public"]["Enums"]["payment_request_status"]
           updated_at?: string
           user_id: string
         }
         Update: {
           capture_paiement?: string | null
+          checkout_url?: string | null
           created_at?: string
           devise?: string
           id?: string
+          method?: string
           montant?: number
           plan_demande?: Database["public"]["Enums"]["paid_plan"]
           reference_transaction?: string
+          saspay_session_id?: string | null
           statut?: Database["public"]["Enums"]["payment_request_status"]
           updated_at?: string
           user_id?: string
@@ -396,7 +405,7 @@ export type Database = {
         | "post_reseau_social"
       app_role: "user" | "admin"
       paid_plan: "pro" | "expert" | "business"
-      payment_request_status: "en_attente" | "valide" | "refuse"
+      payment_request_status: "en_attente" | "valide" | "refuse" | "echoue"
       plan_type: "gratuit" | "pro" | "expert" | "business"
       prospect_status:
         | "nouveau"
@@ -541,7 +550,7 @@ export const Constants = {
       ],
       app_role: ["user", "admin"],
       paid_plan: ["pro", "expert", "business"],
-      payment_request_status: ["en_attente", "valide", "refuse"],
+      payment_request_status: ["en_attente", "valide", "refuse", "echoue"],
       plan_type: ["gratuit", "pro", "expert", "business"],
       prospect_status: [
         "nouveau",

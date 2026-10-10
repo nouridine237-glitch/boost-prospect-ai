@@ -22,3 +22,4 @@
 - [x] Correction du typage de l’écran d’erreur racine
 - [x] Section « Mes recrues » sur la page Prospects (onglets, cartes, toast, IA, dashboard) — testée Client → recrue → retour
 - [ ] Acheter et connecter un nom de domaine (en attente du nom choisi)
+- [ ] SasPay : attendre les clés (SASPAY_API_KEY, SASPAY_WEBHOOK_SECRET) puis tester paiement réel/abandon/rejeu.
