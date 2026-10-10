@@ -40,6 +40,7 @@ export const createPaymentRequest = createServerFn({ method: "POST" })
       .select("id")
       .eq("user_id", context.userId)
       .eq("statut", "en_attente")
+      .eq("method", "manuel")
       .maybeSingle();
     if (existing) {
       return { ok: false as const, reason: "pending" as const };
@@ -82,7 +83,7 @@ export const getMyPaymentStatus = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     const { data } = await context.supabase
       .from("payment_requests")
-      .select("plan_demande, montant, devise, statut, created_at")
+      .select("plan_demande, montant, devise, statut, method, created_at")
       .eq("user_id", context.userId)
       .order("created_at", { ascending: false })
       .limit(1)
@@ -100,6 +101,7 @@ export type AdminPaymentRow = {
   devise: string;
   reference: string;
   statut: string;
+  method: string;
   captureUrl: string | null;
   createdAt: string;
 };
@@ -149,12 +151,13 @@ export const listPaymentRequests = createServerFn({ method: "GET" })
         devise: r.devise,
         reference: r.reference_transaction,
         statut: r.statut,
+        method: r.method ?? "manuel",
         captureUrl,
         createdAt: r.created_at,
       });
     }
 
-    const order: Record<string, number> = { en_attente: 0, valide: 1, refuse: 2 };
+    const order: Record<string, number> = { en_attente: 0, valide: 1, refuse: 2, echoue: 3 };
     requests.sort((a, b) => (order[a.statut]! - order[b.statut]!) || (a.createdAt < b.createdAt ? 1 : -1));
 
     return { requests, pending: requests.filter((r) => r.statut === "en_attente").length };
@@ -212,4 +215,84 @@ export const reviewPaymentRequest = createServerFn({ method: "POST" })
     }
 
     return { ok: true, statut: data.decision };
+  });
+
+// ---------- Paiement en ligne SasPay ----------
+const saspaySchema = z.object({ plan: z.enum(["pro", "expert", "business"]) });
+
+export const startSaspayCheckout = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((input: unknown) => saspaySchema.parse(input))
+  .handler(async ({ data, context }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { saspayFetch, SASPAY_PRICES, SASPAY_CURRENCY } = await import("@/lib/saspay.server");
+    const { getRequest } = await import("@tanstack/react-start/server");
+    const price = SASPAY_PRICES[data.plan]!;
+
+    // Réutilise une session encore en attente (< 30 min) pour ce plan
+    const since = new Date(Date.now() - 30 * 60 * 1000).toISOString();
+    const { data: reuse } = await supabaseAdmin
+      .from("payment_requests")
+      .select("checkout_url")
+      .eq("user_id", context.userId)
+      .eq("method", "saspay")
+      .eq("plan_demande", data.plan)
+      .eq("statut", "en_attente")
+      .gte("created_at", since)
+      .not("checkout_url", "is", null)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if ((reuse as any)?.checkout_url) return { url: (reuse as any).checkout_url as string };
+
+    const email = String((context.claims as any)?.email ?? "");
+    const { data: profile } = await context.supabase.from("profiles").select("full_name").eq("id", context.userId).maybeSingle();
+    const name = ((profile as any)?.full_name || email.split("@")[0] || "Client").slice(0, 100);
+    const origin = new URL(getRequest().url).origin;
+
+    let session: any;
+    try {
+      session = await saspayFetch("/checkout-sessions/", {
+        method: "POST",
+        body: JSON.stringify({
+          amount: price.amount,
+          currency: SASPAY_CURRENCY,
+          country: "CM",
+          customer_email: email,
+          customer_name: name,
+          description: `MLM Boost AI — plan ${price.label}`,
+          return_url: `${origin}/abonnement?saspay=retour`,
+          metadata: { user_id: context.userId, plan: data.plan },
+        }),
+      });
+    } catch {
+      throw new Error("Le paiement en ligne est indisponible pour le moment. Réessayez ou utilisez le paiement manuel.");
+    }
+    if (!session?.id || !session?.checkout_url) throw new Error("Réponse SasPay inattendue.");
+
+    const { error } = await supabaseAdmin.from("payment_requests").insert({
+      user_id: context.userId,
+      plan_demande: data.plan,
+      montant: Number(price.amount),
+      devise: "FCFA",
+      method: "saspay",
+      saspay_session_id: String(session.id),
+      checkout_url: String(session.checkout_url),
+      reference_transaction: String(session.id),
+    });
+    if (error) throw new Error("L’enregistrement du paiement a échoué.");
+    return { url: String(session.checkout_url) };
+  });
+
+export const checkSaspayStatus = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { syncPendingSaspay } = await import("@/lib/saspay.server");
+    try { await syncPendingSaspay({ userId: context.userId }); } catch (e) { console.error("[saspay] check", e); }
+    const [{ data: req }, { data: sub }] = await Promise.all([
+      context.supabase.from("payment_requests").select("plan_demande, statut, method, created_at")
+        .eq("user_id", context.userId).eq("method", "saspay").order("created_at", { ascending: false }).limit(1).maybeSingle(),
+      context.supabase.from("subscriptions").select("plan").eq("user_id", context.userId).maybeSingle(),
+    ]);
+    return { request: (req as any) ?? null, plan: ((sub as any)?.plan as string) ?? "gratuit" };
   });
