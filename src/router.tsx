@@ -12,7 +12,7 @@ function reloadOnStaleChunk() {
 }
 if (typeof window !== "undefined") {
   window.addEventListener("vite:preloadError", (e) => { e.preventDefault(); reloadOnStaleChunk(); });
-  const isChunkError = (m: unknown) => /dynamically imported module|Importing a module script failed|error loading dynamically/i.test(String(m));
+  const isChunkError = (m: unknown) => /reading 'component'|dynamically imported module|Importing a module script failed|error loading dynamically/i.test(String(m));
   window.addEventListener("unhandledrejection", (e) => { if (isChunkError((e.reason as Error)?.message ?? e.reason)) reloadOnStaleChunk(); });
   window.addEventListener("error", (e) => { if (isChunkError(e.message)) reloadOnStaleChunk(); });
 }
