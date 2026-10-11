@@ -1,3 +1,4 @@
+import { usePlan } from "@/hooks/use-plan";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { LogOut } from "lucide-react";
@@ -23,14 +24,13 @@ function SettingsPage() {
   const { user } = Route.useRouteContext();
   const navigate = useNavigate();
   const [fullName, setFullName] = useState(String(user.user_metadata?.["full_name"] ?? ""));
-  const [plan, setPlan] = useState("gratuit");
+  const { plan } = usePlan(user.id);
   const [countryCode, setCountryCode] = useState("237");
   const [prefs, setPrefs] = useState<Record<string, unknown>>({});
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
-    supabase.from("subscriptions").select("plan").eq("user_id", user.id).maybeSingle().then(({ data }) => { if (data?.plan) setPlan(data.plan); });
     supabase.from("profiles").select("preferences").eq("id", user.id).maybeSingle().then(({ data }) => {
       const pr = (data?.preferences ?? {}) as Record<string, unknown>;
       setPrefs(pr);
