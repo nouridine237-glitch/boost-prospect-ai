@@ -8,6 +8,9 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
+import { PLANS, PLAN_ORDER, PLAN_CARD_ITEMS } from "@/lib/plans";
+import { refreshPlan, usePlan } from "@/hooks/use-plan";
+import { PlanBanner } from "@/components/plan-gate";
 import { getPaymentNumbers, type PaymentNumbers } from "@/lib/payment-settings.functions";
 import { checkSaspayStatus, createPaymentRequest, getMyPaymentStatus, startSaspayCheckout, PAID_PLANS, type PaidPlanKey } from "@/lib/payments.functions";
 
@@ -24,12 +27,7 @@ export const Route = createFileRoute("/_authenticated/abonnement")({
 });
 
 
-const plans = [
-  { key: "gratuit", name: "Gratuit", fcfa: 0, usd: 0, popular: false, items: ["10 prospects maximum", "5 générations IA / mois", "1 utilisateur"] },
-  { key: "pro", name: "Pro", fcfa: PAID_PLANS.pro.fcfa, usd: PAID_PLANS.pro.usd, popular: true, items: ["Prospects illimités", "100 générations IA / mois", "Historique complet", "Relances automatiques"] },
-  { key: "expert", name: "Expert", fcfa: PAID_PLANS.expert.fcfa, usd: PAID_PLANS.expert.usd, popular: false, items: ["Tout le plan Pro", "Générations IA illimitées", "Académie complète", "Rapports hebdomadaires", "Export CSV"] },
-  { key: "business", name: "Business", fcfa: PAID_PLANS.business.fcfa, usd: PAID_PLANS.business.usd, popular: false, items: ["Tout le plan Expert", "Gestion d’équipe", "Templates par entreprise", "WhatsApp Business", "Support prioritaire"] },
-] as const;
+const plans = PLAN_ORDER.map((key) => ({ key, name: PLANS[key].label, fcfa: PLANS[key].fcfa, usd: PLANS[key].usd, popular: key === "pro", items: PLAN_CARD_ITEMS[key] }));
 
 function priceLabel(fcfa: number, usd: number) {
   if (fcfa === 0) return "0 FCFA";
@@ -38,6 +36,7 @@ function priceLabel(fcfa: number, usd: number) {
 
 function Abonnement() {
   const { user } = Route.useRouteContext();
+  const planInfo = usePlan(user.id);
   const createFn = useServerFn(createPaymentRequest);
   const statusFn = useServerFn(getMyPaymentStatus);
 
@@ -83,6 +82,7 @@ function Abonnement() {
         if (st === "valide") {
           setVerifying(false);
           setPending(null);
+          refreshPlan();
           setOnlineMsg(`Paiement confirmé : votre plan ${res.plan} est activé. 🎉`);
           return;
         }
@@ -169,6 +169,14 @@ function Abonnement() {
           <p className="mt-2 text-sm text-muted-foreground">Évoluez en fonction de votre rythme de prospection.</p>
         </div>
 
+        <PlanBanner info={planInfo} />
+        {!planInfo.loading && (
+          <div className="surface mb-6 rounded-lg p-4 text-sm">
+            Plan actuel : <strong>{PLANS[planInfo.plan].label}</strong>
+            {planInfo.plan !== "gratuit" && <> · {planInfo.renewal ? <>fin le <strong>{new Date(planInfo.renewal).toLocaleDateString("fr-FR")}</strong></> : "sans échéance"}</>}
+          </div>
+        )}
+
         {pending && (
           <div className="mb-6 rounded-lg border border-warning/40 bg-warning/10 p-4 text-sm">
             <strong>Paiement en cours de vérification.</strong> Votre demande pour le plan{" "}
@@ -201,7 +209,7 @@ function Abonnement() {
               <CardContent className="flex-1">
                 <ul className="space-y-2 text-sm text-muted-foreground">
                   {plan.items.map((item) => (
-                    <li key={item} className="flex items-start gap-2"><Check className="mt-0.5 size-4 shrink-0 text-success" /> <span>{item}</span></li>
+                    <li key={item.text} className="flex items-start gap-2"><Check className="mt-0.5 size-4 shrink-0 text-success" /> <span>{item.text}{item.soon && <span className="ml-1.5 rounded-full border border-border px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground">Bientôt</span>}</span></li>
                   ))}
                 </ul>
               </CardContent>
