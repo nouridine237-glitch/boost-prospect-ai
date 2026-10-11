@@ -237,7 +237,7 @@ export function AiAssistantPanel({ crm, initialScript }: { crm: Crm; initialScri
       {initialScript && <p className="mt-4 text-sm font-semibold text-primary">{initialScript.title}</p>}
       <Textarea aria-label={initialScript ? "Script à personnaliser" : "Contexte du message"} className="mt-3 min-h-32 resize-none" placeholder="Décrivez le prospect, le contexte et le ton souhaité…" value={context} onChange={e => setContext(e.target.value)} />
       <Button className={`mt-3 w-full ${initialScript ? "min-h-11" : ""}`} onClick={runGeneration} disabled={generating}><Sparkles />{generating ? "Génération…" : initialScript ? "Personnaliser le script" : "Générer"}</Button>
-      {error && <p className="mt-3 text-xs text-destructive">{error}</p>}
+      {error && <div className="mt-3 rounded-md border border-destructive/30"><LimitError message={error} /></div>}
       {result && <div className="prose prose-invert mt-4 max-h-72 overflow-y-auto rounded-md border border-border bg-secondary p-4 text-sm leading-6"><ReactMarkdown>{result}</ReactMarkdown></div>}
       {result && <WhatsAppActions prospectId={target?.id} message={result} phone={target?.phone} prospectStatus={target?.status} onMarkContacted={target ? () => crm.markContacted(target.id) : undefined} />}
     </section>
