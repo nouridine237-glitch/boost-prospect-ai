@@ -6,8 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { lovable } from "@/integrations/lovable";
 import { supabase } from "@/integrations/supabase/client";
+import { oauthReturnPath } from "@/lib/oauth-return-path";
 
 export const Route = createFileRoute("/auth")({
+  validateSearch: (s: Record<string, unknown>): { next?: string | undefined } => (typeof s["next"] === "string" ? { next: s["next"] } : {}),
   head: () => ({ meta: [
     { title: "Connexion — MLM Boost AI" },
     { name: "description", content: "Connectez-vous à votre espace de prospection MLM Boost AI." },
@@ -21,6 +23,10 @@ export const Route = createFileRoute("/auth")({
 
 function AuthPage() {
   const navigate = useNavigate();
+  const { next: rawNext } = Route.useSearch();
+  const next = rawNext ? oauthReturnPath(rawNext) : "";
+  const goNext = () => { if (next && next !== "/") window.location.href = next; else goNext(); };
+  const returnUrl = () => next && next !== "/" ? new URL(next, window.location.origin).href : window.location.origin;
   const [signup, setSignup] = useState(false);
   const [forgot, setForgot] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -30,9 +36,9 @@ function AuthPage() {
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
-      if (data.user) navigate({ to: "/dashboard", replace: true });
+      if (data.user) goNext();
     });
-  }, [navigate]);
+  }, [navigate]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); setLoading(true); setError(""); setMessage("");
@@ -45,26 +51,26 @@ function AuthPage() {
       setLoading(false); setMessage(resetError ? "" : "Consultez votre boîte mail pour réinitialiser votre mot de passe."); setError(resetError?.message ?? ""); return;
     }
     if (signup) {
-      const { data, error: signupError } = await supabase.auth.signUp({ email, password, options: { emailRedirectTo: window.location.origin, data: { full_name: fullName } } });
+      const { data, error: signupError } = await supabase.auth.signUp({ email, password, options: { emailRedirectTo: returnUrl(), data: { full_name: fullName } } });
       if (!signupError && data.user) await supabase.from("profiles").upsert({ id: data.user.id, full_name: fullName });
       setLoading(false); setError(signupError?.message ?? ""); setMessage(signupError ? "" : "Compte créé. Confirmez votre adresse e-mail pour continuer."); return;
     }
     const { error: loginError } = await supabase.auth.signInWithPassword({ email, password });
-    setLoading(false); if (loginError) setError(loginError.message); else navigate({ to: "/dashboard", replace: true });
+    setLoading(false); if (loginError) setError(loginError.message); else goNext();
   }
 
   async function handleGoogle() {
     setLoading(true); setError("");
-    const result = await lovable.auth.signInWithOAuth("google", { redirect_uri: window.location.origin });
+    const result = await lovable.auth.signInWithOAuth("google", { redirect_uri: returnUrl() });
     if (result.error) { setError(result.error.message); setLoading(false); return; }
-    if (!result.redirected) navigate({ to: "/dashboard", replace: true });
+    if (!result.redirected) goNext();
   }
 
   async function handleApple() {
     setLoading(true); setError("");
-    const result = await lovable.auth.signInWithOAuth("apple", { redirect_uri: window.location.origin });
+    const result = await lovable.auth.signInWithOAuth("apple", { redirect_uri: returnUrl() });
     if (result.error) { setError(result.error.message); setLoading(false); return; }
-    if (!result.redirected) navigate({ to: "/dashboard", replace: true });
+    if (!result.redirected) goNext();
   }
 
   return (
