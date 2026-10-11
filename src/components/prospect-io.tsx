@@ -4,11 +4,12 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import type { Crm, Prospect, Status } from "@/components/crm";
+import { UpgradeDialog } from "@/components/plan-gate";
+import { planDef } from "@/lib/plans";
 
 const STATUS_LABELS: Record<string, string> = { nouveau: "Nouveau", "contacté": "Contacté", discussion: "Discussion", "intéressé": "Intéressé", client: "Client", "non_intéressé": "Non intéressé" };
 export const SOURCES = ["Facebook", "WhatsApp", "Marché chaud", "Recommandation", "Autre"];
 const INTEREST: Record<number, string> = { 3: "Chaud", 2: "Tiède", 1: "Froid" };
-const IMPORT_CAP: Record<string, number> = { gratuit: 50, pro: 500 };
 
 export type ImportRow = { name: string; phone: string; source: string; notes: string };
 const digits = (s: string | null | undefined) => (s ?? "").replace(/\D/g, "");
@@ -55,22 +56,27 @@ export function ImportExportButtons({ crm }: { crm: Crm }) {
   const input = useRef<HTMLInputElement>(null);
   const [rows, setRows] = useState<ImportRow[] | null>(null);
   const [busy, setBusy] = useState(false);
-  const cap = IMPORT_CAP[crm.limits.plan] ?? -1;
+  const [locked, setLocked] = useState(false);
+  const def = planDef(crm.limits.plan);
+  const cap = def.importMax;
 
   const preview = useMemo(() => {
     if (!rows) return [];
     const seen = new Set(crm.prospects.map(p => digits(p.phone)).filter(Boolean));
-    let room = cap < 0 ? Infinity : Math.max(0, cap - crm.prospects.length);
+    let room = def.prospects < 0 ? Infinity : Math.max(0, def.prospects - crm.prospects.length);
+    let capLeft = cap < 0 ? Infinity : cap;
     return rows.map(r => {
       const d = digits(r.phone);
       if (!r.name) return { ...r, reason: "Nom manquant" };
       if (d && seen.has(d)) return { ...r, reason: "Doublon (numéro)" };
       if (room <= 0) return { ...r, reason: "Limite du plan" };
-      if (d) seen.add(d); room--;
+      if (capLeft <= 0) return { ...r, reason: "Limite d'import" };
+      if (d) seen.add(d); room--; capLeft--;
       return { ...r, reason: "" };
     });
-  }, [rows, crm.prospects, cap]);
+  }, [rows, crm.prospects, cap, def.prospects]);
   const valid = preview.filter(r => !r.reason);
+  const limitRefused = preview.filter(r => r.reason === "Limite du plan" || r.reason === "Limite d'import").length;
 
   async function onFile(f: File | undefined) {
     if (!f) return;
@@ -80,20 +86,25 @@ export function ImportExportButtons({ crm }: { crm: Crm }) {
   }
   async function confirm() {
     setBusy(true);
-    const n = await crm.importProspects(valid.map(({ reason: _r, ...r }) => r));
+    const { inserted, refused } = await crm.importProspects(valid.map(({ reason: _r, ...r }) => r));
     setBusy(false);
-    if (n >= 0) { toast.success(`${n} importés, ${preview.length - n} ignorés`); setRows(null); }
+    if (inserted >= 0) {
+      const byLimit = limitRefused + refused;
+      toast.success(`${inserted} importés, ${preview.length - inserted} ignorés${byLimit ? ` dont ${byLimit} refusés à cause de la limite du plan` : ""}`);
+      setRows(null);
+    }
   }
 
   return <>
     <input ref={input} type="file" accept=".csv,text/csv" className="hidden" aria-label="Fichier CSV" onChange={e => onFile(e.target.files?.[0])} />
-    <Button size="sm" variant="outline" onClick={() => input.current?.click()}><Upload /> Importer</Button>
-    <Button size="sm" variant="outline" onClick={() => exportProspects(crm.prospects)} disabled={!crm.prospects.length}><Download /> Exporter</Button>
+    <Button size="sm" variant="outline" onClick={() => def.csv ? input.current?.click() : setLocked(true)}><Upload /> Importer</Button>
+    <Button size="sm" variant="outline" onClick={() => def.csv ? exportProspects(crm.prospects) : setLocked(true)} disabled={def.csv && !crm.prospects.length}><Download /> Exporter</Button>
+    <UpgradeDialog open={locked} onOpenChange={setLocked} minPlan="pro">L’import et l’export CSV de tes prospects sont inclus dès le plan Pro.</UpgradeDialog>
     <Dialog open={!!rows} onOpenChange={o => !o && setRows(null)}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle>Aperçu de l'import</DialogTitle>
-          <DialogDescription>{valid.length} à importer · {preview.length - valid.length} ignorés · limite d'import du plan {cap < 0 ? "illimitée" : `${cap} prospects`}</DialogDescription>
+          <DialogDescription>{valid.length} à importer · {preview.length - valid.length} ignorés{limitRefused ? ` (dont ${limitRefused} à cause de la limite du plan)` : ""} · limite d'import du plan {cap < 0 ? "illimitée" : `${cap} prospects`}</DialogDescription>
         </DialogHeader>
         <div className="max-h-80 overflow-auto rounded-md border border-border">
           <table className="w-full text-left text-xs">
