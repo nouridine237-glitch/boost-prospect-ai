@@ -50,6 +50,13 @@
       "when": 1791591711422,
       "tag": "0006_saspay_payments",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1791694267813,
+      "tag": "0007_lock_subscriptions_payment_requests",
+      "breakpoints": true
     }
   ]
 }
