@@ -1,0 +1,209 @@
+{
+  "version": 1,
+  "sdk_version": "3.0.5",
+  "path": "/mcp",
+  "auth": {
+    "type": "oauth",
+    "issuer": "https://wtvoshjrmkghfgenysrq.supabase.co/auth/v1",
+    "require_oauth_client_claim": true,
+    "accepted_audiences": [
+      "authenticated"
+    ]
+  },
+  "mcp": {
+    "server": {
+      "name": "boost-prospect-ai",
+      "version": "0.1.0",
+      "title": "Boost Prospect AI"
+    },
+    "tools": [
+      {
+        "name": "list_prospects",
+        "title": "Lister mes prospects",
+        "description": "Liste les prospects de l'utilisateur connecté, avec filtre optionnel par statut ou recherche par nom.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "type": "object",
+          "properties": {
+            "status": {
+              "description": "Filtrer par statut.",
+              "type": "string",
+              "enum": [
+                "nouveau",
+                "contacté",
+                "discussion",
+                "intéressé",
+                "client",
+                "non_intéressé"
+              ]
+            },
+            "search": {
+              "description": "Recherche dans le nom.",
+              "type": "string",
+              "maxLength": 100
+            },
+            "limit": {
+              "default": 50,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          },
+          "additionalProperties": false
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_followups_today",
+        "title": "Prospects à relancer aujourd'hui",
+        "description": "Liste les prospects dont la relance est prévue aujourd'hui ou en retard, du plus en retard au plus récent.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "type": "object",
+          "properties": {},
+          "additionalProperties": false
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "create_prospect",
+        "title": "Ajouter un prospect",
+        "description": "Ajoute un prospect au CRM de l'utilisateur (la limite de prospects de son plan s'applique).",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 120
+            },
+            "phone": {
+              "type": "string",
+              "maxLength": 40
+            },
+            "status": {
+              "default": "nouveau",
+              "type": "string",
+              "enum": [
+                "nouveau",
+                "contacté",
+                "discussion",
+                "intéressé",
+                "client",
+                "non_intéressé"
+              ]
+            },
+            "source": {
+              "type": "string",
+              "maxLength": 120
+            },
+            "product_interest": {
+              "type": "string",
+              "maxLength": 200
+            },
+            "notes": {
+              "type": "string",
+              "maxLength": 4000
+            },
+            "next_followup_date": {
+              "description": "Date AAAA-MM-JJ.",
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            }
+          },
+          "required": [
+            "name"
+          ],
+          "additionalProperties": false
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "update_prospect",
+        "title": "Mettre à jour un prospect",
+        "description": "Modifie le statut, les notes ou la date de relance d'un prospect de l'utilisateur.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "status": {
+              "type": "string",
+              "enum": [
+                "nouveau",
+                "contacté",
+                "discussion",
+                "intéressé",
+                "client",
+                "non_intéressé"
+              ]
+            },
+            "notes": {
+              "type": "string",
+              "maxLength": 4000
+            },
+            "next_followup_date": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "id"
+          ],
+          "additionalProperties": false
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_scripts",
+        "title": "Bibliothèque de scripts",
+        "description": "Liste les modèles de scripts de prospection éthiques disponibles.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "type": "object",
+          "properties": {},
+          "additionalProperties": false
+        },
+        "outputSchema": null
+      }
+    ]
+  }
+}
