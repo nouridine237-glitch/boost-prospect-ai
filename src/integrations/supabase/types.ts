@@ -400,6 +400,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      reserve_ai_generation: {
+        Args: { _type: Database["public"]["Enums"]["ai_generation_type"] }
+        Returns: string
+      }
     }
     Enums: {
       ai_generation_type:

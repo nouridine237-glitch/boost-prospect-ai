@@ -21,7 +21,7 @@ export type PlanDef = {
 
 export const PLANS: Record<PlanKey, PlanDef> = {
   gratuit: { key: "gratuit", label: "Gratuit", fcfa: 0, usd: 0, prospects: 10, generations: 5, academyLevels: 2, csv: false, importMax: 0, advancedStats: false, teamTraining: false },
-  pro: { key: "pro", label: "Pro", fcfa: 5000, usd: 8, prospects: -1, generations: 100, academyLevels: 6, csv: true, importMax: 500, advancedStats: false, teamTraining: false },
+  pro: { key: "pro", label: "Pro", fcfa: 5000, usd: 8, prospects: -1, generations: 100, academyLevels: 6, csv: true, importMax: -1, advancedStats: false, teamTraining: false },
   expert: { key: "expert", label: "Expert", fcfa: 12000, usd: 20, prospects: -1, generations: 500, academyLevels: 6, csv: true, importMax: -1, advancedStats: true, teamTraining: false },
   business: { key: "business", label: "Business", fcfa: 25000, usd: 41, prospects: -1, generations: 500, academyLevels: 6, csv: true, importMax: -1, advancedStats: true, teamTraining: true },
 };

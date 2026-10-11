@@ -57,7 +57,7 @@ export function useCrm(user: User, opts?: { onJoinTeam?: (p: Prospect) => void }
     const monthStart = new Date();
     monthStart.setUTCDate(1);
     monthStart.setUTCHours(0, 0, 0, 0);
-    supabase.from("ai_generations").select("id", { count: "exact", head: true }).gte("created_at", monthStart.toISOString()).then(({ count }) => setMonthlyGenerations(count ?? 0));
+    supabase.from("ai_usage_log").select("id", { count: "exact", head: true }).eq("user_id", user.id).gte("created_at", monthStart.toISOString()).then(({ count }) => setMonthlyGenerations(count ?? 0));
     paymentStatusFn({}).then(({ request }) => setPendingPayment((request as { statut?: string; plan_demande: string } | null)?.statut === "en_attente" ? (request as { plan_demande: string }) : null)).catch(() => {});
   }, [displayName, user.id]);
 
