@@ -3,6 +3,9 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { ArrowLeft, ArrowRight, CheckCircle2, Target, Trophy } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
+import { UpgradeCard } from "@/components/plan-gate";
+import { usePlan } from "@/hooks/use-plan";
+import { canAccessAcademyLevel } from "@/lib/plans";
 import { getLesson, lessons } from "@/lib/academy-content";
 
 export const Route = createFileRoute("/_authenticated/academie_/$niveau")({
@@ -38,6 +41,8 @@ function LessonPage() {
   const prev = lessons[lesson.number - 2];
   const next = lessons[lesson.number];
   const { main, recap } = splitRecap(lesson.body);
+  const planInfo = usePlan(user.id);
+  const locked = !canAccessAcademyLevel(planInfo.plan, lesson.number);
 
   return (
     <AppShell user={user} title="Académie">
@@ -48,6 +53,9 @@ function LessonPage() {
         <span className="eyebrow mt-6 block">Niveau {lesson.number} / {lessons.length}</span>
         <h1 className="mt-2 text-3xl font-extrabold leading-tight">{lesson.title}</h1>
 
+        {planInfo.loading ? <p className="mt-6 text-sm text-muted-foreground">Chargement…</p> : locked ? (
+          <div className="mt-6"><UpgradeCard minPlan="pro">Les niveaux 3 à 6 de l'Académie sont inclus dès le plan Pro. Les niveaux 1 et 2 restent accessibles gratuitement.</UpgradeCard></div>
+        ) : <>
         <section className="surface mt-6 rounded-lg border-l-4 border-l-primary p-5">
           <h2 className="flex items-center gap-2 font-bold"><Target className="size-5 text-primary" />Ce que tu vas apprendre</h2>
           <ul className="mt-3 space-y-2 text-sm">
@@ -67,6 +75,8 @@ function LessonPage() {
             <div className="lesson-prose mt-2"><ReactMarkdown remarkPlugins={[remarkGfm]}>{recap}</ReactMarkdown></div>
           </section>
         )}
+
+        </>}
 
         <nav className="mt-10 flex flex-col gap-3 border-t border-border pt-6 sm:flex-row sm:justify-between">
           {prev ? (

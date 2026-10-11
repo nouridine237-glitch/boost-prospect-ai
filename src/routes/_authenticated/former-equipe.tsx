@@ -3,6 +3,9 @@ import { useEffect, useState } from "react";
 import { Copy, ExternalLink, Users } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/app-shell";
+import { UpgradeCard } from "@/components/plan-gate";
+import { usePlan } from "@/hooks/use-plan";
+import { hasFeature } from "@/lib/plans";
 
 export const Route = createFileRoute("/_authenticated/former-equipe")({
   head: () => ({ meta: [
@@ -22,6 +25,8 @@ function FormerEquipePage() {
   const [origin, setOrigin] = useState("");
   useEffect(() => setOrigin(window.location.origin), []);
   const link = `${origin}/formation${sponsor.trim() ? `?parrain=${encodeURIComponent(sponsor.trim())}` : ""}`;
+  const planInfo = usePlan(user.id);
+  const allowed = hasFeature(planInfo.plan, "teamTraining");
   const msg = `Salut ! Voici ta formation de démarrage en 6 niveaux, avec quiz et certificat à la fin : ${link}`;
 
   return (
@@ -30,6 +35,7 @@ function FormerEquipePage() {
         <span className="eyebrow">Équipe</span>
         <h1 className="mt-2 text-3xl font-extrabold">Former mon équipe.</h1>
         <p className="mt-2 text-sm text-muted-foreground">Envoie ce lien à tes filleuls : ils suivent les 6 niveaux de l'Académie sans créer de compte, valident un quiz par niveau (80 %) et téléchargent leur certificat.</p>
+        {planInfo.loading ? <p className="mt-6 text-sm text-muted-foreground">Chargement…</p> : !allowed ? <div className="mt-6"><UpgradeCard minPlan="business">La formation de ton équipe (lien de parrain, quiz et certificats) est incluse dans le plan Business.</UpgradeCard></div> : (
         <section className="surface mt-6 rounded-lg p-5">
           <label className="text-sm font-semibold">Ton nom (affiché comme parrain)</label>
           <input value={sponsor} onChange={(e) => setSponsor(e.target.value)} className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm" />
@@ -49,6 +55,7 @@ function FormerEquipePage() {
             </a>
           </div>
         </section>
+        )}
       </div>
     </AppShell>
   );
