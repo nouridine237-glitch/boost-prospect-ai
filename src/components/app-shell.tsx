@@ -1,10 +1,12 @@
 import { Link, useLocation } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { BarChart3, Bot, ContactRound, CreditCard, FileText, GraduationCap, LayoutDashboard, LogOut, Menu, Settings, ShieldCheck, Users } from "lucide-react";
+import { BarChart3, Bot, ContactRound, CreditCard, FileText, GraduationCap, LayoutDashboard, Lock, LogOut, Menu, Settings, ShieldCheck, Users } from "lucide-react";
 import { Brand } from "@/components/brand";
 import { supabase } from "@/integrations/supabase/client";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import type { User } from "@supabase/supabase-js";
+import { usePlan } from "@/hooks/use-plan";
+import { hasFeature } from "@/lib/plans";
 
 const nav = [
   { icon: LayoutDashboard, label: "Dashboard", to: "/dashboard" },
@@ -22,16 +24,13 @@ const planLabels: Record<string, string> = { gratuit: "Gratuit", pro: "Pro", exp
 
 export function AppShell({ children, user, title }: { children: React.ReactNode; user: User; title: string }) {
   const location = useLocation();
-  const [plan, setPlan] = useState<string>("gratuit");
+  const { plan } = usePlan(user.id);
   const [isAdmin, setIsAdmin] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const displayName = String(user.user_metadata?.["full_name"] ?? user.email?.split("@")[0] ?? "Networker");
   const items = isAdmin ? [...nav, { icon: ShieldCheck, label: "Admin", to: "/admin" }] : nav;
 
   useEffect(() => {
-    supabase.from("subscriptions").select("plan").eq("user_id", user.id).maybeSingle().then(({ data }) => {
-      if (data?.plan) setPlan(data.plan);
-    });
     supabase.from("user_roles").select("role").eq("user_id", user.id).eq("role", "admin").maybeSingle().then(({ data }) => {
       setIsAdmin(!!data);
     });
@@ -55,7 +54,7 @@ export function AppShell({ children, user, title }: { children: React.ReactNode;
                 to={to}
                 className={`flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm transition-colors ${active ? "bg-primary/12 font-semibold text-primary" : "text-muted-foreground hover:bg-accent hover:text-foreground"}`}
               >
-                <Icon className="size-4" />{label}
+                <Icon className="size-4" />{label}{to === "/former-equipe" && !hasFeature(plan, "teamTraining") && <Lock className="ml-auto size-3.5" aria-label="Réservé au plan Business" />}
               </Link>
             );
           })}
@@ -85,7 +84,7 @@ export function AppShell({ children, user, title }: { children: React.ReactNode;
                     const active = location.pathname === to;
                     return (
                       <Link key={label} to={to} onClick={() => setMenuOpen(false)} className={`flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm transition-colors ${active ? "bg-primary/12 font-semibold text-primary" : "text-muted-foreground hover:bg-accent hover:text-foreground"}`}>
-                        <Icon className="size-4" />{label}
+                        <Icon className="size-4" />{label}{to === "/former-equipe" && !hasFeature(plan, "teamTraining") && <Lock className="ml-auto size-3.5" aria-label="Réservé au plan Business" />}
                       </Link>
                     );
                   })}
