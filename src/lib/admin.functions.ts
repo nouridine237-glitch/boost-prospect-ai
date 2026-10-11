@@ -2,12 +2,11 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
-export const PLAN_LIMITS: Record<string, { prospects: number; generations: number; price: number }> = {
-  gratuit: { prospects: 10, generations: 5, price: 0 },
-  pro: { prospects: -1, generations: 100, price: 5000 },
-  expert: { prospects: -1, generations: -1, price: 12000 },
-  business: { prospects: -1, generations: -1, price: 25000 },
-};
+import { PLANS } from "@/lib/plans";
+
+export const PLAN_LIMITS: Record<string, { prospects: number; generations: number; price: number }> = Object.fromEntries(
+  Object.values(PLANS).map((p) => [p.key, { prospects: p.prospects, generations: p.generations, price: p.fcfa }]),
+);
 
 async function assertAdmin(context: { supabase: any; userId: string }) {
   const { data } = await context.supabase
@@ -40,6 +39,7 @@ export type AdminUserRow = {
   plan: string;
   status: string;
   updatedAt: string | null;
+  dateRenouvellement: string | null;
 };
 
 export const listAdminUsers = createServerFn({ method: "GET" })
@@ -55,7 +55,7 @@ export const listAdminUsers = createServerFn({ method: "GET" })
     const { data: profiles } = await supabaseAdmin.from("profiles").select("id, full_name, display_name").in("id", ids);
     const { data: subs } = await supabaseAdmin
       .from("subscriptions")
-      .select("user_id, plan, status, updated_at")
+      .select("user_id, plan, status, updated_at, date_renouvellement")
       .in("user_id", ids);
 
     const profileById = new Map((profiles ?? []).map((p: any) => [p.id, p]));
@@ -73,6 +73,7 @@ export const listAdminUsers = createServerFn({ method: "GET" })
         plan: s?.plan ?? "gratuit",
         status: s?.status ?? "actif",
         updatedAt: s?.updated_at ?? null,
+        dateRenouvellement: s?.date_renouvellement ?? null,
       };
     });
     users.sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
@@ -83,6 +84,7 @@ const updateSchema = z.object({
   userId: z.string().uuid(),
   plan: z.enum(["gratuit", "pro", "expert", "business"]),
   status: z.enum(["actif", "expire", "en_attente"]),
+  renewal: z.union([z.enum(["extend", "keep", "none"]), z.string().regex(/^\d{4}-\d{2}-\d{2}/)]).default("keep"),
 });
 
 export const updateUserSubscription = createServerFn({ method: "POST" })
@@ -90,31 +92,10 @@ export const updateUserSubscription = createServerFn({ method: "POST" })
   .validator((input: unknown) => updateSchema.parse(input))
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const limits = PLAN_LIMITS[data.plan]!;
-
-    const { data: existing } = await supabaseAdmin
-      .from("subscriptions")
-      .select("id")
-      .eq("user_id", data.userId)
-      .maybeSingle();
-
-    const payload = {
-      plan: data.plan as any,
-      status: data.status as any,
-      limite_prospects: limits.prospects,
-      limite_generations_ia: limits.generations,
-      updated_at: new Date().toISOString(),
-    };
-
-    if (existing) {
-      const { error } = await supabaseAdmin.from("subscriptions").update(payload).eq("id", (existing as any).id);
-      if (error) throw new Error("La mise à jour de l’abonnement a échoué.");
-    } else {
-      const { error } = await supabaseAdmin
-        .from("subscriptions")
-        .insert({ user_id: data.userId, ...payload });
-      if (error) throw new Error("La création de l’abonnement a échoué.");
-    }
-    return { ok: true, updatedAt: payload.updated_at };
+    const { applySubscription } = await import("@/lib/subscription.server");
+    const renewal = data.renewal === "extend" || data.renewal === "keep" ? data.renewal
+      : data.renewal === "none" ? null : new Date(data.renewal.length === 10 ? `${data.renewal}T23:59:59Z` : data.renewal);
+    if (renewal instanceof Date && Number.isNaN(renewal.getTime())) throw new Error("Date invalide.");
+    const res = await applySubscription(data.userId, data.plan, { status: data.status, renewal });
+    return { ok: true, ...res };
   });

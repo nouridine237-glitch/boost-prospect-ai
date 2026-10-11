@@ -1,14 +1,12 @@
 // Intégration SasPay (checkout hébergé). Serveur uniquement.
 // Doc : https://docs.saspay.me — base https://api.saspay.me/api/v1
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
-import { PLAN_LIMITS } from "@/lib/admin.functions";
+import { PLANS } from "@/lib/plans";
 
 export const SASPAY_BASE = "https://api.saspay.me/api/v1";
-export const SASPAY_PRICES: Record<string, { label: string; amount: string }> = {
-  pro: { label: "Pro", amount: "5000.00" },
-  expert: { label: "Expert", amount: "12000.00" },
-  business: { label: "Business", amount: "25000.00" },
-};
+export const SASPAY_PRICES: Record<string, { label: string; amount: string }> = Object.fromEntries(
+  (["pro", "expert", "business"] as const).map((k) => [k, { label: PLANS[k].label, amount: PLANS[k].fcfa.toFixed(2) }]),
+);
 export const SASPAY_CURRENCY = "XAF";
 
 function apiKey() {
@@ -40,21 +38,8 @@ export async function saspayFetch(path: string, init: RequestInit = {}) {
 }
 
 async function activatePlan(userId: string, plan: string) {
-  const limits = PLAN_LIMITS[plan]!;
-  const now = new Date();
-  const renew = new Date(now);
-  renew.setMonth(renew.getMonth() + 1);
-  const payload = {
-    plan: plan as any,
-    status: "actif" as any,
-    limite_prospects: limits.prospects,
-    limite_generations_ia: limits.generations,
-    date_renouvellement: renew.toISOString(),
-    updated_at: now.toISOString(),
-  };
-  const { data: existing } = await supabaseAdmin.from("subscriptions").select("id").eq("user_id", userId).maybeSingle();
-  if (existing) await supabaseAdmin.from("subscriptions").update(payload).eq("id", (existing as any).id);
-  else await supabaseAdmin.from("subscriptions").insert({ user_id: userId, ...payload });
+  const { applySubscription } = await import("@/lib/subscription.server");
+  await applySubscription(userId, plan, { renewal: "extend" });
 }
 
 type Row = { id: string; user_id: string; plan_demande: string; saspay_session_id: string | null; statut: string };
