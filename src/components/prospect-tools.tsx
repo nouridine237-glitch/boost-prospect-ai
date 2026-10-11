@@ -1,3 +1,4 @@
+import { LimitError } from "@/components/plan-gate";
 import { useEffect, useRef, useState } from "react";
 import { BellRing, CalendarClock, Check, Loader2, RefreshCw, Sparkles } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
@@ -174,7 +175,7 @@ function NextActionCard({ prospect, crm, autoRun }: { prospect: Prospect; crm: C
   return (
     <div className="grid gap-3">
       {!res && <Button type="button" onClick={run} disabled={loading} className="min-h-11">{loading ? <><Loader2 className="animate-spin" /> Analyse en cours…</> : <><Sparkles /> Suggérer la prochaine action</>}</Button>}
-      {error && <p className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-xs text-destructive">{error}</p>}
+      {error && <div className="rounded-md border border-destructive/40 bg-destructive/10"><LimitError message={error} /></div>}
       {res && (
         <div className="surface rounded-lg border border-primary/30 p-4">
           <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-primary"><Sparkles className="size-3.5" /> Prochaine action</p>

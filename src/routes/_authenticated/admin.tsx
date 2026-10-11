@@ -200,12 +200,15 @@ function AdminPage() {
     return { total: rows.length, byPlan, revenue };
   }, [rows]);
 
-  async function save(row: AdminUserRow, plan: string, status: string) {
+  const [dates, setDates] = useState<Record<string, string>>({});
+  async function save(row: AdminUserRow, plan: string, status: string, renewal: string = "keep") {
     setSavingId(row.id);
     setError("");
     try {
-      const res = await updateFn({ data: { userId: row.id, plan, status } as any });
-      setRows((prev) => prev.map((r) => (r.id === row.id ? { ...r, plan, status, updatedAt: res.updatedAt } : r)));
+      if (renewal === "keep" && plan !== "gratuit" && row.plan === "gratuit") renewal = "extend";
+      const res = await updateFn({ data: { userId: row.id, plan, status, renewal } as any });
+      setRows((prev) => prev.map((r) => (r.id === row.id ? { ...r, plan, status, updatedAt: res.updatedAt, dateRenouvellement: res.dateRenouvellement } : r)));
+      setDates((d) => { const n = { ...d }; delete n[row.id]; return n; });
     } catch {
       setError("La modification n’a pas pu être enregistrée.");
     } finally {
@@ -222,7 +225,7 @@ function AdminPage() {
       await reviewFn({ data: { id: row.id, decision } as any });
       setPayments((prev) => prev.map((p) => (p.id === row.id ? { ...p, statut: decision } : p)));
       if (decision === "valide") {
-        setRows((prev) => prev.map((r) => (r.id === row.userId ? { ...r, plan: row.plan, status: "actif", updatedAt: new Date().toISOString() } : r)));
+        listFn({}).then(({ users }) => setRows(users)).catch(() => {});
       }
     } catch {
       setError("La décision n’a pas pu être enregistrée.");
@@ -344,12 +347,13 @@ function AdminPage() {
                   <p className="truncate text-xs text-muted-foreground">{row.email}</p>
                   <p className="mt-1 text-xs text-muted-foreground">
                     Inscrit le {formatDate(row.createdAt)} · Dernière modification : {formatDate(row.updatedAt)}
+                    {row.plan !== "gratuit" && <> · Échéance : {row.dateRenouvellement ? formatDate(row.dateRenouvellement) : "sans échéance"}</>}
                   </p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
                   <select
                     value={row.plan}
-                    onChange={(e) => save(row, e.target.value, row.status)}
+                    onChange={(e) => save(row, e.target.value, row.status, e.target.value !== "gratuit" && e.target.value !== row.plan ? "extend" : "keep")}
                     disabled={savingId === row.id}
                     className="h-9 rounded-md border border-border bg-secondary/50 px-3 text-sm"
                     aria-label={`Plan de ${row.email}`}
@@ -365,7 +369,19 @@ function AdminPage() {
                   >
                     {statuses.map((s) => <option key={s} value={s}>{statusLabels[s]}</option>)}
                   </select>
-                  <Button variant="outline" size="sm" disabled={savingId === row.id} onClick={() => save(row, row.plan, row.status)}>
+                  {row.plan !== "gratuit" && (
+                    <>
+                      <input
+                        type="date"
+                        value={dates[row.id] ?? (row.dateRenouvellement ? row.dateRenouvellement.slice(0, 10) : "")}
+                        onChange={(e) => setDates((d) => ({ ...d, [row.id]: e.target.value }))}
+                        className="h-9 rounded-md border border-border bg-secondary/50 px-3 text-sm"
+                        aria-label={`Date de fin de ${row.email}`}
+                      />
+                      <Button variant="ghost" size="sm" disabled={savingId === row.id} onClick={() => save(row, row.plan, row.status, "none")}>Sans échéance</Button>
+                    </>
+                  )}
+                  <Button variant="outline" size="sm" disabled={savingId === row.id} onClick={() => save(row, row.plan, row.status, dates[row.id] || "keep")}>
                     {savingId === row.id ? "Enregistrement…" : "Appliquer"}
                   </Button>
                 </div>

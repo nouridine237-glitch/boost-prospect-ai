@@ -1,12 +1,12 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { PLAN_LIMITS } from "@/lib/admin.functions";
+import { PLANS } from "@/lib/plans";
 
 export const PAID_PLANS = {
-  pro: { label: "Pro", fcfa: 5000, usd: 8 },
-  expert: { label: "Expert", fcfa: 12000, usd: 20 },
-  business: { label: "Business", fcfa: 25000, usd: 41 },
+  pro: { label: PLANS.pro.label, fcfa: PLANS.pro.fcfa, usd: PLANS.pro.usd },
+  expert: { label: PLANS.expert.label, fcfa: PLANS.expert.fcfa, usd: PLANS.expert.usd },
+  business: { label: PLANS.business.label, fcfa: PLANS.business.fcfa, usd: PLANS.business.usd },
 } as const;
 
 export type PaidPlanKey = keyof typeof PAID_PLANS;
@@ -189,29 +189,8 @@ export const reviewPaymentRequest = createServerFn({ method: "POST" })
     if (error) throw new Error("La mise à jour de la demande a échoué.");
 
     if (data.decision === "valide") {
-      const plan = (request as any).plan_demande as string;
-      const limits = PLAN_LIMITS[plan]!;
-      const now = new Date();
-      const renew = new Date(now);
-      renew.setMonth(renew.getMonth() + 1);
-      const payload = {
-        plan: plan as any,
-        status: "actif" as any,
-        limite_prospects: limits.prospects,
-        limite_generations_ia: limits.generations,
-        date_renouvellement: renew.toISOString(),
-        updated_at: now.toISOString(),
-      };
-      const { data: existing } = await supabaseAdmin
-        .from("subscriptions")
-        .select("id")
-        .eq("user_id", (request as any).user_id)
-        .maybeSingle();
-      if (existing) {
-        await supabaseAdmin.from("subscriptions").update(payload).eq("id", (existing as any).id);
-      } else {
-        await supabaseAdmin.from("subscriptions").insert({ user_id: (request as any).user_id, ...payload });
-      }
+      const { applySubscription } = await import("@/lib/subscription.server");
+      await applySubscription((request as any).user_id, (request as any).plan_demande, { renewal: "extend" });
     }
 
     return { ok: true, statut: data.decision };
@@ -292,7 +271,7 @@ export const checkSaspayStatus = createServerFn({ method: "POST" })
     const [{ data: req }, { data: sub }] = await Promise.all([
       context.supabase.from("payment_requests").select("plan_demande, statut, method, created_at")
         .eq("user_id", context.userId).eq("method", "saspay").order("created_at", { ascending: false }).limit(1).maybeSingle(),
-      context.supabase.from("subscriptions").select("plan").eq("user_id", context.userId).maybeSingle(),
+      context.supabase.rpc("effective_plan", { _user_id: context.userId }),
     ]);
-    return { request: (req as any) ?? null, plan: ((sub as any)?.plan as string) ?? "gratuit" };
+    return { request: (req as any) ?? null, plan: PLANS[((sub as any) as keyof typeof PLANS) ?? "gratuit"]?.label ?? "Gratuit" };
   });

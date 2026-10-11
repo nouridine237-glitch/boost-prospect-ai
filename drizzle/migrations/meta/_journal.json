@@ -57,6 +57,13 @@
       "when": 1791694267813,
       "tag": "0007_lock_subscriptions_payment_requests",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1791719503096,
+      "tag": "0008_plan_enforcement",
+      "breakpoints": true
     }
   ]
 }

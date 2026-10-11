@@ -13,6 +13,9 @@ import type { User } from "@supabase/supabase-js";
 import { WhatsAppActions } from "@/components/whatsapp-actions";
 import { toast } from "sonner";
 import { logProspectEvent } from "@/lib/prospect-events";
+import { usePlan } from "@/hooks/use-plan";
+import { planDef } from "@/lib/plans";
+import { LimitError } from "@/components/plan-gate";
 import { FilterBar, ImportExportButtons, applyFilters, emptyFilters, type Filters, type ImportRow } from "@/components/prospect-io";
 
 export type Prospect = Tables<"prospects"> & { joined_team_at?: string | null };
@@ -24,6 +27,9 @@ export const baseModes = ["Message de prospection", "Réponse à un prospect", "
 export const welcomeMode = "Message d'accueil / encouragement";
 export const modes = [...baseModes, welcomeMode] as const;
 export const planLabels: Record<string, string> = { gratuit: "Gratuit", pro: "Pro", expert: "Expert", business: "Business" };
+export function prospectLimitMsg(limits: { plan: string; prospects: number }) {
+  return `Vous avez atteint la limite de votre plan actuel ${planLabels[limits.plan] ?? limits.plan} (${limits.prospects} prospects). Passez à un plan supérieur pour ajouter plus de prospects.`;
+}
 export function usageLabel(used: number, limit: number) { return limit < 0 ? `${used} (illimité)` : `${used}/${limit}`; }
 export function slugStatus(status: string) { return status.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replaceAll(" ", "-").replaceAll("_", "-"); }
 
@@ -31,7 +37,8 @@ export function useCrm(user: User, opts?: { onJoinTeam?: (p: Prospect) => void }
   const [prospects, setProspects] = useState<Prospect[]>([]);
   const [generationCount, setGenerationCount] = useState(0);
   const [monthlyGenerations, setMonthlyGenerations] = useState(0);
-  const [limits, setLimits] = useState<{ plan: string; prospects: number; generations: number }>({ plan: "gratuit", prospects: 10, generations: 5 });
+  const planInfo = usePlan(user.id);
+  const limits = useMemo(() => { const d = planDef(planInfo.plan); return { plan: d.key as string, prospects: d.prospects, generations: d.generations }; }, [planInfo.plan]);
   const [pendingPayment, setPendingPayment] = useState<{ plan_demande: string } | null>(null);
   const [error, setError] = useState("");
   const [lastMessages, setLastMessages] = useState<Record<string, string>>({});
@@ -51,9 +58,6 @@ export function useCrm(user: User, opts?: { onJoinTeam?: (p: Prospect) => void }
     monthStart.setUTCDate(1);
     monthStart.setUTCHours(0, 0, 0, 0);
     supabase.from("ai_generations").select("id", { count: "exact", head: true }).gte("created_at", monthStart.toISOString()).then(({ count }) => setMonthlyGenerations(count ?? 0));
-    supabase.from("subscriptions").select("plan, limite_prospects, limite_generations_ia").eq("user_id", user.id).maybeSingle().then(({ data }) => {
-      if (data) setLimits({ plan: data.plan, prospects: data.limite_prospects, generations: data.limite_generations_ia });
-    });
     paymentStatusFn({}).then(({ request }) => setPendingPayment((request as { statut?: string; plan_demande: string } | null)?.statut === "en_attente" ? (request as { plan_demande: string }) : null)).catch(() => {});
   }, [displayName, user.id]);
 
@@ -62,20 +66,33 @@ export function useCrm(user: User, opts?: { onJoinTeam?: (p: Prospect) => void }
 
   async function addProspect(name: string, phone: string) {
     if (limits.prospects >= 0 && prospects.length >= limits.prospects) {
-      setError(`Vous avez atteint la limite de votre plan actuel ${planLabels[limits.plan] ?? limits.plan} (${limits.prospects} prospects). Passez à un plan supérieur pour ajouter plus de prospects.`);
+      setError(prospectLimitMsg(limits));
       return false;
     }
     const { data, error: insertError } = await supabase.from("prospects").insert({ user_id: user.id, name: name.trim(), phone: phone.trim() }).select().single();
-    if (insertError) { setError(insertError.message); return false; }
+    if (insertError) { setError(insertError.message.includes("LIMITE_PROSPECTS") ? prospectLimitMsg(limits) : insertError.message); return false; }
     if (data) setProspects(p => [data, ...p]);
     return true;
   }
-  async function importProspects(rows: ImportRow[]) {
-    if (!rows.length) return 0;
-    const { data, error: e } = await supabase.from("prospects").insert(rows.map(r => ({ user_id: user.id, name: r.name, phone: r.phone, source: r.source, notes: r.notes }))).select();
-    if (e) { setError(e.message); return -1; }
-    setProspects(p => [...(data ?? []), ...p]);
-    return data?.length ?? 0;
+  /** Renvoie le nombre importé et le nombre refusé par la limite du plan (vérifiée côté base). */
+  async function importProspects(rows: ImportRow[]): Promise<{ inserted: number; refused: number }> {
+    if (!rows.length) return { inserted: 0, refused: 0 };
+    const payload = rows.map(r => ({ user_id: user.id, name: r.name, phone: r.phone, source: r.source, notes: r.notes }));
+    const { data, error: e } = await supabase.from("prospects").insert(payload).select();
+    if (!e) { setProspects(p => [...(data ?? []), ...p]); return { inserted: data?.length ?? 0, refused: 0 }; }
+    if (!e.message.includes("LIMITE_PROSPECTS")) { setError(e.message); return { inserted: -1, refused: 0 }; }
+    // La base a refusé le lot : on insère un par un jusqu'à la limite.
+    const added: Prospect[] = [];
+    let refused = 0;
+    for (const row of payload) {
+      if (refused) { refused++; continue; }
+      const { data: one, error: e1 } = await supabase.from("prospects").insert(row).select().single();
+      if (e1) { if (e1.message.includes("LIMITE_PROSPECTS")) refused++; else { setError(e1.message); break; } }
+      else if (one) added.push(one);
+    }
+    setProspects(p => [...added, ...p]);
+    if (refused) setError(prospectLimitMsg(limits));
+    return { inserted: added.length, refused };
   }
   async function changeStatus(id: string, status: Status) {
     const before = prospects.find(p => p.id === id);
@@ -100,7 +117,7 @@ export function useCrm(user: User, opts?: { onJoinTeam?: (p: Prospect) => void }
     if (e) setError(e.message); else setProspects(items => items.map(p => p.id === id ? { ...p, ...patch } : p));
   }
 
-  return { lastMessages, setLastMessages, markContacted, prospects, generationCount, monthlyGenerations, setMonthlyGenerations, setGenerationCount, limits, pendingPayment, error, setError, displayName, clients, conversion, addProspect, importProspects, changeStatus, updateProspect };
+  return { lastMessages, setLastMessages, markContacted, prospects, generationCount, monthlyGenerations, setMonthlyGenerations, setGenerationCount, limits, planInfo, pendingPayment, error, setError, displayName, clients, conversion, addProspect, importProspects, changeStatus, updateProspect };
 }
 
 export type Crm = ReturnType<typeof useCrm>;
@@ -151,7 +168,7 @@ export function ProspectsPanel({ crm, limit, excludeClients, onOpen }: { crm: Cr
       </div>
       {!limit && <FilterBar f={filters} set={setFilters} statuses={excludeClients ? statuses.filter(s => s !== "client") : statuses} />}
       {adding && <form onSubmit={submit} className="grid gap-3 border-b border-border p-4 sm:grid-cols-[1fr_1fr_auto]"><Input value={name} onChange={e => setName(e.target.value)} placeholder="Nom du prospect" required /><Input value={phone} onChange={e => setPhone(e.target.value)} placeholder="Téléphone" /><Button>Enregistrer</Button></form>}
-      {crm.error && <p className="border-b border-border p-4 text-xs text-destructive">{crm.error}</p>}
+      {crm.error && <LimitError message={crm.error} />}
       <div className="divide-y divide-border">{shown.length ? shown.map(p => <ProspectCard key={p.id} prospect={p} onOpen={onOpen} onChangeStatus={crm.changeStatus} onUpdate={crm.updateProspect} />) : <div className="p-10 text-center"><ContactRound className="mx-auto size-8 text-muted-foreground" /><p className="mt-3 text-sm font-semibold">Aucun prospect pour le moment</p><p className="mt-1 text-xs text-muted-foreground">Ajoutez votre premier contact pour commencer.</p></div>}</div>
     </section>
   );
@@ -220,7 +237,7 @@ export function AiAssistantPanel({ crm, initialScript }: { crm: Crm; initialScri
       {initialScript && <p className="mt-4 text-sm font-semibold text-primary">{initialScript.title}</p>}
       <Textarea aria-label={initialScript ? "Script à personnaliser" : "Contexte du message"} className="mt-3 min-h-32 resize-none" placeholder="Décrivez le prospect, le contexte et le ton souhaité…" value={context} onChange={e => setContext(e.target.value)} />
       <Button className={`mt-3 w-full ${initialScript ? "min-h-11" : ""}`} onClick={runGeneration} disabled={generating}><Sparkles />{generating ? "Génération…" : initialScript ? "Personnaliser le script" : "Générer"}</Button>
-      {error && <p className="mt-3 text-xs text-destructive">{error}</p>}
+      {error && <div className="mt-3 rounded-md border border-destructive/30"><LimitError message={error} /></div>}
       {result && <div className="prose prose-invert mt-4 max-h-72 overflow-y-auto rounded-md border border-border bg-secondary p-4 text-sm leading-6"><ReactMarkdown>{result}</ReactMarkdown></div>}
       {result && <WhatsAppActions prospectId={target?.id} message={result} phone={target?.phone} prospectStatus={target?.status} onMarkContacted={target ? () => crm.markContacted(target.id) : undefined} />}
     </section>

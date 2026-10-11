@@ -1,3 +1,4 @@
+import { PlanBanner } from "@/components/plan-gate";
 import { createFileRoute } from "@tanstack/react-router";
 import { BarChart3, CheckCircle2, ContactRound, MessageSquareText } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
@@ -24,6 +25,7 @@ function Dashboard() {
   return (
     <AppShell user={user} title="Dashboard">
       <div className="mx-auto max-w-[1500px] p-5 lg:p-8">
+        <PlanBanner info={crm.planInfo} />
         <GettingStartedCard />
         <div>
           <span className="eyebrow">Bonjour {crm.displayName.split(" ")[0]}</span>

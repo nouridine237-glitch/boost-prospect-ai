@@ -1,6 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { BarChart3, CheckCircle2, ContactRound, MessageSquareText } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
+import { UpgradeCard } from "@/components/plan-gate";
+import { hasFeature } from "@/lib/plans";
 import { Stat, UsageLine, statusLabels, statuses, slugStatus, useCrm } from "@/components/crm";
 
 export const Route = createFileRoute("/_authenticated/statistiques")({
@@ -19,6 +21,7 @@ function StatsPage() {
   const { user } = Route.useRouteContext();
   const crm = useCrm(user);
   const total = crm.prospects.length;
+  const advanced = !crm.planInfo.loading && hasFeature(crm.planInfo.plan, "advancedStats");
 
   return (
     <AppShell user={user} title="Statistiques">
@@ -33,7 +36,9 @@ function StatsPage() {
           <Stat icon={CheckCircle2} label="Clients" value={String(crm.clients)} note="Prospects convertis" />
           <Stat icon={BarChart3} label="Taux de conversion" value={`${crm.conversion}%`} note="Clients / prospects" />
         </section>
-        <section className="surface mt-6 rounded-lg p-5">
+        <div className="relative mt-6">
+        {!advanced && <div className="absolute inset-0 z-10 grid place-items-center p-4"><UpgradeCard minPlan="expert">Les graphiques avancés de tes statistiques sont inclus dans les plans Expert et Business.</UpgradeCard></div>}
+        <section aria-hidden={!advanced} className={`surface rounded-lg p-5 ${advanced ? "" : "pointer-events-none select-none blur-sm"}`}>
           <h2 className="font-bold">Répartition par statut</h2>
           <div className="mt-5 grid gap-4">
             {statuses.map(s => {
@@ -53,6 +58,7 @@ function StatsPage() {
             })}
           </div>
         </section>
+        </div>
       </div>
     </AppShell>
   );
