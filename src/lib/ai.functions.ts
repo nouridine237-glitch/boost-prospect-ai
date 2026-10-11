@@ -3,6 +3,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { streamText } from "ai";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { planDef } from "@/lib/plans";
 
 const modeToType = {
   "Message de prospection": "message_prospection",
@@ -11,6 +12,11 @@ const modeToType = {
   "Post réseau social": "post_reseau_social",
   "Message d'accueil / encouragement": "message_prospection",
 } as const;
+
+async function monthlyLimit(context: { supabase: any; userId: string }) {
+  const { data } = await context.supabase.rpc("effective_plan", { _user_id: context.userId });
+  return planDef(data as string).generations;
+}
 
 const inputSchema = z.object({
   mode: z.enum(["Message de prospection", "Réponse à un prospect", "Script d'appel", "Post réseau social", "Message d'accueil / encouragement"]),
@@ -26,12 +32,7 @@ export const generateProspectingContent = createServerFn({ method: "POST" })
     const key = process.env["LOVABLE_API_KEY"];
     if (!key) throw new Error("Le service IA n’est pas configuré.");
 
-    const { data: subscription } = await context.supabase
-      .from("subscriptions")
-      .select("limite_generations_ia")
-      .eq("user_id", context.userId)
-      .maybeSingle();
-    const limit = subscription?.limite_generations_ia ?? 5;
+    const limit = await monthlyLimit(context);
     if (limit >= 0) {
       const monthStart = new Date();
       monthStart.setUTCDate(1);
@@ -41,7 +42,7 @@ export const generateProspectingContent = createServerFn({ method: "POST" })
         .select("id", { count: "exact", head: true })
         .gte("created_at", monthStart.toISOString());
       if ((count ?? 0) >= limit) {
-        throw new Error("Vous avez atteint la limite de générations IA de votre plan actuel pour ce mois. Passez à un plan supérieur pour continuer à générer du contenu.");
+        throw new Error(`Vous avez atteint la limite de ${limit} générations IA de votre plan actuel pour ce mois. Passez à un plan supérieur sur la page Abonnement pour continuer.`);
       }
     }
 
@@ -104,8 +105,7 @@ export const suggestNextAction = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const key = process.env["LOVABLE_API_KEY"];
     if (!key) throw new Error("Le service IA n’est pas configuré.");
-    const { data: subscription } = await context.supabase.from("subscriptions").select("limite_generations_ia").eq("user_id", context.userId).maybeSingle();
-    const limit = subscription?.limite_generations_ia ?? 5;
+    const limit = await monthlyLimit(context);
     if (limit >= 0) {
       const monthStart = new Date(); monthStart.setUTCDate(1); monthStart.setUTCHours(0, 0, 0, 0);
       const { count } = await context.supabase.from("ai_generations").select("id", { count: "exact", head: true }).gte("created_at", monthStart.toISOString());
