@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, type FormEvent } from "react";
-import { ArrowLeft, Eye, EyeOff, Quote, Sparkles } from "lucide-react";
+import { Apple, ArrowLeft, Eye, EyeOff, Quote, Sparkles } from "lucide-react";
 import { Brand } from "@/components/brand";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -60,6 +60,13 @@ function AuthPage() {
     if (!result.redirected) navigate({ to: "/dashboard", replace: true });
   }
 
+  async function handleApple() {
+    setLoading(true); setError("");
+    const result = await lovable.auth.signInWithOAuth("apple", { redirect_uri: window.location.origin });
+    if (result.error) { setError(result.error.message); setLoading(false); return; }
+    if (!result.redirected) navigate({ to: "/dashboard", replace: true });
+  }
+
   return (
     <main className="grid min-h-screen bg-background lg:grid-cols-[1.05fr_.95fr]">
       <section className="auth-visual relative hidden overflow-hidden border-r border-border p-12 lg:flex lg:flex-col lg:justify-between">
@@ -80,6 +87,7 @@ function AuthPage() {
           <h2 className="mt-3 text-3xl font-extrabold">{forgot ? "Mot de passe oublié" : signup ? "Créer votre espace" : "Connectez-vous"}</h2>
           <p className="mt-2 text-sm text-muted-foreground">{forgot ? "Nous vous envoyons un lien sécurisé." : "Continuez votre prospection là où vous l’avez laissée."}</p>
           {!forgot && <Button variant="outline" className="mt-7 h-11 w-full" onClick={handleGoogle} disabled={loading}><Sparkles /> Continuer avec Google</Button>}
+          {!forgot && <Button variant="outline" className="mt-3 h-11 w-full" onClick={handleApple} disabled={loading}><Apple /> Continuer avec Apple</Button>}
           {!forgot && <div className="my-6 flex items-center gap-4 text-xs text-muted-foreground"><span className="h-px flex-1 bg-border" /> OU AVEC VOTRE E-MAIL <span className="h-px flex-1 bg-border" /></div>}
           <form onSubmit={handleSubmit} className="space-y-4">
             {signup && !forgot && <label className="field-label">Nom complet<Input name="fullName" required placeholder="Votre nom" className="mt-2 h-11" /></label>}
