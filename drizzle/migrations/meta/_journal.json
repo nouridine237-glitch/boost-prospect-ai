@@ -71,6 +71,13 @@
       "when": 1791721651691,
       "tag": "0009_ai_quota_reservation",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1791721750952,
+      "tag": "0010_ai_usage_log_lock_writes",
+      "breakpoints": true
     }
   ]
 }
