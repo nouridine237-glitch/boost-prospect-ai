@@ -34,6 +34,8 @@ export async function saspayFetch(path: string, init: RequestInit = {}) {
     console.error(`[saspay] ${init.method ?? "GET"} ${path} → ${res.status}`, json?.code ?? "");
     throw new Error(`saspay_${res.status}`);
   }
+  // SasPay enveloppe ses réponses dans { success, data, code } : on renvoie data.
+  if (json && typeof json === "object" && "data" in json && json.data != null) return json.data;
   return json;
 }
 
