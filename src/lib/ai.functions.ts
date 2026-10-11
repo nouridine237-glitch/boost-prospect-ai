@@ -3,7 +3,6 @@ import { createServerFn } from "@tanstack/react-start";
 import { streamText } from "ai";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { planDef } from "@/lib/plans";
 
 const modeToType = {
   "Message de prospection": "message_prospection",
@@ -13,9 +12,24 @@ const modeToType = {
   "Message d'accueil / encouragement": "message_prospection",
 } as const;
 
-async function monthlyLimit(context: { supabase: any; userId: string }) {
-  const { data } = await context.supabase.rpc("effective_plan", { _user_id: context.userId });
-  return planDef(data as string).generations;
+/** Réserve atomiquement une génération dans ai_usage_log (verrou par utilisateur, plan effectif). */
+async function reserveGeneration(context: { supabase: any }, type: string): Promise<{ id: string } | { limit: number }> {
+  const { data, error } = await context.supabase.rpc("reserve_ai_generation", { _type: type });
+  if (error) {
+    const m = String(error.message ?? "").match(/LIMITE_IA:(\d+)/);
+    if (m) return { limit: Number(m[1]) };
+    throw new Error("La génération n’a pas pu démarrer. Réessayez dans un instant.");
+  }
+  return { id: String(data) };
+}
+/** Rembourse une réservation (serveur uniquement : l'utilisateur ne peut pas supprimer ses lignes). */
+async function refundGeneration(id: string) {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  await supabaseAdmin.from("ai_usage_log").delete().eq("id", id);
+}
+async function settleGeneration(id: string, credits: number) {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  await supabaseAdmin.from("ai_usage_log").update({ credits_estimes: credits }).eq("id", id);
 }
 
 const inputSchema = z.object({
@@ -32,19 +46,13 @@ export const generateProspectingContent = createServerFn({ method: "POST" })
     const key = process.env["LOVABLE_API_KEY"];
     if (!key) throw new Error("Le service IA n’est pas configuré.");
 
-    const limit = await monthlyLimit(context);
-    if (limit >= 0) {
-      const monthStart = new Date();
-      monthStart.setUTCDate(1);
-      monthStart.setUTCHours(0, 0, 0, 0);
-      const { count } = await context.supabase
-        .from("ai_generations")
-        .select("id", { count: "exact", head: true })
-        .gte("created_at", monthStart.toISOString());
-      if ((count ?? 0) >= limit) {
-        throw new Error(`Vous avez atteint la limite de ${limit} générations IA de votre plan actuel pour ce mois. Passez à un plan supérieur sur la page Abonnement pour continuer.`);
-      }
+    const reservation = await reserveGeneration(context, modeToType[data.mode]);
+    if ("limit" in reservation) {
+      throw new Error(`Vous avez atteint la limite de ${reservation.limit} générations IA de votre plan actuel pour ce mois. Passez à un plan supérieur sur la page Abonnement pour continuer.`);
     }
+    let text = "";
+    let result: ReturnType<typeof streamText>;
+    try {
 
     let prompt = `Format demandé : ${data.mode}\nContexte : ${data.context}`;
     if (data.scriptId) {
@@ -64,7 +72,7 @@ export const generateProspectingContent = createServerFn({ method: "POST" })
       apiKey: key,
       headers: { "Lovable-API-Key": key, "X-Lovable-AIG-SDK": "vercel-ai-sdk" },
     });
-    const result = streamText({
+    result = streamText({
       model: lovable.responses("openai/gpt-6-astra"),
       system: "Tu es un assistant de prospection MLM éthique. Rédige en français naturel, sans promesse de gains, de gains rapides ou de revenus garantis, sans pression, avec une approche humaine, concise et personnalisable. Ne présente jamais un système pyramidal comme légal ou sûr : un produit à lui seul ne prouve pas la légitimité d'un MLM.",
       prompt,
@@ -78,16 +86,17 @@ export const generateProspectingContent = createServerFn({ method: "POST" })
         },
       },
     });
-    const text = await result.text;
+    text = await result.text;
+    if (!text.trim()) throw new Error("Réponse IA vide.");
+    } catch (e) {
+      await refundGeneration(reservation.id).catch(() => {});
+      throw e instanceof Error && /introuvable/.test(e.message) ? e : new Error("La génération a échoué. Votre quota n’a pas été consommé, réessayez.");
+    }
     // Estimation : ~1 crédit pour 10 000 tokens, minimum 0,01 par génération.
     const usage = await Promise.resolve(result.totalUsage).catch(() => undefined);
     const tokens = Number(usage?.totalTokens ?? 0) || Math.ceil((data.context.length + text.length) / 3);
     const credits = Math.max(0.01, Math.round((tokens / 10000) * 100) / 100);
-    await (context.supabase as any).from("ai_usage_log").insert({
-      user_id: context.userId,
-      generation_type: modeToType[data.mode],
-      credits_estimes: credits,
-    });
+    await settleGeneration(reservation.id, credits).catch(() => {});
     const { error } = await context.supabase.from("ai_generations").insert({
       user_id: context.userId,
       generated_content: text,
@@ -105,28 +114,32 @@ export const suggestNextAction = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const key = process.env["LOVABLE_API_KEY"];
     if (!key) throw new Error("Le service IA n’est pas configuré.");
-    const limit = await monthlyLimit(context);
-    if (limit >= 0) {
-      const monthStart = new Date(); monthStart.setUTCDate(1); monthStart.setUTCHours(0, 0, 0, 0);
-      const { count } = await context.supabase.from("ai_generations").select("id", { count: "exact", head: true }).gte("created_at", monthStart.toISOString());
-      if ((count ?? 0) >= limit) throw new Error("LIMIT_REACHED");
-    }
+    const reservation = await reserveGeneration(context, "message_prospection");
+    if ("limit" in reservation) throw new Error("LIMIT_REACHED");
+    let text = "";
+    let result: ReturnType<typeof streamText>;
+    try {
     const { data: p } = await context.supabase.from("prospects").select("name, status, interest_level, source, product_interest, main_objection, notes, last_contact_date, next_followup_date").eq("id", data.prospectId).maybeSingle();
     if (!p) throw new Error("Prospect introuvable.");
     const interest = ({ 3: "Chaud", 2: "Tiède", 1: "Froid" } as Record<number, string>)[p.interest_level ?? 0] ?? "non renseigné";
     const lovable = createOpenAI({ baseURL: "https://ai.gateway.lovable.dev/v1", apiKey: key, headers: { "Lovable-API-Key": key, "X-Lovable-AIG-SDK": "vercel-ai-sdk" } });
-    const result = streamText({
+    result = streamText({
       model: lovable.responses("openai/gpt-6-astra"),
       system: "Tu es un coach de prospection MLM éthique. Tu réponds en français. Ne promets JAMAIS de gains, de revenus ou de résultats financiers garantis. Pas de pression. Réponds EXACTEMENT sous ce format, sur trois lignes :\nACTION: <action recommandée en une phrase>\nMOMENT: <meilleur moment pour la faire>\nMESSAGE: <message WhatsApp court (2 à 4 phrases), naturel, tutoiement, prêt à envoyer ; s'il y a une objection principale, y répondre avec empathie>",
       prompt: `Prénom/nom : ${p.name}\nStatut : ${p.status}\nNiveau d'intérêt : ${interest}\nSource : ${p.source || "non renseignée"}\nProduit d'intérêt : ${p.product_interest || "non renseigné"}\nObjection principale : ${p.main_objection || "aucune"}\nNotes : ${p.notes || "aucune"}\nDernier contact : ${p.last_contact_date ? String(p.last_contact_date).slice(0, 10) : "inconnu"}\nProchaine relance prévue : ${p.next_followup_date ?? "aucune"}\nDate du jour : ${new Date().toISOString().slice(0, 10)}`,
       providerOptions: { openai: { forceReasoning: true, reasoningEffort: "low", reasoningSummary: "auto", store: false, include: ["reasoning.encrypted_content"] } },
     });
-    const text = await result.text;
+    text = await result.text;
+    if (!text.trim()) throw new Error("Réponse IA vide.");
+    } catch (e) {
+      await refundGeneration(reservation.id).catch(() => {});
+      throw e instanceof Error && /introuvable/.test(e.message) ? e : new Error("La suggestion a échoué. Votre quota n’a pas été consommé, réessayez.");
+    }
     const pick = (label: string) => text.match(new RegExp(`${label}\\s*:\\s*([\\s\\S]*?)(?=\\n(?:ACTION|MOMENT|MESSAGE)\\s*:|$)`, "i"))?.[1]?.trim() ?? "";
     const suggestion = { action: pick("ACTION"), moment: pick("MOMENT"), message: pick("MESSAGE") || text.trim() };
     const usage = await Promise.resolve(result.totalUsage).catch(() => undefined);
     const tokens = Number(usage?.totalTokens ?? 0) || Math.ceil(text.length / 3);
-    await (context.supabase as any).from("ai_usage_log").insert({ user_id: context.userId, generation_type: "message_prospection", credits_estimes: Math.max(0.01, Math.round((tokens / 10000) * 100) / 100) });
+    await settleGeneration(reservation.id, Math.max(0.01, Math.round((tokens / 10000) * 100) / 100)).catch(() => {});
     await context.supabase.from("ai_generations").insert({ user_id: context.userId, generated_content: suggestion.message, generation_type: "message_prospection", prospect_id: data.prospectId });
     return suggestion;
   });
