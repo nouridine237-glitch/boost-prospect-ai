@@ -64,6 +64,13 @@
       "when": 1791719503096,
       "tag": "0008_plan_enforcement",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1791721651691,
+      "tag": "0009_ai_quota_reservation",
+      "breakpoints": true
     }
   ]
 }
