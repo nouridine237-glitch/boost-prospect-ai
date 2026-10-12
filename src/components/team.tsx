@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { supabase } from "@/integrations/supabase/client";
 import { statuses, statusLabels, type Crm, type Prospect, type Status } from "@/components/crm";
 
 const GOAL_KEY = "mlm-team-goal";
