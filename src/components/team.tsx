@@ -25,10 +25,35 @@ export function TeamPanel({ crm }: { crm: Crm }) {
   const members = crm.prospects.filter(p => p.status === "client").sort((a, b) => (b.joined_team_at ?? "").localeCompare(a.joined_team_at ?? ""));
   const [goal, setGoal] = useState(10);
   const [editing, setEditing] = useState(false);
-  useEffect(() => { const v = Number(localStorage.getItem(GOAL_KEY)); if (v > 0) setGoal(v); }, []);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user || cancelled) return;
+      const { data } = await supabase.from("profiles").select("preferences").eq("id", user.id).maybeSingle();
+      const v = Number((data?.preferences as Record<string, unknown> | null)?.team_goal);
+      if (v > 0 && !cancelled) { setGoal(v); return; }
+      // Migration : reprendre l'objectif stocké localement sur cet appareil, puis l'enregistrer sur le compte
+      const local = Number(localStorage.getItem(GOAL_KEY));
+      if (local > 0 && !cancelled) {
+        setGoal(local);
+        await supabase.from("profiles").update({ preferences: { ...((data?.preferences as object) ?? {}), team_goal: local } }).eq("id", user.id);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
   const count = members.length;
   const pct = Math.min(100, Math.round((members.length / goal) * 100));
-  function saveGoal(v: number) { const g = Math.max(1, Math.min(10000, Math.round(v) || 10)); setGoal(g); localStorage.setItem(GOAL_KEY, String(g)); setEditing(false); }
+  async function saveGoal(v: number) {
+    const g = Math.max(1, Math.min(10000, Math.round(v) || 10));
+    setGoal(g);
+    setEditing(false);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    const { data } = await supabase.from("profiles").select("preferences").eq("id", user.id).maybeSingle();
+    const { error } = await supabase.from("profiles").update({ preferences: { ...((data?.preferences as object) ?? {}), team_goal: g } }).eq("id", user.id);
+    if (error) toast.error("Objectif non enregistré sur le compte");
+  }
 
   return (
     <div className="grid gap-6">
