@@ -31,7 +31,7 @@ export function TeamPanel({ crm }: { crm: Crm }) {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user || cancelled) return;
       const { data } = await supabase.from("profiles").select("preferences").eq("id", user.id).maybeSingle();
-      const v = Number((data?.preferences as Record<string, unknown> | null)?.team_goal);
+      const v = Number((data?.preferences as Record<string, unknown> | null)?.["team_goal"]);
       if (v > 0 && !cancelled) { setGoal(v); return; }
       // Migration : reprendre l'objectif stocké localement sur cet appareil, puis l'enregistrer sur le compte
       const local = Number(localStorage.getItem(GOAL_KEY));
