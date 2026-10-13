@@ -294,7 +294,8 @@
   .lp-hero-photo { object-position: 68% center; opacity: .35; }
   .lp-nav .text-base { font-size: 14px; }
 }
-@media (max-width: 359px) { .lp-headline { font-size: 31px; } .lp-container { padding-inline: 16px; } }
+@media (max-width: 639px) { .lp-headline { font-size: clamp(18px, 5.6vw, 32px); } }
+@media (max-width: 359px) { .lp-container { padding-inline: 16px; } }
 @media (prefers-reduced-motion: reduce) {
   .lp-root *, .lp-root *::before, .lp-root *::after { animation: none !important; transition: none !important; }
   .lp-motion .lp-reveal { opacity: 1; transform: none; }
