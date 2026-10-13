@@ -1,6 +1,11 @@
 import { QueryClient } from "@tanstack/react-query";
 import { createRouter } from "@tanstack/react-router";
 import { routeTree } from "./routeTree.gen";
+import { createElement } from "react";
+
+function PagePending() {
+  return createElement("div", { className: "page-pending", role: "status", "aria-label": "Chargement" });
+}
 
 // After a new deploy, old hashed chunks disappear: reload once to fetch the fresh version.
 function reloadOnStaleChunk() {
@@ -25,6 +30,9 @@ export const getRouter = () => {
     context: { queryClient },
     scrollRestoration: true,
     defaultPreloadStaleTime: 0,
+    defaultPreload: "intent",
+    defaultPendingComponent: PagePending,
+    defaultPendingMs: 150,
   });
 
   return router;

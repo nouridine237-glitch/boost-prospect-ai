@@ -302,3 +302,13 @@
   .lp-lift:hover, .lp-lift:active, .lp-motion .lp-lift.lp-visible:hover { transform: none; }
   .lp-motion .lp-steps::before { transform: none; }
 }
+/* Performance: off-screen landing sections render only when near the viewport */
+.lp-deferred { content-visibility: auto; contain-intrinsic-size: auto 900px; }
+.page-pending { position: fixed; top: 0; left: 0; right: 0; height: 3px; z-index: 100; background: linear-gradient(90deg, transparent, var(--primary), var(--info), transparent); background-size: 200% 100%; animation: page-pending 1s linear infinite; }
+@keyframes page-pending { from { background-position: 100% 0; } to { background-position: -100% 0; } }
+@media (max-width: 767px) {
+  .lp-primary-cta::before { animation: none; opacity: .6; }
+  .lp-nav-scrolled { backdrop-filter: none; -webkit-backdrop-filter: none; background: color-mix(in oklab, var(--background) 97%, transparent); }
+  .lp-lift::after { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { .page-pending { animation: none; } }
