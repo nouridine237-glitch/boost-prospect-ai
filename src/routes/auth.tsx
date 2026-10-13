@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate, useRouter } from "@tanstack/react-router";
 import { useEffect, useState, type FormEvent } from "react";
 import { Apple, ArrowLeft, Eye, EyeOff, Quote, Sparkles } from "lucide-react";
 import { Brand } from "@/components/brand";
@@ -23,6 +23,8 @@ export const Route = createFileRoute("/auth")({
 
 function AuthPage() {
   const navigate = useNavigate();
+  const router = useRouter();
+  useEffect(() => { void router.preloadRoute({ to: "/dashboard" }).catch(() => {}); }, [router]);
   const { next: rawNext } = Route.useSearch();
   const next = rawNext ? oauthReturnPath(rawNext) : "";
   const goNext = () => { if (next && next !== "/") window.location.href = next; else navigate({ to: "/dashboard", replace: true }); };
