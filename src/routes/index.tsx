@@ -80,9 +80,8 @@ function Landing() {
       <div className="lp-ambient" aria-hidden="true" />
       <div className="lp-container relative pt-28 text-center lg:pt-32">
         <div className="lp-hero-intro mb-5 flex items-center justify-center gap-2 text-xs font-semibold text-info"><span className="h-px w-6 bg-info" /><Sparkles className="size-4" />MOINS D’OUBLIS. PLUS DE CLARTÉ.<span className="h-px w-6 bg-info" /></div>
-        <p className="mb-3 text-sm font-semibold text-foreground">MLM Boost AI</p>
         <h1 className="lp-headline mx-auto max-w-5xl">{["Organise ta prospection MLM.", "Relance mieux.", "Avance chaque jour."].map((line, j) => <span key={line} className={`block ${j === 2 ? "text-info" : ""}`}>{line.split(" ").map((word, i) => <span className="lp-word" style={{ "--lp-delay": `${Math.min(560, (j * 4 + i) * 45)}ms` } as CSSProperties} key={i}>{word}{" "}</span>)}</span>)}</h1>
-        <p className="lp-hero-sub mx-auto mt-5 max-w-xl text-base leading-7 text-muted-foreground sm:text-lg">L'assistant IA + CRM pensé pour les entrepreneurs MLM et vente directe en Afrique</p>
+        <p className="lp-hero-sub mx-auto mt-5 max-w-xl text-base leading-7 text-muted-foreground sm:text-lg">L'assistant IA + CRM pensé pour les entrepreneurs MLM et vente directe en Afrique francophone</p>
         <div className="lp-hero-actions mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row"><Button asChild className="lp-button lp-primary-cta w-full sm:w-auto"><Link to="/auth">Commencer gratuitement <ArrowRight /></Link></Button><Button asChild variant="outline" className="lp-button w-full bg-background/60 sm:w-auto"><a href="#how">Voir comment ça marche <ArrowDown /></a></Button></div>
         <p className="lp-hero-actions mt-4 text-xs text-muted-foreground">Gratuit pour démarrer · Sans carte bancaire</p>
         <div className="lp-hero-demo relative mx-auto mt-8 flex max-w-3xl items-center justify-center gap-10">
