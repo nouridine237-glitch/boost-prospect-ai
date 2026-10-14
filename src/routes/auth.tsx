@@ -9,7 +9,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { oauthReturnPath } from "@/lib/oauth-return-path";
 
 export const Route = createFileRoute("/auth")({
-  validateSearch: (s: Record<string, unknown>): { next?: string | undefined } => (typeof s["next"] === "string" ? { next: s["next"] } : {}),
+  validateSearch: (s: Record<string, unknown>): { next?: string | undefined; mode?: "signup" | undefined } => ({
+    ...(typeof s["next"] === "string" ? { next: s["next"] } : {}),
+    ...(s["mode"] === "signup" ? { mode: "signup" as const } : {}),
+  }),
   head: () => ({ meta: [
     { title: "Connexion — MLM Boost AI" },
     { name: "description", content: "Connectez-vous à votre espace de prospection MLM Boost AI." },
@@ -25,11 +28,11 @@ function AuthPage() {
   const navigate = useNavigate();
   const router = useRouter();
   useEffect(() => { void router.preloadRoute({ to: "/dashboard" }).catch(() => {}); }, [router]);
-  const { next: rawNext } = Route.useSearch();
+  const { next: rawNext, mode } = Route.useSearch();
   const next = rawNext ? oauthReturnPath(rawNext) : "";
   const goNext = () => { if (next && next !== "/") window.location.href = next; else navigate({ to: "/dashboard", replace: true }); };
   const returnUrl = () => next && next !== "/" ? new URL(next, window.location.origin).href : window.location.origin;
-  const [signup, setSignup] = useState(false);
+  const [signup, setSignup] = useState(mode === "signup");
   const [forgot, setForgot] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
