@@ -63,21 +63,18 @@ function Landing() {
     const element = root.current;
     if (!element) return;
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const onScroll = () => setScrolled(window.scrollY > 16);
-    onScroll(); window.addEventListener("scroll", onScroll, { passive: true });
-    let barObserver: IntersectionObserver | undefined;
-    if ("IntersectionObserver" in window) {
+    const onScroll = () => {
+      setScrolled(window.scrollY > 16);
       const heroEl = document.getElementById("top");
       const pricingEl = document.getElementById("pricing");
-      if (heroEl && pricingEl) {
-        barObserver = new IntersectionObserver(entries => entries.forEach(entry => {
-          if (entry.target.id === "top") setPastHero(!entry.isIntersecting);
-          else setPricingInView(entry.isIntersecting);
-        }), { threshold: 0 });
-        barObserver.observe(heroEl); barObserver.observe(pricingEl);
+      if (heroEl) setPastHero(heroEl.getBoundingClientRect().bottom <= window.innerHeight * 0.3);
+      if (pricingEl) {
+        const rect = pricingEl.getBoundingClientRect();
+        setPricingInView(rect.top < window.innerHeight && rect.bottom > 0);
       }
-    }
-    if (reduced || !barObserver) return () => { barObserver?.disconnect(); window.removeEventListener("scroll", onScroll); };
+    };
+    onScroll(); window.addEventListener("scroll", onScroll, { passive: true });
+    if (reduced) return () => window.removeEventListener("scroll", onScroll);
     element.classList.add("lp-motion");
     const observer = new IntersectionObserver(entries => entries.forEach(entry => {
       if (entry.isIntersecting) { entry.target.classList.add("lp-visible"); observer.unobserve(entry.target); }
