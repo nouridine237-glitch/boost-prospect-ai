@@ -312,3 +312,16 @@
   .lp-lift::after { display: none; }
 }
 @media (prefers-reduced-motion: reduce) { .page-pending { animation: none; } }
+
+/* Landing: WhatsApp flottant, barre CTA mobile fixe, photo fondateur */
+.lp-wa-fab { position: fixed; right: 20px; bottom: 24px; z-index: 45; display: grid; place-items: center; width: 56px; height: 56px; border-radius: 50%; background: var(--success); color: var(--background); box-shadow: 0 12px 30px color-mix(in oklab, var(--success) 40%, transparent); transition: transform 200ms ease; }
+.lp-wa-fab:active { transform: scale(.94); }
+.lp-wa-fab svg { width: 26px; height: 26px; }
+.lp-cta-bar { position: fixed; inset: auto 0 0; z-index: 40; padding-block: 10px; padding-bottom: calc(10px + env(safe-area-inset-bottom)); background: color-mix(in oklab, var(--background) 96%, transparent); border-top: 1px solid var(--border); transform: translateY(110%); visibility: hidden; transition: transform 250ms ease; pointer-events: none; }
+.lp-cta-bar.lp-cta-visible { transform: translateY(0); visibility: visible; pointer-events: auto; }
+.lp-founder-photo { display: grid; place-items: center; flex: none; width: 88px; height: 88px; border-radius: 50%; font-size: 2rem; font-weight: 800; color: var(--primary-foreground); background: linear-gradient(135deg, var(--primary), var(--info)); box-shadow: 0 0 0 4px var(--card), 0 0 24px var(--lp-halo); }
+@media (max-width: 767px) {
+  .lp-wa-fab { right: 16px; bottom: 92px; }
+  .lp-root { padding-bottom: 84px; }
+}
+@media (prefers-reduced-motion: reduce) { .lp-wa-fab, .lp-cta-bar { transition: none; } }
