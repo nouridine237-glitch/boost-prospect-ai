@@ -80,7 +80,7 @@ function Landing() {
       if (entry.isIntersecting) { entry.target.classList.add("lp-visible"); observer.unobserve(entry.target); }
     }), { threshold: 0.08 });
     element.querySelectorAll(".lp-reveal").forEach(el => observer.observe(el));
-    return () => { observer.disconnect(); barObserver?.disconnect(); window.removeEventListener("scroll", onScroll); };
+    return () => { observer.disconnect(); window.removeEventListener("scroll", onScroll); };
   }, []);
 
   return <main ref={root} className="lp-root min-h-screen overflow-clip bg-background">
