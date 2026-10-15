@@ -1,7 +1,7 @@
 import { PLANS, PLAN_ORDER, PLAN_CARD_ITEMS } from "@/lib/plans";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
-import { ArrowDown, ArrowRight, BellRing, Bot, Check, CheckCheck, ChevronDown, Clock3, ContactRound, GraduationCap, LayoutList, Mail, Menu, MessageCircle, MessageSquareText, Plus, ShieldCheck, Sparkles, Users, X } from "lucide-react";
+import { ArrowDown, ArrowRight, BellRing, Bot, Check, CheckCheck, ChevronDown, Clock3, ContactRound, Facebook, GraduationCap, LayoutList, Mail, Menu, MessageCircle, MessageSquareText, Plus, ShieldCheck, Sparkles, Users, X } from "lucide-react";
 import { Brand } from "@/components/brand";
 import { Button } from "@/components/ui/button";
 import { Accordion, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -13,6 +13,7 @@ import workspaceWebp from "@/assets/landing-workspace.webp";
 import workspaceWebpSm from "@/assets/landing-workspace-768.webp";
 
 const shareImage = "https://networker-ai-buddy.lovable.app/mlm-boost-share.jpg";
+const whatsappLink = `https://wa.me/237641313407?text=${encodeURIComponent("Bonjour, j'ai une question sur MLM Boost AI")}`;
 export const Route = createFileRoute("/")({
   head: () => ({ meta: [
     { title: "MLM Boost AI — Organise ta prospection MLM" },
@@ -51,6 +52,8 @@ function Landing() {
   const root = useRef<HTMLElement>(null);
   const [scrolled, setScrolled] = useState(false);
   const [menu, setMenu] = useState(false);
+  const [pastHero, setPastHero] = useState(false);
+  const [pricingInView, setPricingInView] = useState(false);
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       if (data.session) navigate({ to: "/dashboard", replace: true });
@@ -62,13 +65,25 @@ function Landing() {
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const onScroll = () => setScrolled(window.scrollY > 16);
     onScroll(); window.addEventListener("scroll", onScroll, { passive: true });
-    if (reduced || !("IntersectionObserver" in window)) return () => window.removeEventListener("scroll", onScroll);
+    let barObserver: IntersectionObserver | undefined;
+    if ("IntersectionObserver" in window) {
+      const heroEl = document.getElementById("top");
+      const pricingEl = document.getElementById("pricing");
+      if (heroEl && pricingEl) {
+        barObserver = new IntersectionObserver(entries => entries.forEach(entry => {
+          if (entry.target.id === "top") setPastHero(!entry.isIntersecting);
+          else setPricingInView(entry.isIntersecting);
+        }), { threshold: 0 });
+        barObserver.observe(heroEl); barObserver.observe(pricingEl);
+      }
+    }
+    if (reduced || !barObserver) return () => { barObserver?.disconnect(); window.removeEventListener("scroll", onScroll); };
     element.classList.add("lp-motion");
     const observer = new IntersectionObserver(entries => entries.forEach(entry => {
       if (entry.isIntersecting) { entry.target.classList.add("lp-visible"); observer.unobserve(entry.target); }
     }), { threshold: 0.08 });
     element.querySelectorAll(".lp-reveal").forEach(el => observer.observe(el));
-    return () => { observer.disconnect(); window.removeEventListener("scroll", onScroll); };
+    return () => { observer.disconnect(); barObserver?.disconnect(); window.removeEventListener("scroll", onScroll); };
   }, []);
 
   return <main ref={root} className="lp-root min-h-screen overflow-clip bg-background">
@@ -113,7 +128,7 @@ function Landing() {
       { view: "prospect" as const, title: "Retrouve tout le contexte", label: "02 / FICHE PROSPECT" },
       { view: "assistant" as const, title: "Écris sans partir de zéro", label: "03 / ASSISTANT IA" },
     ].map(({ view, title, label }, i) => <figure key={view} style={delay(i)} className="lp-reveal min-w-0"><LandingPhone view={view} /><figcaption className="mt-6 text-center"><span className="text-[11px] font-semibold text-info">{label}</span><h3 className="mt-2 text-base font-bold">{title}</h3></figcaption></figure>)}</div></div></section>
-
+    <section id="founder" className="lp-section lp-deferred"><div className="lp-container max-w-3xl"><SectionTitle eyebrow="DERRIÈRE L'OUTIL" title="Qui est derrière MLM Boost AI ?" /><div className="lp-reveal lp-card mt-10 flex flex-col items-center gap-6 p-6 text-center sm:flex-row sm:gap-7 sm:p-8 sm:text-left"><span aria-hidden="true" className="lp-founder-photo">N</span><div className="min-w-0"><h3 className="text-lg font-bold">Nouridine, Nkongsamba (Cameroun)</h3><p className="mt-3 text-sm leading-6 text-muted-foreground">MLM Boost AI vient tout juste de naître. Pas d'ancienneté, pas de chiffres à te vendre : c'est un jeune outil, construit au grand jour.</p><p className="mt-2 text-sm leading-6 text-muted-foreground">Il se construit avec les retours des premiers utilisateurs, une suggestion après l'autre, pour rester simple et honnête.</p></div></div></div></section>
     <section id="pricing" className="lp-section lp-deferred lp-band"><div className="lp-container"><SectionTitle eyebrow="DES TARIFS TRANSPARENTS" title="Commence petit. Évolue à ton rythme." /><p className="lp-reveal mt-4 text-center text-sm text-muted-foreground">Sans carte bancaire pour démarrer. Des prix clairs en FCFA.</p><div className="mt-12 grid items-stretch gap-5 md:grid-cols-2 xl:grid-cols-4">{plans.map((plan, i) => <article key={plan.name} style={delay(i)} className={`lp-reveal lp-card lp-lift relative flex flex-col p-6 ${plan.popular ? "lp-plan-pro" : ""}`}>{plan.popular && <span className="absolute -top-3 left-5 rounded-full bg-primary px-3 py-1 text-xs font-bold text-primary-foreground">Populaire</span>}<h3 className="text-xl font-bold">{plan.name}</h3><p className="mt-2 text-xs text-muted-foreground">{plan.sub}</p><p className="mt-7 whitespace-nowrap text-3xl font-extrabold">{plan.price}</p><p className="mt-2 text-xs text-muted-foreground">par mois · ≈ {plan.usd} $</p><Button asChild variant={plan.popular ? "default" : "outline"} className="lp-button mt-6 w-full"><Link to="/auth" search={plan.name === "Gratuit" ? { mode: "signup" } : { mode: "signup", next: "/abonnement" }}>{plan.name === "Gratuit" ? "Commencer gratuitement" : `Choisir ${plan.name}`}</Link></Button><ul className="mb-2 mt-6 space-y-4">{plan.items.map(item => <li key={item.text} className="flex gap-2 text-sm leading-5 text-muted-foreground"><Check className="size-4 shrink-0 text-info" /><span>{item.text}{item.soon && <span className="ml-1.5 rounded-full border border-border px-1.5 py-0.5 text-[10px] font-semibold">Bientôt</span>}</span></li>)}</ul></article>)}</div></div></section>
 
     <section id="faq" className="lp-section lp-deferred"><div className="lp-container max-w-3xl"><SectionTitle eyebrow="ON TE RÉPOND" title="Tes questions, simplement." /><Accordion type="single" collapsible className="lp-reveal lp-faq mt-10">{faqs.map(([q, a], i) => <AccordionItem key={q} value={`faq-${i}`}><AccordionTrigger className="min-h-16 gap-4 py-5 text-base font-semibold hover:no-underline">{q}</AccordionTrigger><AccordionPrimitive.Content className="lp-faq-content"><p className="pb-5 text-sm leading-7 text-muted-foreground">{a}</p></AccordionPrimitive.Content></AccordionItem>)}</Accordion></div></section>
