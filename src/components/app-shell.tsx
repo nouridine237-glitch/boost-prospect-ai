@@ -1,6 +1,6 @@
 import { Link, useLocation } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { BarChart3, Bot, Gift, ContactRound, CreditCard, FileText, GraduationCap, LayoutDashboard, Lock, LogOut, Menu, Settings, ShieldCheck, Users } from "lucide-react";
+import { BarChart3, Bot, Gift, Globe, ContactRound, CreditCard, FileText, GraduationCap, LayoutDashboard, Lock, LogOut, Menu, Settings, ShieldCheck, Users } from "lucide-react";
 import { Brand } from "@/components/brand";
 import { supabase } from "@/integrations/supabase/client";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
@@ -12,6 +12,7 @@ const nav = [
   { icon: LayoutDashboard, label: "Dashboard", to: "/dashboard" },
   { icon: ContactRound, label: "Prospects", to: "/prospects" },
   { icon: Bot, label: "Assistant IA", to: "/assistant" },
+  { icon: Globe, label: "Ma page", to: "/ma-page" },
   { icon: FileText, label: "Scripts", to: "/scripts" },
   { icon: BarChart3, label: "Statistiques", to: "/statistiques" },
   { icon: GraduationCap, label: "Académie", to: "/academie" },
