@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { countryCodes, setCachedCountryCode } from "@/components/whatsapp-actions";
+import { CaptureSettings } from "@/components/capture-settings";
 
 export const Route = createFileRoute("/_authenticated/parametres")({
   head: () => ({ meta: [
@@ -68,6 +69,8 @@ function SettingsPage() {
             {saved && <span className="text-xs text-primary">Modifications enregistrées.</span>}
           </div>
         </section>
+
+        <CaptureSettings userId={user.id} />
 
         <section className="surface mt-6 rounded-lg p-5">
           <h2 className="font-bold">Abonnement</h2>

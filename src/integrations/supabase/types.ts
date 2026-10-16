@@ -94,6 +94,63 @@ export type Database = {
         }
         Relationships: []
       }
+      capture_pages: {
+        Row: {
+          created_at: string
+          display_name: string
+          photo_url: string | null
+          seen_at: string
+          slug: string
+          tagline: string
+          updated_at: string
+          user_id: string
+          visits: number
+          whatsapp: string
+        }
+        Insert: {
+          created_at?: string
+          display_name?: string
+          photo_url?: string | null
+          seen_at?: string
+          slug: string
+          tagline?: string
+          updated_at?: string
+          user_id: string
+          visits?: number
+          whatsapp?: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string
+          photo_url?: string | null
+          seen_at?: string
+          slug?: string
+          tagline?: string
+          updated_at?: string
+          user_id?: string
+          visits?: number
+          whatsapp?: string
+        }
+        Relationships: []
+      }
+      capture_rate_limits: {
+        Row: {
+          created_at: string
+          id: string
+          ip_hash: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          ip_hash: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          ip_hash?: string
+        }
+        Relationships: []
+      }
       payment_requests: {
         Row: {
           capture_paiement: string | null
@@ -489,6 +546,15 @@ export type Database = {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["plan_type"]
       }
+      capture_page_view: {
+        Args: { _slug: string }
+        Returns: {
+          display_name: string
+          photo_url: string
+          tagline: string
+          whatsapp: string
+        }[]
+      }
       effective_plan: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["plan_type"]
@@ -507,6 +573,16 @@ export type Database = {
       my_ai_bonus: { Args: never; Returns: number }
       reserve_ai_generation: {
         Args: { _type: Database["public"]["Enums"]["ai_generation_type"] }
+        Returns: string
+      }
+      submit_capture_lead: {
+        Args: {
+          _interest: string
+          _ip_hash: string
+          _name: string
+          _phone: string
+          _slug: string
+        }
         Returns: string
       }
     }

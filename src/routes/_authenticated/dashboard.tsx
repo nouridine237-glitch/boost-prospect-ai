@@ -5,6 +5,7 @@ import { AppShell } from "@/components/app-shell";
 import { WeeklyGoalsCard } from "@/components/weekly-goals";
 import { GettingStartedCard } from "@/components/onboarding";
 import { AiAssistantPanel, PendingPaymentBanner, ProspectsPanel, Stat, UsageLine, useCrm } from "@/components/crm";
+import { CaptureLeadsNotice } from "@/components/capture-settings";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({ meta: [
@@ -26,6 +27,7 @@ function Dashboard() {
     <AppShell user={user} title="Dashboard">
       <div className="mx-auto max-w-[1500px] p-5 lg:p-8">
         <PlanBanner info={crm.planInfo} />
+        <CaptureLeadsNotice userId={user.id} />
         <GettingStartedCard />
         <div>
           <span className="eyebrow">Bonjour {crm.displayName.split(" ")[0]}</span>

@@ -22,11 +22,13 @@ import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedAssistantRouteImport } from './routes/_authenticated/assistant'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedFormerEquipeRouteImport } from './routes/_authenticated/former-equipe'
+import { Route as AuthenticatedMaPageRouteImport } from './routes/_authenticated/ma-page'
 import { Route as AuthenticatedParametresRouteImport } from './routes/_authenticated/parametres'
 import { Route as AuthenticatedParrainageRouteImport } from './routes/_authenticated/parrainage'
 import { Route as AuthenticatedProspectsRouteImport } from './routes/_authenticated/prospects'
 import { Route as AuthenticatedScriptsRouteImport } from './routes/_authenticated/scripts'
 import { Route as AuthenticatedStatistiquesRouteImport } from './routes/_authenticated/statistiques'
+import { Route as PPseudoRouteImport } from './routes/p.$pseudo'
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
 import { Route as AuthenticatedAcademieNiveauRouteImport } from './routes/_authenticated/academie_.$niveau'
 import { Route as ApiPublicSaspayWebhookRouteImport } from './routes/api/public/saspay-webhook'
@@ -98,6 +100,11 @@ const AuthenticatedFormerEquipeRoute =
     path: '/former-equipe',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedMaPageRoute = AuthenticatedMaPageRouteImport.update({
+  id: '/ma-page',
+  path: '/ma-page',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedParametresRoute = AuthenticatedParametresRouteImport.update({
   id: '/parametres',
   path: '/parametres',
@@ -124,6 +131,11 @@ const AuthenticatedStatistiquesRoute =
     path: '/statistiques',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const PPseudoRoute = PPseudoRouteImport.update({
+  id: '/p/$pseudo',
+  path: '/p/$pseudo',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DotlovableOauthConsentRoute = DotlovableOauthConsentRouteImport.update({
   id: '/.lovable/oauth/consent',
   path: '/.lovable/oauth/consent',
@@ -160,11 +172,13 @@ export interface FileRoutesByFullPath {
   '/assistant': typeof AuthenticatedAssistantRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/former-equipe': typeof AuthenticatedFormerEquipeRoute
+  '/ma-page': typeof AuthenticatedMaPageRoute
   '/parametres': typeof AuthenticatedParametresRoute
   '/parrainage': typeof AuthenticatedParrainageRoute
   '/prospects': typeof AuthenticatedProspectsRoute
   '/scripts': typeof AuthenticatedScriptsRoute
   '/statistiques': typeof AuthenticatedStatistiquesRoute
+  '/p/$pseudo': typeof PPseudoRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/academie/$niveau': typeof AuthenticatedAcademieNiveauRoute
   '/api/public/saspay-webhook': typeof ApiPublicSaspayWebhookRoute
@@ -183,11 +197,13 @@ export interface FileRoutesByTo {
   '/assistant': typeof AuthenticatedAssistantRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/former-equipe': typeof AuthenticatedFormerEquipeRoute
+  '/ma-page': typeof AuthenticatedMaPageRoute
   '/parametres': typeof AuthenticatedParametresRoute
   '/parrainage': typeof AuthenticatedParrainageRoute
   '/prospects': typeof AuthenticatedProspectsRoute
   '/scripts': typeof AuthenticatedScriptsRoute
   '/statistiques': typeof AuthenticatedStatistiquesRoute
+  '/p/$pseudo': typeof PPseudoRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/academie/$niveau': typeof AuthenticatedAcademieNiveauRoute
   '/api/public/saspay-webhook': typeof ApiPublicSaspayWebhookRoute
@@ -208,11 +224,13 @@ export interface FileRoutesById {
   '/_authenticated/assistant': typeof AuthenticatedAssistantRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/former-equipe': typeof AuthenticatedFormerEquipeRoute
+  '/_authenticated/ma-page': typeof AuthenticatedMaPageRoute
   '/_authenticated/parametres': typeof AuthenticatedParametresRoute
   '/_authenticated/parrainage': typeof AuthenticatedParrainageRoute
   '/_authenticated/prospects': typeof AuthenticatedProspectsRoute
   '/_authenticated/scripts': typeof AuthenticatedScriptsRoute
   '/_authenticated/statistiques': typeof AuthenticatedStatistiquesRoute
+  '/p/$pseudo': typeof PPseudoRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/_authenticated/academie_/$niveau': typeof AuthenticatedAcademieNiveauRoute
   '/api/public/saspay-webhook': typeof ApiPublicSaspayWebhookRoute
@@ -233,11 +251,13 @@ export interface FileRouteTypes {
     | '/assistant'
     | '/dashboard'
     | '/former-equipe'
+    | '/ma-page'
     | '/parametres'
     | '/parrainage'
     | '/prospects'
     | '/scripts'
     | '/statistiques'
+    | '/p/$pseudo'
     | '/.lovable/oauth/consent'
     | '/academie/$niveau'
     | '/api/public/saspay-webhook'
@@ -256,11 +276,13 @@ export interface FileRouteTypes {
     | '/assistant'
     | '/dashboard'
     | '/former-equipe'
+    | '/ma-page'
     | '/parametres'
     | '/parrainage'
     | '/prospects'
     | '/scripts'
     | '/statistiques'
+    | '/p/$pseudo'
     | '/.lovable/oauth/consent'
     | '/academie/$niveau'
     | '/api/public/saspay-webhook'
@@ -280,11 +302,13 @@ export interface FileRouteTypes {
     | '/_authenticated/assistant'
     | '/_authenticated/dashboard'
     | '/_authenticated/former-equipe'
+    | '/_authenticated/ma-page'
     | '/_authenticated/parametres'
     | '/_authenticated/parrainage'
     | '/_authenticated/prospects'
     | '/_authenticated/scripts'
     | '/_authenticated/statistiques'
+    | '/p/$pseudo'
     | '/.lovable/oauth/consent'
     | '/_authenticated/academie_/$niveau'
     | '/api/public/saspay-webhook'
@@ -299,6 +323,7 @@ export interface RootRouteChildren {
   McpRoute: typeof McpRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
+  PPseudoRoute: typeof PPseudoRoute
   DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
   ApiPublicSaspayWebhookRoute: typeof ApiPublicSaspayWebhookRoute
   LovableEmailTransactionalPreviewRoute: typeof LovableEmailTransactionalPreviewRoute
@@ -397,6 +422,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedFormerEquipeRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/ma-page': {
+      id: '/_authenticated/ma-page'
+      path: '/ma-page'
+      fullPath: '/ma-page'
+      preLoaderRoute: typeof AuthenticatedMaPageRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/parametres': {
       id: '/_authenticated/parametres'
       path: '/parametres'
@@ -431,6 +463,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/statistiques'
       preLoaderRoute: typeof AuthenticatedStatistiquesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/p/$pseudo': {
+      id: '/p/$pseudo'
+      path: '/p/$pseudo'
+      fullPath: '/p/$pseudo'
+      preLoaderRoute: typeof PPseudoRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/.lovable/oauth/consent': {
       id: '/.lovable/oauth/consent'
@@ -470,6 +509,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAssistantRoute: typeof AuthenticatedAssistantRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedFormerEquipeRoute: typeof AuthenticatedFormerEquipeRoute
+  AuthenticatedMaPageRoute: typeof AuthenticatedMaPageRoute
   AuthenticatedParametresRoute: typeof AuthenticatedParametresRoute
   AuthenticatedParrainageRoute: typeof AuthenticatedParrainageRoute
   AuthenticatedProspectsRoute: typeof AuthenticatedProspectsRoute
@@ -485,6 +525,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAssistantRoute: AuthenticatedAssistantRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedFormerEquipeRoute: AuthenticatedFormerEquipeRoute,
+  AuthenticatedMaPageRoute: AuthenticatedMaPageRoute,
   AuthenticatedParametresRoute: AuthenticatedParametresRoute,
   AuthenticatedParrainageRoute: AuthenticatedParrainageRoute,
   AuthenticatedProspectsRoute: AuthenticatedProspectsRoute,
@@ -505,6 +546,7 @@ const rootRouteChildren: RootRouteChildren = {
   ResetPasswordRoute: ResetPasswordRoute,
   Char91DotwellKnownChar93OauthProtectedResourceRoute:
     Char91DotwellKnownChar93OauthProtectedResourceRoute,
+  PPseudoRoute: PPseudoRoute,
   DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
   ApiPublicSaspayWebhookRoute: ApiPublicSaspayWebhookRoute,
   LovableEmailTransactionalPreviewRoute: LovableEmailTransactionalPreviewRoute,
