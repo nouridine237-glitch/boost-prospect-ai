@@ -27,6 +27,7 @@ import { Route as AuthenticatedParrainageRouteImport } from './routes/_authentic
 import { Route as AuthenticatedProspectsRouteImport } from './routes/_authenticated/prospects'
 import { Route as AuthenticatedScriptsRouteImport } from './routes/_authenticated/scripts'
 import { Route as AuthenticatedStatistiquesRouteImport } from './routes/_authenticated/statistiques'
+import { Route as PPseudoRouteImport } from './routes/p.$pseudo'
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
 import { Route as AuthenticatedAcademieNiveauRouteImport } from './routes/_authenticated/academie_.$niveau'
 import { Route as ApiPublicSaspayWebhookRouteImport } from './routes/api/public/saspay-webhook'
@@ -124,6 +125,11 @@ const AuthenticatedStatistiquesRoute =
     path: '/statistiques',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const PPseudoRoute = PPseudoRouteImport.update({
+  id: '/p/$pseudo',
+  path: '/p/$pseudo',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DotlovableOauthConsentRoute = DotlovableOauthConsentRouteImport.update({
   id: '/.lovable/oauth/consent',
   path: '/.lovable/oauth/consent',
@@ -165,6 +171,7 @@ export interface FileRoutesByFullPath {
   '/prospects': typeof AuthenticatedProspectsRoute
   '/scripts': typeof AuthenticatedScriptsRoute
   '/statistiques': typeof AuthenticatedStatistiquesRoute
+  '/p/$pseudo': typeof PPseudoRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/academie/$niveau': typeof AuthenticatedAcademieNiveauRoute
   '/api/public/saspay-webhook': typeof ApiPublicSaspayWebhookRoute
@@ -188,6 +195,7 @@ export interface FileRoutesByTo {
   '/prospects': typeof AuthenticatedProspectsRoute
   '/scripts': typeof AuthenticatedScriptsRoute
   '/statistiques': typeof AuthenticatedStatistiquesRoute
+  '/p/$pseudo': typeof PPseudoRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/academie/$niveau': typeof AuthenticatedAcademieNiveauRoute
   '/api/public/saspay-webhook': typeof ApiPublicSaspayWebhookRoute
@@ -213,6 +221,7 @@ export interface FileRoutesById {
   '/_authenticated/prospects': typeof AuthenticatedProspectsRoute
   '/_authenticated/scripts': typeof AuthenticatedScriptsRoute
   '/_authenticated/statistiques': typeof AuthenticatedStatistiquesRoute
+  '/p/$pseudo': typeof PPseudoRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/_authenticated/academie_/$niveau': typeof AuthenticatedAcademieNiveauRoute
   '/api/public/saspay-webhook': typeof ApiPublicSaspayWebhookRoute
@@ -238,6 +247,7 @@ export interface FileRouteTypes {
     | '/prospects'
     | '/scripts'
     | '/statistiques'
+    | '/p/$pseudo'
     | '/.lovable/oauth/consent'
     | '/academie/$niveau'
     | '/api/public/saspay-webhook'
@@ -261,6 +271,7 @@ export interface FileRouteTypes {
     | '/prospects'
     | '/scripts'
     | '/statistiques'
+    | '/p/$pseudo'
     | '/.lovable/oauth/consent'
     | '/academie/$niveau'
     | '/api/public/saspay-webhook'
@@ -285,6 +296,7 @@ export interface FileRouteTypes {
     | '/_authenticated/prospects'
     | '/_authenticated/scripts'
     | '/_authenticated/statistiques'
+    | '/p/$pseudo'
     | '/.lovable/oauth/consent'
     | '/_authenticated/academie_/$niveau'
     | '/api/public/saspay-webhook'
@@ -299,6 +311,7 @@ export interface RootRouteChildren {
   McpRoute: typeof McpRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
+  PPseudoRoute: typeof PPseudoRoute
   DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
   ApiPublicSaspayWebhookRoute: typeof ApiPublicSaspayWebhookRoute
   LovableEmailTransactionalPreviewRoute: typeof LovableEmailTransactionalPreviewRoute
@@ -432,6 +445,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedStatistiquesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/p/$pseudo': {
+      id: '/p/$pseudo'
+      path: '/p/$pseudo'
+      fullPath: '/p/$pseudo'
+      preLoaderRoute: typeof PPseudoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/.lovable/oauth/consent': {
       id: '/.lovable/oauth/consent'
       path: '/.lovable/oauth/consent'
@@ -505,6 +525,7 @@ const rootRouteChildren: RootRouteChildren = {
   ResetPasswordRoute: ResetPasswordRoute,
   Char91DotwellKnownChar93OauthProtectedResourceRoute:
     Char91DotwellKnownChar93OauthProtectedResourceRoute,
+  PPseudoRoute: PPseudoRoute,
   DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
   ApiPublicSaspayWebhookRoute: ApiPublicSaspayWebhookRoute,
   LovableEmailTransactionalPreviewRoute: LovableEmailTransactionalPreviewRoute,
