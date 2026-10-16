@@ -38,7 +38,7 @@ export function useCrm(user: User, opts?: { onJoinTeam?: (p: Prospect) => void }
   const [generationCount, setGenerationCount] = useState(0);
   const [monthlyGenerations, setMonthlyGenerations] = useState(0);
   const planInfo = usePlan(user.id);
-  const limits = useMemo(() => { const d = planDef(planInfo.plan); return { plan: d.key as string, prospects: d.prospects, generations: d.generations }; }, [planInfo.plan]);
+  const limits = useMemo(() => { const d = planDef(planInfo.plan); const ai = planDef(planInfo.aiPlan); return { plan: d.key as string, prospects: d.prospects, generations: ai.generations < 0 ? -1 : ai.generations + planInfo.aiBonus }; }, [planInfo.plan, planInfo.aiPlan, planInfo.aiBonus]);
   const [pendingPayment, setPendingPayment] = useState<{ plan_demande: string } | null>(null);
   const [error, setError] = useState("");
   const [lastMessages, setLastMessages] = useState<Record<string, string>>({});

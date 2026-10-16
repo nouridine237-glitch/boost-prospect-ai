@@ -1,4 +1,5 @@
 import { PLANS, PLAN_ORDER, PLAN_CARD_ITEMS } from "@/lib/plans";
+import { captureRefFromUrl } from "@/lib/referral-capture";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { ArrowDown, ArrowRight, BellRing, Bot, Check, CheckCheck, ChevronDown, Clock3, ContactRound, Facebook, GraduationCap, LayoutList, Mail, Menu, MessageCircle, MessageSquareText, Plus, ShieldCheck, Sparkles, Users, X } from "lucide-react";
@@ -55,6 +56,7 @@ function Landing() {
   const [pastHero, setPastHero] = useState(false);
   const [pricingInView, setPricingInView] = useState(false);
   useEffect(() => {
+    captureRefFromUrl();
     supabase.auth.getSession().then(({ data }) => {
       if (data.session) navigate({ to: "/dashboard", replace: true });
     });

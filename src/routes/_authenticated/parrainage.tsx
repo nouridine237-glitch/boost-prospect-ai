@@ -46,7 +46,7 @@ function ParrainagePage() {
               <button onClick={() => { navigator.clipboard.writeText(link); toast.success("Lien copié"); }} className="flex min-h-11 items-center gap-2 rounded-lg border border-border px-4 py-2.5 text-sm hover:border-primary/60">
                 <Copy className="size-4" /> Copier
               </button>
-              <a href={`https://wa.me/?text=${encodeURIComponent(msg)}`} target="_blank" rel="noreferrer" className="flex min-h-11 items-center gap-2 rounded-lg bg-success px-4 py-2.5 text-sm font-semibold text-success-foreground hover:opacity-90">
+              <a href={`https://wa.me/?text=${encodeURIComponent(msg)}`} target="_blank" rel="noreferrer" className="flex min-h-11 items-center gap-2 rounded-lg bg-success px-4 py-2.5 text-sm font-semibold text-background hover:opacity-90">
                 <MessageCircle className="size-4" /> Partager sur WhatsApp
               </a>
             </div>

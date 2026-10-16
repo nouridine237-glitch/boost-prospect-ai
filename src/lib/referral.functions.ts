@@ -70,8 +70,6 @@ export const getMyReferral = createServerFn({ method: "GET" })
       }));
     }
     const ms = monthStart();
-    const rewardedThisMonth = (refs ?? []).filter((r) => r.rewarded).length; // affiné ci-dessous
-    void rewardedThisMonth;
     const { count: monthCount } = await context.supabase.from("referrals").select("id", { count: "exact", head: true })
       .eq("referrer_id", context.userId).eq("rewarded", true).gte("validated_at", ms);
     const bonusMonth = (rewards ?? []).filter((r) => r.type === "ai_bonus" && r.created_at >= ms).reduce((s, r) => s + r.value, 0);
