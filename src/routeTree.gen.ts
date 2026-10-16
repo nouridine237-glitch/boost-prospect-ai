@@ -23,6 +23,7 @@ import { Route as AuthenticatedAssistantRouteImport } from './routes/_authentica
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedFormerEquipeRouteImport } from './routes/_authenticated/former-equipe'
 import { Route as AuthenticatedMaPageRouteImport } from './routes/_authenticated/ma-page'
+import { Route as AuthenticatedObjectionsRouteImport } from './routes/_authenticated/objections'
 import { Route as AuthenticatedParametresRouteImport } from './routes/_authenticated/parametres'
 import { Route as AuthenticatedParrainageRouteImport } from './routes/_authenticated/parrainage'
 import { Route as AuthenticatedProspectsRouteImport } from './routes/_authenticated/prospects'
@@ -105,6 +106,11 @@ const AuthenticatedMaPageRoute = AuthenticatedMaPageRouteImport.update({
   path: '/ma-page',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedObjectionsRoute = AuthenticatedObjectionsRouteImport.update({
+  id: '/objections',
+  path: '/objections',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedParametresRoute = AuthenticatedParametresRouteImport.update({
   id: '/parametres',
   path: '/parametres',
@@ -173,6 +179,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/former-equipe': typeof AuthenticatedFormerEquipeRoute
   '/ma-page': typeof AuthenticatedMaPageRoute
+  '/objections': typeof AuthenticatedObjectionsRoute
   '/parametres': typeof AuthenticatedParametresRoute
   '/parrainage': typeof AuthenticatedParrainageRoute
   '/prospects': typeof AuthenticatedProspectsRoute
@@ -198,6 +205,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/former-equipe': typeof AuthenticatedFormerEquipeRoute
   '/ma-page': typeof AuthenticatedMaPageRoute
+  '/objections': typeof AuthenticatedObjectionsRoute
   '/parametres': typeof AuthenticatedParametresRoute
   '/parrainage': typeof AuthenticatedParrainageRoute
   '/prospects': typeof AuthenticatedProspectsRoute
@@ -225,6 +233,7 @@ export interface FileRoutesById {
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/former-equipe': typeof AuthenticatedFormerEquipeRoute
   '/_authenticated/ma-page': typeof AuthenticatedMaPageRoute
+  '/_authenticated/objections': typeof AuthenticatedObjectionsRoute
   '/_authenticated/parametres': typeof AuthenticatedParametresRoute
   '/_authenticated/parrainage': typeof AuthenticatedParrainageRoute
   '/_authenticated/prospects': typeof AuthenticatedProspectsRoute
@@ -252,6 +261,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/former-equipe'
     | '/ma-page'
+    | '/objections'
     | '/parametres'
     | '/parrainage'
     | '/prospects'
@@ -277,6 +287,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/former-equipe'
     | '/ma-page'
+    | '/objections'
     | '/parametres'
     | '/parrainage'
     | '/prospects'
@@ -303,6 +314,7 @@ export interface FileRouteTypes {
     | '/_authenticated/dashboard'
     | '/_authenticated/former-equipe'
     | '/_authenticated/ma-page'
+    | '/_authenticated/objections'
     | '/_authenticated/parametres'
     | '/_authenticated/parrainage'
     | '/_authenticated/prospects'
@@ -429,6 +441,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedMaPageRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/objections': {
+      id: '/_authenticated/objections'
+      path: '/objections'
+      fullPath: '/objections'
+      preLoaderRoute: typeof AuthenticatedObjectionsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/parametres': {
       id: '/_authenticated/parametres'
       path: '/parametres'
@@ -510,6 +529,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedFormerEquipeRoute: typeof AuthenticatedFormerEquipeRoute
   AuthenticatedMaPageRoute: typeof AuthenticatedMaPageRoute
+  AuthenticatedObjectionsRoute: typeof AuthenticatedObjectionsRoute
   AuthenticatedParametresRoute: typeof AuthenticatedParametresRoute
   AuthenticatedParrainageRoute: typeof AuthenticatedParrainageRoute
   AuthenticatedProspectsRoute: typeof AuthenticatedProspectsRoute
@@ -526,6 +546,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedFormerEquipeRoute: AuthenticatedFormerEquipeRoute,
   AuthenticatedMaPageRoute: AuthenticatedMaPageRoute,
+  AuthenticatedObjectionsRoute: AuthenticatedObjectionsRoute,
   AuthenticatedParametresRoute: AuthenticatedParametresRoute,
   AuthenticatedParrainageRoute: AuthenticatedParrainageRoute,
   AuthenticatedProspectsRoute: AuthenticatedProspectsRoute,

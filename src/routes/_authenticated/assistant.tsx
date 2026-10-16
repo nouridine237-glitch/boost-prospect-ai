@@ -5,7 +5,10 @@ import { scriptsOptions } from "@/lib/scripts";
 import { z } from "zod";
 
 export const Route = createFileRoute("/_authenticated/assistant")({
-  validateSearch: (search: Record<string, unknown>): { script?: string | undefined } => ({ script: z.string().uuid().optional().catch(undefined).parse(search["script"]) }),
+  validateSearch: (search: Record<string, unknown>): { script?: string | undefined; context?: string | undefined } => ({
+    script: z.string().uuid().optional().catch(undefined).parse(search["script"]),
+    context: z.string().max(2000).optional().catch(undefined).parse(search["context"]),
+  }),
   loaderDeps: ({ search }) => ({ script: search.script }),
   loader: async ({ context, deps }) => {
     if (!deps.script) return { script: undefined };
@@ -27,6 +30,7 @@ function AssistantPage() {
   const { user } = Route.useRouteContext();
   const crm = useCrm(user);
   const { script } = Route.useLoaderData();
+  const { context } = Route.useSearch();
 
   return (
     <AppShell user={user} title="Assistant IA">
@@ -36,7 +40,7 @@ function AssistantPage() {
         <p className="mt-2 text-sm text-muted-foreground">Choisissez un mode, décrivez le contexte, générez.</p>
         <UsageLine crm={crm} />
         <PendingPaymentBanner crm={crm} />
-        <div className="mt-6"><AiAssistantPanel key={script?.id ?? "general"} crm={crm} initialScript={script} /></div>
+        <div className="mt-6"><AiAssistantPanel key={script?.id ?? context ?? "general"} crm={crm} initialScript={script} initialContext={context} /></div>
       </div>
     </AppShell>
   );
