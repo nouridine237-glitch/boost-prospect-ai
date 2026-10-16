@@ -18,7 +18,7 @@ export async function notifyAdminOfPaymentRequest(payload: PaymentNotification) 
     await sendTemplateEmail("payment-notification", ADMIN_EMAIL, {
       templateData: payload,
       idempotencyKey: `payment-notification-${payload.reference}`,
-      replyTo: payload.email || undefined,
+      ...(payload.email ? { replyTo: payload.email } : {}),
     });
   } catch (error) {
     console.error("[payments] Échec de l'envoi de la notification e-mail :", error);

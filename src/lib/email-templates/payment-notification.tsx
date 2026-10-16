@@ -54,7 +54,7 @@ function PaymentNotification({
 export const template = {
   component: PaymentNotification,
   subject: (d: Record<string, any>) =>
-    `Paiement à vérifier — ${d.userName ?? 'Utilisateur'} · ${d.plan ?? ''}`,
+    `Paiement à vérifier — ${d['userName'] ?? 'Utilisateur'} · ${d['plan'] ?? ''}`,
   displayName: 'Notification de paiement (admin)',
   previewData: {
     userName: 'Awa Ndi',
