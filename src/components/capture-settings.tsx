@@ -28,7 +28,7 @@ export function CaptureSettings({ userId }: { userId: string }) {
   const { page, loaded, reload } = useCapturePage(userId);
   const [f, setF] = useState({ slug: "", display_name: "", tagline: "", whatsapp: "", photo_url: null as string | null });
   const [saving, setSaving] = useState(false);
-  useEffect(() => { if (page) setF({ slug: page.slug, display_name: page.display_name, tagline: page.tagline, whatsapp: page.whatsapp, photo_url: page.photo_url }); }, [page]);
+  useEffect(() => { if (page) { setF({ slug: page.slug, display_name: page.display_name, tagline: page.tagline, whatsapp: page.whatsapp, photo_url: page.photo_url }); } }, [page]);
 
   async function save() {
     const slug = f.slug.trim().toLowerCase();
