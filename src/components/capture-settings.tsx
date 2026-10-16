@@ -32,12 +32,12 @@ export function CaptureSettings({ userId }: { userId: string }) {
 
   async function save() {
     const slug = f.slug.trim().toLowerCase();
-    if (!/^[a-z0-9][a-z0-9-]{2,29}$/.test(slug)) return toast.error("Pseudo : 3 à 30 caractères, lettres minuscules, chiffres ou tirets.");
+    if (!/^[a-z0-9][a-z0-9-]{2,29}$/.test(slug)) { toast.error("Pseudo : 3 à 30 caractères, lettres minuscules, chiffres ou tirets."); return; }
     setSaving(true);
     const row = { user_id: userId, slug, display_name: f.display_name.trim().slice(0, 80), tagline: f.tagline.trim().slice(0, 160), whatsapp: f.whatsapp.replace(/[^\d+]/g, "").slice(0, 20), photo_url: f.photo_url };
     const { error } = page ? await supabase.from("capture_pages").update(row).eq("user_id", userId) : await supabase.from("capture_pages").insert(row);
     setSaving(false);
-    if (error) return toast.error(error.code === "23505" ? "Ce pseudo est déjà pris." : "Enregistrement impossible.");
+    if (error) { toast.error(error.code === "23505" ? "Ce pseudo est déjà pris." : "Enregistrement impossible."); return; }
     toast.success("Page de capture enregistrée"); void reload();
   }
 
