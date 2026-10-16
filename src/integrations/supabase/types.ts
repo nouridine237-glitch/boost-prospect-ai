@@ -51,6 +51,7 @@ export type Database = {
       }
       ai_usage_log: {
         Row: {
+          bonus: boolean
           created_at: string
           credits_estimes: number
           generation_type: Database["public"]["Enums"]["ai_generation_type"]
@@ -58,6 +59,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          bonus?: boolean
           created_at?: string
           credits_estimes?: number
           generation_type: Database["public"]["Enums"]["ai_generation_type"]
@@ -65,6 +67,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          bonus?: boolean
           created_at?: string
           credits_estimes?: number
           generation_type?: Database["public"]["Enums"]["ai_generation_type"]
@@ -270,6 +273,98 @@ export type Database = {
         }
         Relationships: []
       }
+      referral_codes: {
+        Row: {
+          code: string
+          created_at: string
+          user_id: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          user_id: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      referral_rewards: {
+        Row: {
+          created_at: string
+          expires_at: string | null
+          id: string
+          referral_id: string | null
+          type: string
+          user_id: string
+          value: number
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          referral_id?: string | null
+          type: string
+          user_id: string
+          value?: number
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          referral_id?: string | null
+          type?: string
+          user_id?: string
+          value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referral_rewards_referral_id_fkey"
+            columns: ["referral_id"]
+            isOneToOne: false
+            referencedRelation: "referrals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      referrals: {
+        Row: {
+          created_at: string
+          id: string
+          paid_rewarded: boolean
+          referred_id: string
+          referrer_id: string
+          reward_note: string
+          rewarded: boolean
+          status: string
+          validated_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          paid_rewarded?: boolean
+          referred_id: string
+          referrer_id: string
+          reward_note?: string
+          rewarded?: boolean
+          status?: string
+          validated_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          paid_rewarded?: boolean
+          referred_id?: string
+          referrer_id?: string
+          reward_note?: string
+          rewarded?: boolean
+          status?: string
+          validated_at?: string | null
+        }
+        Relationships: []
+      }
       scripts: {
         Row: {
           category: string
@@ -389,7 +484,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      _ai_bonus_left: { Args: { _user_id: string }; Returns: number }
+      _paid_plan_of: {
+        Args: { _user_id: string }
+        Returns: Database["public"]["Enums"]["plan_type"]
+      }
       effective_plan: {
+        Args: { _user_id: string }
+        Returns: Database["public"]["Enums"]["plan_type"]
+      }
+      feature_plan: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["plan_type"]
       }
@@ -400,6 +504,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      my_ai_bonus: { Args: never; Returns: number }
       reserve_ai_generation: {
         Args: { _type: Database["public"]["Enums"]["ai_generation_type"] }
         Returns: string
