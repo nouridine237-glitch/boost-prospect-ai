@@ -109,15 +109,17 @@ function AuthPage() {
 
   async function handleGoogle() {
     setLoading(true); setError("");
-    const result = await lovable.auth.signInWithOAuth("google", { redirect_uri: returnUrl() });
-    if (result.error) { setError(result.error.message); setLoading(false); return; }
+    let result;
+    try { result = await lovable.auth.signInWithOAuth("google", { redirect_uri: returnUrl() }); } catch (e) { setError("Connexion Google impossible. Réessayez ou utilisez votre e-mail."); setLoading(false); return; }
+    if (result.error) { setError(frenchError(result.error.message)); setLoading(false); return; }
     if (!result.redirected) goNext();
   }
 
   async function handleApple() {
     setLoading(true); setError("");
-    const result = await lovable.auth.signInWithOAuth("apple", { redirect_uri: returnUrl() });
-    if (result.error) { setError(result.error.message); setLoading(false); return; }
+    let result;
+    try { result = await lovable.auth.signInWithOAuth("apple", { redirect_uri: returnUrl() }); } catch (e) { setError("Connexion Apple impossible. Réessayez ou utilisez votre e-mail."); setLoading(false); return; }
+    if (result.error) { setError(frenchError(result.error.message)); setLoading(false); return; }
     if (!result.redirected) goNext();
   }
 
@@ -148,9 +150,10 @@ function AuthPage() {
             <label className="field-label">Adresse e-mail<Input name="email" type="email" required placeholder="vous@exemple.com" className="mt-2 h-11" /></label>
             {!forgot && <label className="field-label">Mot de passe<div className="relative mt-2"><Input name="password" type={showPassword ? "text" : "password"} required minLength={6} placeholder="••••••••" className="h-11 pr-10" /><button type="button" aria-label="Afficher le mot de passe" className="absolute right-3 top-3 text-muted-foreground" onClick={() => setShowPassword(!showPassword)}>{showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}</button></div></label>}
             {error && <p className="text-sm text-destructive">{error}</p>}{message && <p className="text-sm text-success">{message}</p>}
+            {pendingEmail && !forgot && <button type="button" onClick={resend} disabled={loading} className="text-sm text-primary underline">Renvoyer l’e-mail de confirmation</button>}
             <Button className="h-11 w-full" disabled={loading}>{loading ? "Patientez…" : forgot ? "Envoyer le lien" : signup ? "Créer mon compte" : "Se connecter"}</Button>
           </form>
-          <div className="mt-5 flex justify-between text-sm"><button className="text-muted-foreground hover:text-foreground" onClick={() => { setSignup(!signup); setForgot(false); setMessage(""); }}>{signup ? "J’ai déjà un compte" : "Créer un compte"}</button><button className="text-primary hover:text-primary/80" onClick={() => { setForgot(!forgot); setMessage(""); }}> {forgot ? "Retour" : "Mot de passe oublié ?"}</button></div>
+          <div className="mt-5 flex justify-between text-sm"><button className="text-muted-foreground hover:text-foreground" onClick={() => { setSignup(!signup); setForgot(false); setMessage(""); setError(""); }}>{signup ? "J’ai déjà un compte" : "Créer un compte"}</button><button className="text-primary hover:text-primary/80" onClick={() => { setForgot(!forgot); setMessage(""); }}> {forgot ? "Retour" : "Mot de passe oublié ?"}</button></div>
         </div>
       </section>
     </main>
