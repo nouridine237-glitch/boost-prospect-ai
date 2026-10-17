@@ -62,7 +62,8 @@ function AuthPage() {
     if (m.includes("invalid login")) return "E-mail ou mot de passe incorrect.";
     if (m.includes("email not confirmed")) return "Votre adresse e-mail n’est pas encore confirmée. Ouvrez le lien reçu par e-mail ou renvoyez-le ci-dessous.";
     if (m.includes("already registered") || m.includes("already been registered")) return "Un compte existe déjà avec cet e-mail. Connectez-vous ou utilisez « Mot de passe oublié ».";
-    if (m.includes("password")) return "Mot de passe trop faible : au moins 6 caractères.";
+    if (m.includes("pwned") || m.includes("leaked") || m.includes("compromised")) return "Ce mot de passe est trop connu (trouvé dans des fuites). Choisissez-en un plus unique.";
+    if (m.includes("at least") || m.includes("weak")) return "Mot de passe trop faible : au moins 6 caractères, mélangez lettres et chiffres.";
     if (m.includes("rate limit") || m.includes("too many")) return "Trop de tentatives. Patientez une minute puis réessayez.";
     if (m.includes("fetch") || m.includes("network")) return "Connexion internet instable. Réessayez.";
     return msg;
