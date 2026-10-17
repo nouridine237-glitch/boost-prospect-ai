@@ -29,6 +29,7 @@ import { Route as AuthenticatedParrainageRouteImport } from './routes/_authentic
 import { Route as AuthenticatedProspectsRouteImport } from './routes/_authenticated/prospects'
 import { Route as AuthenticatedScriptsRouteImport } from './routes/_authenticated/scripts'
 import { Route as AuthenticatedStatistiquesRouteImport } from './routes/_authenticated/statistiques'
+import { Route as AuthenticatedTramesVocalesRouteImport } from './routes/_authenticated/trames-vocales'
 import { Route as PPseudoRouteImport } from './routes/p.$pseudo'
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
 import { Route as AuthenticatedAcademieNiveauRouteImport } from './routes/_authenticated/academie_.$niveau'
@@ -137,6 +138,12 @@ const AuthenticatedStatistiquesRoute =
     path: '/statistiques',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedTramesVocalesRoute =
+  AuthenticatedTramesVocalesRouteImport.update({
+    id: '/trames-vocales',
+    path: '/trames-vocales',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const PPseudoRoute = PPseudoRouteImport.update({
   id: '/p/$pseudo',
   path: '/p/$pseudo',
@@ -185,6 +192,7 @@ export interface FileRoutesByFullPath {
   '/prospects': typeof AuthenticatedProspectsRoute
   '/scripts': typeof AuthenticatedScriptsRoute
   '/statistiques': typeof AuthenticatedStatistiquesRoute
+  '/trames-vocales': typeof AuthenticatedTramesVocalesRoute
   '/p/$pseudo': typeof PPseudoRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/academie/$niveau': typeof AuthenticatedAcademieNiveauRoute
@@ -211,6 +219,7 @@ export interface FileRoutesByTo {
   '/prospects': typeof AuthenticatedProspectsRoute
   '/scripts': typeof AuthenticatedScriptsRoute
   '/statistiques': typeof AuthenticatedStatistiquesRoute
+  '/trames-vocales': typeof AuthenticatedTramesVocalesRoute
   '/p/$pseudo': typeof PPseudoRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/academie/$niveau': typeof AuthenticatedAcademieNiveauRoute
@@ -239,6 +248,7 @@ export interface FileRoutesById {
   '/_authenticated/prospects': typeof AuthenticatedProspectsRoute
   '/_authenticated/scripts': typeof AuthenticatedScriptsRoute
   '/_authenticated/statistiques': typeof AuthenticatedStatistiquesRoute
+  '/_authenticated/trames-vocales': typeof AuthenticatedTramesVocalesRoute
   '/p/$pseudo': typeof PPseudoRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/_authenticated/academie_/$niveau': typeof AuthenticatedAcademieNiveauRoute
@@ -267,6 +277,7 @@ export interface FileRouteTypes {
     | '/prospects'
     | '/scripts'
     | '/statistiques'
+    | '/trames-vocales'
     | '/p/$pseudo'
     | '/.lovable/oauth/consent'
     | '/academie/$niveau'
@@ -293,6 +304,7 @@ export interface FileRouteTypes {
     | '/prospects'
     | '/scripts'
     | '/statistiques'
+    | '/trames-vocales'
     | '/p/$pseudo'
     | '/.lovable/oauth/consent'
     | '/academie/$niveau'
@@ -320,6 +332,7 @@ export interface FileRouteTypes {
     | '/_authenticated/prospects'
     | '/_authenticated/scripts'
     | '/_authenticated/statistiques'
+    | '/_authenticated/trames-vocales'
     | '/p/$pseudo'
     | '/.lovable/oauth/consent'
     | '/_authenticated/academie_/$niveau'
@@ -483,6 +496,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedStatistiquesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/trames-vocales': {
+      id: '/_authenticated/trames-vocales'
+      path: '/trames-vocales'
+      fullPath: '/trames-vocales'
+      preLoaderRoute: typeof AuthenticatedTramesVocalesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/p/$pseudo': {
       id: '/p/$pseudo'
       path: '/p/$pseudo'
@@ -535,6 +555,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedProspectsRoute: typeof AuthenticatedProspectsRoute
   AuthenticatedScriptsRoute: typeof AuthenticatedScriptsRoute
   AuthenticatedStatistiquesRoute: typeof AuthenticatedStatistiquesRoute
+  AuthenticatedTramesVocalesRoute: typeof AuthenticatedTramesVocalesRoute
   AuthenticatedAcademieNiveauRoute: typeof AuthenticatedAcademieNiveauRoute
 }
 
@@ -552,6 +573,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedProspectsRoute: AuthenticatedProspectsRoute,
   AuthenticatedScriptsRoute: AuthenticatedScriptsRoute,
   AuthenticatedStatistiquesRoute: AuthenticatedStatistiquesRoute,
+  AuthenticatedTramesVocalesRoute: AuthenticatedTramesVocalesRoute,
   AuthenticatedAcademieNiveauRoute: AuthenticatedAcademieNiveauRoute,
 }
 
