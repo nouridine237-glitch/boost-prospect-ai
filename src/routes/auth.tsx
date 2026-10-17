@@ -39,29 +39,72 @@ function AuthPage() {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
 
+  const [pendingEmail, setPendingEmail] = useState("");
+
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      if (data.user) goNext();
+    let done = false;
+    const finish = async (user: { id: string; user_metadata?: Record<string, unknown> } | null | undefined) => {
+      if (!user || done) return; done = true;
+      const meta = user.user_metadata ?? {};
+      const name = String(meta["full_name"] ?? meta["name"] ?? "").trim();
+      if (name) await supabase.from("profiles").upsert({ id: user.id, full_name: name }).then(() => {}, () => {});
+      goNext();
+    };
+    supabase.auth.getUser().then(({ data }) => finish(data.user));
+    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "SIGNED_IN") void finish(session?.user);
     });
+    return () => sub.subscription.unsubscribe();
   }, [navigate]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  function frenchError(msg: string) {
+    const m = msg.toLowerCase();
+    if (m.includes("invalid login")) return "E-mail ou mot de passe incorrect.";
+    if (m.includes("email not confirmed")) return "Votre adresse e-mail n’est pas encore confirmée. Ouvrez le lien reçu par e-mail ou renvoyez-le ci-dessous.";
+    if (m.includes("already registered") || m.includes("already been registered")) return "Un compte existe déjà avec cet e-mail. Connectez-vous ou utilisez « Mot de passe oublié ».";
+    if (m.includes("password")) return "Mot de passe trop faible : au moins 6 caractères.";
+    if (m.includes("rate limit") || m.includes("too many")) return "Trop de tentatives. Patientez une minute puis réessayez.";
+    if (m.includes("fetch") || m.includes("network")) return "Connexion internet instable. Réessayez.";
+    return msg;
+  }
+
+  async function resend() {
+    if (!pendingEmail) return;
+    setLoading(true); setError("");
+    const { error: e } = await supabase.auth.resend({ type: "signup", email: pendingEmail, options: { emailRedirectTo: returnUrl() } });
+    setLoading(false);
+    if (e) setError(frenchError(e.message)); else setMessage(`Nouvel e-mail envoyé à ${pendingEmail}. Pensez à vérifier les spams.`);
+  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); setLoading(true); setError(""); setMessage("");
     const form = new FormData(event.currentTarget);
-    const email = String(form.get("email") ?? "");
+    const email = String(form.get("email") ?? "").trim().toLowerCase();
     const password = String(form.get("password") ?? "");
-    const fullName = String(form.get("fullName") ?? "");
-    if (forgot) {
-      const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: `${window.location.origin}/reset-password` });
-      setLoading(false); setMessage(resetError ? "" : "Consultez votre boîte mail pour réinitialiser votre mot de passe."); setError(resetError?.message ?? ""); return;
-    }
-    if (signup) {
-      const { data, error: signupError } = await supabase.auth.signUp({ email, password, options: { emailRedirectTo: returnUrl(), data: { full_name: fullName } } });
-      if (!signupError && data.user) await supabase.from("profiles").upsert({ id: data.user.id, full_name: fullName });
-      setLoading(false); setError(signupError?.message ?? ""); setMessage(signupError ? "" : "Compte créé. Confirmez votre adresse e-mail pour continuer."); return;
-    }
-    const { error: loginError } = await supabase.auth.signInWithPassword({ email, password });
-    setLoading(false); if (loginError) setError(loginError.message); else goNext();
+    const fullName = String(form.get("fullName") ?? "").trim();
+    try {
+      if (forgot) {
+        const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: `${window.location.origin}/reset-password` });
+        if (resetError) setError(frenchError(resetError.message)); else setMessage("Consultez votre boîte mail (et les spams) pour réinitialiser votre mot de passe.");
+        return;
+      }
+      if (signup) {
+        const { data, error: signupError } = await supabase.auth.signUp({ email, password, options: { emailRedirectTo: returnUrl(), data: { full_name: fullName } } });
+        if (signupError) { setError(frenchError(signupError.message)); return; }
+        if (data.user && data.user.identities?.length === 0) { setError(frenchError("already registered")); return; }
+        if (data.session) { await supabase.from("profiles").upsert({ id: data.session.user.id, full_name: fullName }); goNext(); return; }
+        setPendingEmail(email);
+        setMessage(`Compte créé ! Un lien de confirmation a été envoyé à ${email}. Ouvrez-le (vérifiez aussi les spams) pour accéder à votre espace.`);
+        return;
+      }
+      const { error: loginError } = await supabase.auth.signInWithPassword({ email, password });
+      if (loginError) {
+        setError(frenchError(loginError.message));
+        if (loginError.message.toLowerCase().includes("not confirmed")) setPendingEmail(email);
+      } else goNext();
+    } catch (e) {
+      setError(frenchError(e instanceof Error ? e.message : "Erreur inattendue. Réessayez."));
+    } finally { setLoading(false); }
   }
 
   async function handleGoogle() {
