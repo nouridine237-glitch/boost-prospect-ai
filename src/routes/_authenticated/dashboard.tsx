@@ -6,6 +6,7 @@ import { WeeklyGoalsCard } from "@/components/weekly-goals";
 import { GettingStartedCard } from "@/components/onboarding";
 import { AiAssistantPanel, PendingPaymentBanner, ProspectsPanel, Stat, UsageLine, useCrm } from "@/components/crm";
 import { CaptureLeadsNotice } from "@/components/capture-settings";
+import { CoachCard } from "@/components/coach-card";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({ meta: [
@@ -36,6 +37,7 @@ function Dashboard() {
         </div>
         <UsageLine crm={crm} />
         <PendingPaymentBanner crm={crm} />
+        <CoachCard crm={crm} userId={user.id} />
         <WeeklyGoalsCard crm={crm} userId={user.id} />
         <section className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <Stat icon={ContactRound} label="Prospects actifs" value={String(crm.prospects.filter(p => p.status !== "client" && p.status !== "non_intéressé").length)} note="En cours de suivi" />

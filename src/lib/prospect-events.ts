@@ -1,6 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 
-export type ProspectEventType = "message_envoyé" | "message_copié" | "changement_statut" | "relance_reportée" | "note_modifiée";
+export type ProspectEventType = "message_envoyé" | "message_copié" | "changement_statut" | "relance_reportée" | "note_modifiée" | "mission_faite" | "mission_passée";
 
 const listeners = new Set<(prospectId: string) => void>();
 export function onProspectEvent(fn: (prospectId: string) => void) { listeners.add(fn); return () => { listeners.delete(fn); }; }
