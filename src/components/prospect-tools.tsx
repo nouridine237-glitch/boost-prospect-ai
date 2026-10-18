@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { BellRing, CalendarClock, Check, Loader2, RefreshCw, Sparkles } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { suggestNextAction } from "@/lib/ai.functions";
+import { isFollowupDue } from "@/lib/coach";
 import { logProspectEvent, onProspectEvent, type ProspectEventType } from "@/lib/prospect-events";
 import { supabase } from "@/integrations/supabase/client";
 import { ArrowRightLeft, Clock, Copy, MessageCircle, StickyNote } from "lucide-react";
@@ -28,7 +29,7 @@ function daysLate(date: string) { return Math.round((new Date(todayStr() + "T00:
 export function FollowupQueue({ crm }: { crm: Crm }) {
   const today = todayStr();
   const due = crm.prospects
-    .filter(p => p.next_followup_date && p.next_followup_date <= today)
+    .filter(p => isFollowupDue(p, today))
     .sort((a, b) => (a.next_followup_date! < b.next_followup_date! ? -1 : 1));
 
   return (
