@@ -198,6 +198,8 @@ const eventMeta: Record<ProspectEventType, { label: string; icon: typeof Clock; 
   "changement_statut": { label: "Changement de statut", icon: ArrowRightLeft, cls: "bg-warning/15 text-warning" },
   "relance_reportée": { label: "Relance reportée", icon: CalendarClock, cls: "bg-primary/15 text-primary" },
   "note_modifiée": { label: "Note modifiée", icon: StickyNote, cls: "bg-secondary text-foreground" },
+  "mission_faite": { label: "Mission du coach faite", icon: Check, cls: "bg-success/15 text-success" },
+  "mission_passée": { label: "Mission du coach passée", icon: Clock, cls: "bg-secondary text-foreground" },
 };
 function relativeTime(iso: string) {
   const s = Math.round((Date.now() - new Date(iso).getTime()) / 1000);
