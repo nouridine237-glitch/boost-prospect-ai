@@ -119,7 +119,7 @@ export const suggestNextAction = createServerFn({ method: "POST" })
     let text = "";
     let result: ReturnType<typeof streamText>;
     try {
-    const { data: p } = await context.supabase.from("prospects").select("name, status, interest_level, source, product_interest, main_objection, notes, last_contact_date, next_followup_date").eq("id", data.prospectId).maybeSingle();
+    const { data: p } = await context.supabase.from("prospects").select("name, status, interest_level, source, product_interest, main_objection, notes, last_contact_date, next_followup_date").eq("id", data.prospectId).eq("user_id", context.userId).maybeSingle();
     if (!p) throw new Error("Prospect introuvable.");
     const interest = ({ 3: "Chaud", 2: "Tiède", 1: "Froid" } as Record<number, string>)[p.interest_level ?? 0] ?? "non renseigné";
     const lovable = createOpenAI({ baseURL: "https://ai.gateway.lovable.dev/v1", apiKey: key, headers: { "Lovable-API-Key": key, "X-Lovable-AIG-SDK": "vercel-ai-sdk" } });
