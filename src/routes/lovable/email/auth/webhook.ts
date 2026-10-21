@@ -9,7 +9,7 @@ import { EmailChangeEmail } from '@/lib/email-templates/email-change'
 import { ReauthenticationEmail } from '@/lib/email-templates/reauthentication'
 
 // Configuration
-const SITE_NAME = "Boost Prospect AI"
+const SITE_NAME = "MLM Boost AI"
 const SENDER_DOMAIN = "notify.mlmboostai.app"
 const ROOT_DOMAIN = "mlmboostai.app"
 const FROM_DOMAIN = "notify.mlmboostai.app"

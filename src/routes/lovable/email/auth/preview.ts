@@ -18,7 +18,7 @@ const EMAIL_TEMPLATES: Record<string, React.ComponentType<any>> = {
 }
 
 // Configuration
-const SITE_NAME = "Boost Prospect AI"
+const SITE_NAME = "MLM Boost AI"
 const ROOT_DOMAIN = "mlmboostai.app"
 
 // Sample data for preview mode ONLY (not used in actual email sending).
