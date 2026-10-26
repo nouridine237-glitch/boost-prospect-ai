@@ -4,5 +4,5 @@
 - [x] Trames vocales guidées WhatsApp
 - [x] Coach du jour V1 (missions, bilan, sans IA)
 - [x] Coach V2 — priorisation, réglages, conseil IA au clic, objections
-- [ ] Coach V3 — séries et objectifs suivants (après V2)
+- [x] Coach V3 — séries, bilan de semaine, objectifs proposés
 - [ ] Planificateur de statuts

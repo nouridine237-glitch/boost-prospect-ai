@@ -114,3 +114,47 @@ const CHEERS = [
   "Bon rythme aujourd'hui. Reste humain et sincère.",
 ];
 export function cheer(today: string) { return CHEERS[Number(today.replaceAll("-", "")) % CHEERS.length]!; }
+
+// ---------- V3 : séries, bilan de semaine, objectifs suivants (sans IA) ----------
+const ACTIVE_TYPES = new Set(["message_envoyé", "mission_faite", "relance_reportée", "changement_statut"]);
+const shiftDay = (day: string, n: number) => { const d = new Date(day + "T12:00:00"); d.setDate(d.getDate() + n); return localDay(d); };
+export function activeDays(events: CoachEvent[]) {
+  return new Set(events.filter(e => ACTIVE_TYPES.has(e.type)).map(e => localDay(new Date(e.created_at))));
+}
+/** Jours actifs d'affilée jusqu'à aujourd'hui. Les jours de repos choisis ne cassent pas la série ; aujourd'hui pas encore actif non plus. */
+export function streak(events: CoachEvent[], today: string, settings: CoachSettings = DEFAULT_COACH, maxDays = 365) {
+  const active = activeDays(events);
+  let n = 0;
+  for (let i = 0, day = today; i < maxDays; i++, day = shiftDay(day, -1)) {
+    if (active.has(day)) { n++; continue; }
+    if (isRestDay(day, settings) || (i === 0)) continue;
+    break;
+  }
+  return n;
+}
+/** Lundi (AAAA-MM-JJ) de la semaine contenant `day`. */
+export function mondayOf(day: string) { return shiftDay(day, -((weekday(day) + 6) % 7)); }
+export type WeekRecap = { contacts: number; relances: number; recrues: number; missions: number; bestDay: string | null };
+export function weeklyRecap(prospects: CoachProspect[], events: CoachEvent[], monday: string): WeekRecap {
+  const end = shiftDay(monday, 7);
+  const week = events.filter(e => { const d = localDay(new Date(e.created_at)); return d >= monday && d < end; });
+  const before = new Set(prospects.filter(p => localDay(new Date(p.created_at)) < monday).map(p => p.id));
+  const sent = week.filter(e => e.type === "message_envoyé");
+  const perDay = new Map<string, number>();
+  week.filter(e => ACTIVE_TYPES.has(e.type)).forEach(e => { const d = localDay(new Date(e.created_at)); perDay.set(d, (perDay.get(d) ?? 0) + 1); });
+  let bestDay: string | null = null; let best = 0;
+  [...perDay.entries()].sort().forEach(([d, c]) => { if (c > best) { best = c; bestDay = d; } });
+  return {
+    contacts: new Set(sent.map(e => e.prospect_id)).size,
+    relances: sent.filter(e => before.has(e.prospect_id)).length + week.filter(e => e.type === "relance_reportée").length,
+    recrues: week.filter(e => e.type === "changement_statut" && /→\s*Client$/.test(e.content ?? "")).length,
+    missions: new Set(week.filter(e => e.type === "mission_faite").map(e => `${e.prospect_id}|${localDay(new Date(e.created_at))}`)).size,
+    bestDay,
+  };
+}
+type Goals3 = { contacts_goal: number; relances_goal: number; recrues_goal: number };
+/** +10 % (arrondi au-dessus, +1 minimum) si l'objectif est atteint, sinon identique. Plafond 1000. */
+export function suggestNextGoals(goals: Goals3, recap: WeekRecap): Goals3 {
+  const up = (g: number, v: number) => v >= g ? Math.min(1000, Math.max(g + 1, Math.ceil(g * 1.1))) : g;
+  return { contacts_goal: up(goals.contacts_goal, recap.contacts), relances_goal: up(goals.relances_goal, recap.relances), recrues_goal: up(goals.recrues_goal, recap.recrues) };
+}

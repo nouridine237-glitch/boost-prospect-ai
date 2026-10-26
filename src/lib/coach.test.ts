@@ -78,3 +78,33 @@ describe("V2 : score et réglages", () => {
     expect(matchObjectionId("aucune idée")).toBeNull();
   });
 });
+
+import { streak, weeklyRecap, suggestNextGoals, mondayOf } from "./coach";
+const ev = (type: string, day: string, pid = "p1", content = "") => ({ type, prospect_id: pid, content, created_at: new Date(day + "T10:00:00").toISOString() });
+describe("coach V3", () => {
+  test("série consécutive, cassée par un trou", () => {
+    const e = [ev("message_envoyé", "2026-10-21"), ev("mission_faite", "2026-10-22"), ev("message_envoyé", "2026-10-23")];
+    expect(streak(e, "2026-10-23")).toBe(3);
+    expect(streak([ev("message_envoyé", "2026-10-20"), ev("message_envoyé", "2026-10-23")], "2026-10-23")).toBe(1);
+  });
+  test("jour de repos ne casse pas la série", () => {
+    // 25 oct. 2026 = dimanche
+    const e = [ev("message_envoyé", "2026-10-24"), ev("message_envoyé", "2026-10-26")];
+    expect(streak(e, "2026-10-26", { missions: 5, restDays: [0], tone: "amical" })).toBe(2);
+    expect(streak(e, "2026-10-26")).toBe(1);
+  });
+  test("aujourd'hui pas encore actif ne remet pas à zéro", () => {
+    expect(streak([ev("message_envoyé", "2026-10-25")], "2026-10-26")).toBe(1);
+  });
+  test("lundi de la semaine", () => { expect(mondayOf("2026-10-25")).toBe("2026-10-19"); expect(mondayOf("2026-10-19")).toBe("2026-10-19"); });
+  test("bilan de semaine limité à la semaine", () => {
+    const e = [ev("message_envoyé", "2026-10-19"), ev("message_envoyé", "2026-10-20", "p2"), ev("message_envoyé", "2026-10-20", "p3"), ev("message_envoyé", "2026-10-26", "p4"), ev("changement_statut", "2026-10-21", "p1", "Intéressé → Client")];
+    const r = weeklyRecap([], e, "2026-10-19");
+    expect(r.contacts).toBe(3); expect(r.recrues).toBe(1); expect(r.bestDay).toBe("2026-10-20");
+  });
+  test("règle +10 % si atteint, identique sinon", () => {
+    const n = suggestNextGoals({ contacts_goal: 10, relances_goal: 5, recrues_goal: 1 }, { contacts: 10, relances: 4, recrues: 1, missions: 0, bestDay: null });
+    expect(n).toEqual({ contacts_goal: 11, relances_goal: 5, recrues_goal: 2 });
+    expect(suggestNextGoals({ contacts_goal: 25, relances_goal: 1, recrues_goal: 1 }, { contacts: 30, relances: 0, recrues: 0, missions: 0, bestDay: null }).contacts_goal).toBe(28);
+  });
+});

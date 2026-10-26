@@ -54,6 +54,11 @@ export function WeeklyGoalsCard({ crm, userId }: { crm: Crm; userId: string }) {
     supabase.from("prospect_events").select("type, content, prospect_id").gte("created_at", start.toISOString())
       .then(({ data }) => setEvents(data ?? []));
   }, [userId, start]);
+  useEffect(() => {
+    const h = (e: Event) => { const g = (e as CustomEvent<Goals>).detail; setGoals(g); setDraft(g); };
+    window.addEventListener("mlm-goals-updated", h);
+    return () => window.removeEventListener("mlm-goals-updated", h);
+  }, []);
 
   const progress = useMemo(() => {
     const createdBefore = new Set(crm.prospects.filter(p => new Date(p.created_at) < start).map(p => p.id));
