@@ -23,7 +23,19 @@ if (typeof window !== "undefined") {
 }
 
 export const getRouter = () => {
-  const queryClient = new QueryClient();
+  // "JWT issued at future" (PGRST303) happens when the device clock is slightly
+  // behind the server right after sign-in; retrying after a short delay succeeds.
+  const isClockSkew = (e: unknown) =>
+    !!e && typeof e === "object" && ((e as { code?: string }).code === "PGRST303" ||
+      /issued at future/i.test(String((e as { message?: string }).message ?? "")));
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: {
+        retry: (count, error) => (isClockSkew(error) ? count < 5 : count < 3),
+        retryDelay: (count, error) => (isClockSkew(error) ? 1500 * (count + 1) : Math.min(1000 * 2 ** count, 8000)),
+      },
+    },
+  });
 
   const router = createRouter({
     routeTree,
