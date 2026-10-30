@@ -33,7 +33,7 @@ function ScriptsPage() {
   const [category, setCategory] = useState("Tous");
   const [query, setQuery] = useState("");
   const [company, setCompany] = useState("Tous");
-  const [editing, setEditing] = useState<Tables<"scripts"> | null>(null);
+  const [editing, setEditing] = useState<Script | null>(null);
   const normalized = (value: string) => value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
   const shown = data.scripts.filter(s => (category === "Tous" || s.category === category) && (company === "Tous" || (company === "Génériques" ? !s.company : s.company === company)) && normalized(`${s.title} ${s.category} ${s.content}`).includes(normalized(query.trim())));
   return <AppShell user={user} title="Scripts">

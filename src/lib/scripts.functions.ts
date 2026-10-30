@@ -16,7 +16,7 @@ export const getScripts = createServerFn({ method: "GET" })
     if (error) throw new Error("Impossible de charger les scripts. Réessayez.");
     const full = (data ?? []).map(s => ({ ...s, locked: false }));
     const ids = new Set(full.map(s => s.id));
-    const locked = (teasers.data ?? []).filter(t => !ids.has(t.id)).map(t => ({ id: t.id, title: t.title, category: t.category, company: t.company, sort_order: t.sort_order, content: "", locked: true }));
+    const locked = (teasers.data ?? []).filter(t => !ids.has(t.id)).map(t => ({ id: t.id, title: t.title, category: t.category, company: t.company, sort_order: t.sort_order, content: "", created_at: "", updated_at: "", locked: true }));
     return { scripts: [...full, ...locked].sort((a, b) => a.sort_order - b.sort_order), isAdmin: role.data === true };
   });
 
