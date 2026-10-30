@@ -18,7 +18,7 @@ type Script = Tables<"scripts"> & { locked: boolean };
 export const Route = createFileRoute("/_authenticated/scripts")({
   head: () => ({ meta: [
     { title: "Scripts de prospection — MLM Boost AI" },
-    { name: "description", content: "Modèles en français pour le premier contact, les relances, les objections et le suivi d’équipe, plus des templates Longrich (plan Business)." },
+    { name: "description", content: "Modèles en français pour le premier contact, les relances, les objections et le suivi d’équipe, plus des templates Longrich (plan Pro)." },
     { property: "og:title", content: "Scripts de prospection — MLM Boost AI" },
     { property: "og:description", content: "Votre bibliothèque de messages de prospection éthiques, prêts à personnaliser." },
     { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" },
@@ -62,7 +62,7 @@ function ScriptCard({ script: s, onEdit }: { script: Script; onEdit?: (() => voi
   }
   return <article className="surface flex min-w-0 flex-col rounded-lg p-5">
     <div className="flex items-start justify-between gap-3"><div><span className="text-xs font-semibold text-primary">{s.category}{s.company ? ` · ${s.company}` : ""}</span><h2 className="mt-2 text-base font-bold">{s.title}</h2></div>{onEdit && <Button variant="ghost" size="icon" className="size-11 shrink-0" title="Modifier le script" aria-label={`Modifier ${s.title}`} onClick={onEdit}><Pencil /></Button>}</div>
-    {s.locked ? <><p className="mb-5 mt-4 flex flex-1 items-start gap-2 text-sm leading-7 text-muted-foreground"><Lock className="mt-1 size-4 shrink-0 text-primary" />Template réservé au plan Business.</p><div className="border-t border-border pt-4"><Button asChild className="min-h-11"><Link to="/abonnement"><Lock />Passer au plan Business</Link></Button></div></> : <>
+    {s.locked ? <><p className="mb-5 mt-4 flex flex-1 items-start gap-2 text-sm leading-7 text-muted-foreground"><Lock className="mt-1 size-4 shrink-0 text-primary" />Template réservé au plan Pro.</p><div className="border-t border-border pt-4"><Button asChild className="min-h-11"><Link to="/abonnement"><Lock />Passer au plan Pro</Link></Button></div></> : <>
     <p className="mb-5 mt-4 flex-1 whitespace-pre-line break-words text-sm leading-7 text-muted-foreground">{s.content}</p>
     <div className="flex flex-wrap gap-2 border-t border-border pt-4"><Button variant="outline" className="min-h-11" onClick={copy}>{copied ? <Check /> : <Copy />}Copier</Button><Button asChild className="min-h-11 whitespace-normal text-left"><Link to="/assistant" search={{ script: s.id }}><Sparkles />Personnaliser avec l’IA</Link></Button></div></>}
   </article>;

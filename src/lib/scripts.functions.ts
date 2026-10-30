@@ -7,7 +7,7 @@ export const scriptCategories = ["Premier contact", "Relance", "Objections", "In
 export const getScripts = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    // RLS only returns company templates in full to Business (effective_plan) or admin.
+    // RLS only returns company templates in full to Pro and above (effective_plan) or admin.
     const [{ data, error }, role, teasers] = await Promise.all([
       context.supabase.from("scripts").select("*").order("sort_order"),
       context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" }),
