@@ -5,4 +5,5 @@
 - [x] Coach du jour V1 (missions, bilan, sans IA)
 - [x] Coach V2 — priorisation, réglages, conseil IA au clic, objections
 - [x] Coach V3 — séries, bilan de semaine, objectifs proposés
+- [x] Templates par entreprise (Longrich) — accès dès le plan Pro
 - [ ] Planificateur de statuts
