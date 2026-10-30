@@ -34,14 +34,15 @@ export function planDef(key: string | null | undefined): PlanDef {
   return PLANS[(key as PlanKey) in PLANS ? (key as PlanKey) : "gratuit"];
 }
 
-export type Feature = "academyFull" | "csv" | "advancedStats" | "teamTraining";
-export const FEATURE_MIN_PLAN: Record<Feature, PlanKey> = { academyFull: "pro", csv: "pro", advancedStats: "expert", teamTraining: "business" };
+export type Feature = "academyFull" | "csv" | "advancedStats" | "teamTraining" | "companyTemplates";
+export const FEATURE_MIN_PLAN: Record<Feature, PlanKey> = { academyFull: "pro", csv: "pro", advancedStats: "expert", teamTraining: "business", companyTemplates: "business" };
 
 export function hasFeature(plan: string, feature: Feature) {
   const d = planDef(plan);
   if (feature === "academyFull") return d.academyLevels >= 6;
   if (feature === "csv") return d.csv;
   if (feature === "advancedStats") return d.advancedStats;
+  if (feature === "companyTemplates") return d.key === "business";
   return d.teamTraining;
 }
 
@@ -70,5 +71,5 @@ export const PLAN_CARD_ITEMS: Record<PlanKey, PlanCardItem[]> = {
   gratuit: [{ text: "10 prospects maximum" }, { text: "5 générations IA / mois" }, { text: "Académie niveaux 1 et 2" }, { text: "1 utilisateur" }],
   pro: [{ text: "Prospects illimités" }, { text: "100 générations IA / mois" }, { text: "Académie complète (6 niveaux)" }, { text: "Import / export CSV" }, { text: "File « À relancer aujourd'hui »" }],
   expert: [{ text: "Tout le plan Pro" }, { text: "Générations IA étendues (jusqu'à 500 / mois)" }, { text: "Statistiques avancées" }, { text: "Rapports hebdomadaires", soon: true }],
-  business: [{ text: "Tout le plan Expert" }, { text: "Formation de l'équipe" }, { text: "Templates par entreprise", soon: true }, { text: "WhatsApp Business", soon: true }, { text: "Support prioritaire" }],
+  business: [{ text: "Tout le plan Expert" }, { text: "Formation de l'équipe" }, { text: "Templates par entreprise" }, { text: "WhatsApp Business", soon: true }, { text: "Support prioritaire" }],
 };
