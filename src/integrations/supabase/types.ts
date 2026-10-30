@@ -425,6 +425,7 @@ export type Database = {
       scripts: {
         Row: {
           category: string
+          company: string | null
           content: string
           created_at: string
           id: string
@@ -434,6 +435,7 @@ export type Database = {
         }
         Insert: {
           category: string
+          company?: string | null
           content: string
           created_at?: string
           id?: string
@@ -443,6 +445,7 @@ export type Database = {
         }
         Update: {
           category?: string
+          company?: string | null
           content?: string
           created_at?: string
           id?: string
@@ -553,6 +556,16 @@ export type Database = {
           photo_url: string
           tagline: string
           whatsapp: string
+        }[]
+      }
+      company_script_teasers: {
+        Args: never
+        Returns: {
+          category: string
+          company: string
+          id: string
+          sort_order: number
+          title: string
         }[]
       }
       effective_plan: {
