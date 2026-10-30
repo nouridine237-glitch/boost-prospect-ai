@@ -7,12 +7,17 @@ export const scriptCategories = ["Premier contact", "Relance", "Objections", "In
 export const getScripts = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const [{ data, error }, role] = await Promise.all([
+    // RLS only returns company templates in full to Business (effective_plan) or admin.
+    const [{ data, error }, role, teasers] = await Promise.all([
       context.supabase.from("scripts").select("*").order("sort_order"),
       context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" }),
+      context.supabase.rpc("company_script_teasers"),
     ]);
     if (error) throw new Error("Impossible de charger les scripts. Réessayez.");
-    return { scripts: data ?? [], isAdmin: role.data === true };
+    const full = (data ?? []).map(s => ({ ...s, locked: false }));
+    const ids = new Set(full.map(s => s.id));
+    const locked = (teasers.data ?? []).filter(t => !ids.has(t.id)).map(t => ({ id: t.id, title: t.title, category: t.category, company: t.company, sort_order: t.sort_order, content: "", locked: true }));
+    return { scripts: [...full, ...locked].sort((a, b) => a.sort_order - b.sort_order), isAdmin: role.data === true };
   });
 
 export const saveScript = createServerFn({ method: "POST" })
