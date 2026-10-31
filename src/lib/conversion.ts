@@ -49,7 +49,7 @@ export function parseStatusChange(content: string | null | undefined): { from: C
   if (!content) return null;
   const parts = content.split("→").map(x => x.trim().toLowerCase());
   if (parts.length !== 2) return null;
-  const from = LABEL_TO_STATUS[parts[0]], to = LABEL_TO_STATUS[parts[1]];
+  const from = LABEL_TO_STATUS[parts[0] ?? ""], to = LABEL_TO_STATUS[parts[1] ?? ""];
   return from && to && from !== to ? { from, to } : null;
 }
 

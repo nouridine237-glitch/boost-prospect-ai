@@ -4,6 +4,7 @@ import { AppShell } from "@/components/app-shell";
 import { UpgradeCard } from "@/components/plan-gate";
 import { hasFeature } from "@/lib/plans";
 import { Stat, UsageLine, statusLabels, statuses, slugStatus, useCrm } from "@/components/crm";
+import { ConversionCard } from "@/components/conversion-card";
 
 export const Route = createFileRoute("/_authenticated/statistiques")({
   head: () => ({ meta: [
@@ -59,6 +60,7 @@ function StatsPage() {
           </div>
         </section>
         </div>
+        {advanced && <ConversionCard userId={user.id} prospects={crm.prospects} />}
       </div>
     </AppShell>
   );
