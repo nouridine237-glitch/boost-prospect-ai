@@ -1,56 +1,40 @@
-# Rapport d'audit — état actuel (commit 2c0e4bf)
+# Audit — conversion intelligente des prospects
 
-Audit seulement : aucun fichier, aucune base, aucune publication modifiés. Ce plan ne propose aucun changement ; l'approuver ne lance rien.
+Audit du code seulement : aucun changement. Ce plan propose la suite la moins coûteuse ; rien n'est construit avant ton accord.
 
-## 1. Coach du jour V2/V3 — implémenté
+## 1. Existant et branché dans l'interface
 
-Code vérifié :
-- `src/lib/coach.ts` : `priorityScore` (retard, intérêt, ancienneté, statut, objection), `priorityOf` (haute ≥50, moyenne ≥25, sinon normale), `CoachSettings` (missions 3/5/8, `restDays`, ton amical/professionnel, lus par `readCoachSettings`), `isRestDay`, `matchObjectionId`, `streak`, `weeklyRecap`, `suggestNextGoals`.
-- `src/components/coach-card.tsx` : badge « Priorité … », jour de repos, conseil IA au clic via `suggestNextAction`. Les conseils du jour sont relus depuis `ai_generations` (filtrés par `user_id`), sans nouvelle génération automatique. Il affiche aussi la réponse courte du Gestionnaire d'objections, avec un bouton Copier.
-- `src/components/coach-week.tsx` : série, bilan de la semaine passée, objectifs proposés.
-- `src/lib/ai.functions.ts` : `suggestNextAction` lit le prospect avec `.eq("user_id", context.userId)`. Le risque relevé lors de l'audit précédent est donc corrigé. Le quota passe par la réservation `ai_usage_log`.
+- **Statuts** : nouveau, contacté, discussion, intéressé, client, non_intéressé (type `prospect_status`). Le changement se fait par `changeStatus` dans `src/components/crm.tsx`, depuis la liste et le pipeline.
+- **Historique des contacts** : table `prospect_events` (RLS propriétaire, pas de modification). Elle est écrite par `logProspectEvent` (`src/lib/prospect-events.ts`), avec 7 types : message_envoyé, message_copié, changement_statut, relance_reportée, note_modifiée, mission_faite, mission_passée. L'onglet « Historique » de la fiche (`src/components/prospect-tools.tsx:215`) affiche les 100 derniers événements.
+- **Prochaine action par prospect** :
+  - Sans IA : le Coach (`src/lib/coach.ts`, `buildDailyMissions` et `priorityScore`) se base sur le retard de relance, l'intérêt, l'ancienneté du dernier contact, le statut et l'objection notée. Il exclut Client et Non intéressé. Les relances du jour viennent de `FollowupQueue`.
+  - Avec IA, au clic : `suggestNextAction` (`src/lib/ai.functions.ts:111`) depuis la fiche et le Coach, sous quota.
+- **Objections** : champ `main_objection`, réponse du Gestionnaire associée dans le Coach (`matchObjectionId`).
+- **Métrique de conversion** : `crm.conversion = clients / total des prospects` (`crm.tsx:65`). Elle est affichée sur Statistiques (« Taux de conversion ») avec la répartition par statut (plan Expert pour la vue avancée).
 
-Tests automatisés (lancés pendant cet audit) : `src/lib/coach.test.ts` — 19 tests passent.
+## 2. Présent mais incomplet (preuves)
 
-Navigateur : aucun test fait. L'écran du coach, les réglages, le bouton « Accepter les objectifs proposés » et le conseil IA n'ont pas été vérifiés à l'écran.
+- **Taux non fiable** : c'est une photo de l'état actuel. Il ne tient compte ni de la période, ni des étapes, ni des prospects qui reviennent en arrière.
+- **Événement de statut en texte libre** : il est enregistré sous la forme « Ancien → Nouveau » avec les libellés affichés (`crm.tsx:101`), sans champ structuré. On peut l'analyser, mais c'est fragile.
+- **Changements de statut non tracés** : ceux faits par l'outil MCP `update-prospect` (`src/lib/mcp/tools/update-prospect.ts`) et ceux de l'import CSV n'écrivent aucun événement. Les prospects antérieurs à la table `prospect_events` n'ont pas d'historique non plus.
+- **`joined_team_at`** (trigger `set_joined_team_at`) donne la date de passage en Client. Elle est fiable pour le passage « → client », pas pour les étapes intermédiaires.
 
-Risques :
-- Fuseau horaire : on se base sur le jour local de l'appareil, non vérifié côté serveur.
-- Le choix entre une objection et un modèle se fait par mots-clés et peut se tromper.
+## 3. Absent
 
-## 2. Templates Longrich — implémenté (plan Pro et plus)
+- Entonnoir par étape (contacté → discussion → intéressé → client) avec le taux de chaque étape.
+- Conversion sur une période (30 jours, ou par mois de création).
+- Délai moyen jusqu'à la conversion.
+- Conversion par source et par objection.
+- Repérage des prospects « bloqués » trop longtemps à une étape.
 
-Code vérifié :
-- `src/lib/plans.ts` : `companyTemplates: "pro"`. La carte du plan Pro mentionne la fonctionnalité, celle du plan Business non.
-- Migrations `0014_company_templates_longrich.sql` (colonne `company`, 10 scripts, fonction `company_script_teasers` qui ne renvoie que le titre et la catégorie) et `0015_company_templates_plan_pro.sql` (lecture si `company IS NULL`, plan effectif pro/expert/business, ou admin).
-- `src/lib/scripts.functions.ts` (`getScripts`) : les scripts verrouillés arrivent sans texte. Le verrou est donc côté serveur.
-- `src/routes/_authenticated/scripts.tsx` : filtre Entreprise, cadenas et bouton « Passer au plan Pro ».
+## Solution proposée (la moins coûteuse, sans IA ni migration)
 
-Tests automatisés : `src/lib/plans.test.ts` — 4 tests passent.
+1. Ajouter au fichier `src/lib/prospect-events.ts` un petit lecteur qui transforme « A → B » en étapes, à partir des libellés existants.
+2. Écrire des fonctions pures dans un nouveau `src/lib/conversion.ts` : entonnoir, conversion sur 30 jours (prospects créés dans la période et devenus clients d'après `joined_team_at`), délai moyen, conversion par source et prospects bloqués depuis plus de 7 jours.
+3. Ajouter une carte « Conversion » sur `src/routes/_authenticated/statistiques.tsx`, réservée à la même vue avancée Expert.
+4. Faire écrire l'événement changement_statut aussi par l'outil MCP de mise à jour.
+5. Écrire des tests unitaires dans `src/lib/conversion.test.ts`.
 
-Navigateur (tour précédent, selon l'historique) : cadenas vu avec un compte Gratuit, pas revérifié aujourd'hui. Lecture complète vérifiée en direct pour un abonné Business. Pas vérifiée avec un compte Pro réel, car le seul abonnement Pro en base a dépassé sa date de renouvellement.
+Estimation : environ 1 à 2 crédits. Aucune nouvelle table, la sécurité existante suffit.
 
-Risques :
-- Les 10 textes ont été rédigés par l'IA et sont à relire (santé, revenus).
-- Le contenu est en base : la règle de lecture s'applique déjà en ligne, même avant publication.
-
-## 3. Autres changements récents
-
-- `src/router.tsx` : nouvelles tentatives en cas de décalage d'horloge (« JWT issued in the future »). Aucun test automatisé, non reproduit.
-- `roadmap.md` et le plan mis à jour (sans effet sur l'app).
-- Les commits nommés « Changes » n'ont pas été détaillés un par un.
-
-## 4. Tests
-
-- 23 tests passent, 0 échec (2 fichiers). La première exécution a renvoyé un code de sortie 1 malgré 0 échec, la seconde est sortie normalement : c'est à surveiller, ce n'est pas un échec de test.
-- Aucun test pour SasPay, le parrainage ou la page de capture dans `src/lib`.
-
-## 5. Publication — non confirmée
-
-- Base de données (migrations 0014/0015) : déjà active en ligne, car une seule base sert l'aperçu et le site publié.
-- Code de l'interface (coach V2/V3, page Scripts, correctif d'horloge) : aucune publication faite par moi depuis le coach V2. Je n'ai pas pu prouver quelle version tourne sur mlmboostai.app. À considérer comme présent seulement dans l'éditeur tant qu'aucune publication n'est faite.
-- Conséquence : en ligne, la page Scripts peut encore afficher l'ancien texte (« plan Business ») alors que la base ouvre déjà l'accès au Pro.
-
-## Prochaine étape recommandée
-
-Publier, puis tester à l'écran avec un compte Pro actif et un compte Gratuit : page Scripts, carte du coach et bouton « Accepter ».
+Limite à annoncer dans l'interface : les étapes intermédiaires ne sont fiables que pour les changements faits depuis l'apparition de l'historique.
