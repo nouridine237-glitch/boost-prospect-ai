@@ -7,3 +7,5 @@
 - [x] Coach V3 — séries, bilan de semaine, objectifs proposés
 - [x] Templates par entreprise (Longrich) — accès dès le plan Pro
 - [ ] Planificateur de statuts
+- [x] Conversion étape 1 — calculs purs + tests (sans interface)
+- [ ] Conversion étape 2 — carte Statistiques
