@@ -57,7 +57,7 @@ describe("prospects bloqués (7 jours)", () => {
       p("recent", "discussion", { created_at: "2026-10-14T10:00:00Z" }),
     ], [], now);
     expect(r.stuck.map(s => s.id)).toEqual(["vieux"]);
-    expect(r.stuck[0].idleDays).toBe(7);
+    expect(r.stuck[0]?.idleDays).toBe(7);
   });
   test("un événement récent compte comme activité", () => {
     expect(stuckProspects([p("a", "contacté")], [ev("a", "x", "2026-10-19T10:00:00Z", "message_envoyé")], now).stuck).toEqual([]);
