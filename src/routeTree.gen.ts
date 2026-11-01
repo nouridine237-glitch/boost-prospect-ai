@@ -21,6 +21,7 @@ import { Route as AuthenticatedAcademieRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedAssistantRouteImport } from './routes/_authenticated/assistant'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedDuplicationRouteImport } from './routes/_authenticated/duplication'
 import { Route as AuthenticatedFormerEquipeRouteImport } from './routes/_authenticated/former-equipe'
 import { Route as AuthenticatedMaPageRouteImport } from './routes/_authenticated/ma-page'
 import { Route as AuthenticatedObjectionsRouteImport } from './routes/_authenticated/objections'
@@ -99,6 +100,12 @@ const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedDuplicationRoute =
+  AuthenticatedDuplicationRouteImport.update({
+    id: '/duplication',
+    path: '/duplication',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedFormerEquipeRoute =
   AuthenticatedFormerEquipeRouteImport.update({
     id: '/former-equipe',
@@ -202,6 +209,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AuthenticatedAdminRoute
   '/assistant': typeof AuthenticatedAssistantRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/duplication': typeof AuthenticatedDuplicationRoute
   '/former-equipe': typeof AuthenticatedFormerEquipeRoute
   '/ma-page': typeof AuthenticatedMaPageRoute
   '/objections': typeof AuthenticatedObjectionsRoute
@@ -232,6 +240,7 @@ export interface FileRoutesByTo {
   '/admin': typeof AuthenticatedAdminRoute
   '/assistant': typeof AuthenticatedAssistantRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/duplication': typeof AuthenticatedDuplicationRoute
   '/former-equipe': typeof AuthenticatedFormerEquipeRoute
   '/ma-page': typeof AuthenticatedMaPageRoute
   '/objections': typeof AuthenticatedObjectionsRoute
@@ -264,6 +273,7 @@ export interface FileRoutesById {
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/assistant': typeof AuthenticatedAssistantRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/duplication': typeof AuthenticatedDuplicationRoute
   '/_authenticated/former-equipe': typeof AuthenticatedFormerEquipeRoute
   '/_authenticated/ma-page': typeof AuthenticatedMaPageRoute
   '/_authenticated/objections': typeof AuthenticatedObjectionsRoute
@@ -296,6 +306,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/assistant'
     | '/dashboard'
+    | '/duplication'
     | '/former-equipe'
     | '/ma-page'
     | '/objections'
@@ -326,6 +337,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/assistant'
     | '/dashboard'
+    | '/duplication'
     | '/former-equipe'
     | '/ma-page'
     | '/objections'
@@ -357,6 +369,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin'
     | '/_authenticated/assistant'
     | '/_authenticated/dashboard'
+    | '/_authenticated/duplication'
     | '/_authenticated/former-equipe'
     | '/_authenticated/ma-page'
     | '/_authenticated/objections'
@@ -477,6 +490,13 @@ declare module '@tanstack/react-router' {
       path: '/dashboard'
       fullPath: '/dashboard'
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/duplication': {
+      id: '/_authenticated/duplication'
+      path: '/duplication'
+      fullPath: '/duplication'
+      preLoaderRoute: typeof AuthenticatedDuplicationRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/former-equipe': {
@@ -607,6 +627,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
   AuthenticatedAssistantRoute: typeof AuthenticatedAssistantRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedDuplicationRoute: typeof AuthenticatedDuplicationRoute
   AuthenticatedFormerEquipeRoute: typeof AuthenticatedFormerEquipeRoute
   AuthenticatedMaPageRoute: typeof AuthenticatedMaPageRoute
   AuthenticatedObjectionsRoute: typeof AuthenticatedObjectionsRoute
@@ -625,6 +646,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRoute,
   AuthenticatedAssistantRoute: AuthenticatedAssistantRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedDuplicationRoute: AuthenticatedDuplicationRoute,
   AuthenticatedFormerEquipeRoute: AuthenticatedFormerEquipeRoute,
   AuthenticatedMaPageRoute: AuthenticatedMaPageRoute,
   AuthenticatedObjectionsRoute: AuthenticatedObjectionsRoute,
