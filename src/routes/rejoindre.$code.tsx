@@ -44,7 +44,7 @@ function JoinPage() {
     setBusy(true);
     const { data, error } = await supabase.rpc("team_respond_invite", { _code: code, _accept: accept });
     setBusy(false);
-    if (error) return toast.error("Action impossible, réessaie.");
+    if (error) { toast.error("Action impossible, réessaie."); return; }
     const r = String(data);
     (r === "actif" || r === "refuse" ? toast.success : toast.error)(MSG[r] ?? "Action impossible.");
     navigate({ to: r === "actif" ? "/academie" : "/dashboard" });
@@ -63,8 +63,8 @@ function JoinPage() {
             <Link to="/auth" search={{ mode: "signup", next: `/rejoindre/${code}` }} className="inline-block rounded-lg bg-primary px-5 py-2.5 font-semibold text-primary-foreground">Se connecter / créer un compte</Link>
           </div>
         )}
-        {state === "ready" && !info && <p className="mt-4 text-sm">{MSG.introuvable}</p>}
-        {state === "ready" && info && !usable && <p className="mt-4 text-sm">{info.is_self ? MSG.soi_meme : info.expired ? MSG.expiree : MSG.deja_utilisee}</p>}
+        {state === "ready" && !info && <p className="mt-4 text-sm">{MSG["introuvable"]}</p>}
+        {state === "ready" && info && !usable && <p className="mt-4 text-sm">{info.is_self ? MSG["soi_meme"] : info.expired ? MSG["expiree"] : MSG["deja_utilisee"]}</p>}
         {state === "ready" && usable && (
           <section className="surface mt-5 rounded-lg p-5 text-sm">
             <p><b>{info.leader_name}</b> t'invite à rejoindre son équipe.</p>

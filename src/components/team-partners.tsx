@@ -26,7 +26,7 @@ export function TeamPartners({ userId }: { userId: string }) {
   const linkFor = (c: string) => `${origin}/rejoindre/${c}`;
   const create = async () => {
     const { data, error } = await supabase.rpc("team_create_invite");
-    if (error || !data) return toast.error(error?.message.includes("PLAN") ? "Réservé au plan Business." : "Invitation non créée, réessaie.");
+    if (error || !data) { toast.error(error?.message.includes("PLAN") ? "Réservé au plan Business." : "Invitation non créée, réessaie."); return; }
     navigator.clipboard.writeText(linkFor(data)).catch(() => {});
     toast.success("Lien d'invitation copié");
     load();
@@ -34,7 +34,7 @@ export function TeamPartners({ userId }: { userId: string }) {
   const end = async (id: string, label: string) => {
     if (!confirm(label)) return;
     const { error } = await supabase.rpc("team_end_link", { _link_id: id });
-    if (error) return toast.error("Action impossible, réessaie.");
+    if (error) { toast.error("Action impossible, réessaie."); return; }
     load();
   };
 
@@ -85,7 +85,7 @@ export function MyLeaderCard() {
   const leave = async () => {
     if (!confirm(`Quitter l'équipe de ${leader.leader_name} ? Il ne verra plus ta progression.`)) return;
     const { error } = await supabase.rpc("team_end_link", { _link_id: leader.link_id });
-    if (error) return toast.error("Action impossible, réessaie.");
+    if (error) { toast.error("Action impossible, réessaie."); return; }
     toast.success("Tu as quitté l'équipe.");
     setLeader(null);
   };
