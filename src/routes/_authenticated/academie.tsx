@@ -4,6 +4,7 @@ import { usePlan } from "@/hooks/use-plan";
 import { canAccessAcademyLevel } from "@/lib/plans";
 import { AppShell } from "@/components/app-shell";
 import { lessons } from "@/lib/academy-content";
+import { MyLeaderCard } from "@/components/team-partners";
 
 export const Route = createFileRoute("/_authenticated/academie")({
   head: () => ({ meta: [
@@ -26,6 +27,8 @@ function AcademiePage() {
         <span className="eyebrow">Formation</span>
         <h1 className="mt-2 text-3xl font-extrabold">Académie MLM.</h1>
         <p className="mt-2 text-sm text-muted-foreground">6 niveaux pour bâtir une activité structurée, honnête et durable.</p>
+        <MyLeaderCard />
+        <p className="mt-3 text-sm"><a href="/formation" className="font-semibold text-primary">Passer les quiz et obtenir ton certificat →</a> <span className="text-muted-foreground">(tes niveaux validés sont enregistrés sur ton compte)</span></p>
         <div className="mt-8 grid gap-4 sm:grid-cols-2">
           {lessons.map((l) => (
             <Link key={l.slug} to="/academie/$niveau" params={{ niveau: l.slug }}

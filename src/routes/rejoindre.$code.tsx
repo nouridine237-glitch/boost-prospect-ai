@@ -4,7 +4,6 @@ import { toast } from "sonner";
 import { Brand } from "@/components/brand";
 import { supabase } from "@/integrations/supabase/client";
 
-const PENDING_TEAM_KEY = "mlm-team-invite";
 
 export const Route = createFileRoute("/rejoindre/$code")({
   head: () => ({ meta: [
@@ -34,8 +33,7 @@ function JoinPage() {
 
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data }) => {
-      if (!data.session) { try { localStorage.setItem(PENDING_TEAM_KEY, code); } catch { /* ignore */ } setState("signedOut"); return; }
-      try { localStorage.removeItem(PENDING_TEAM_KEY); } catch { /* ignore */ }
+      if (!data.session) { setState("signedOut"); return; }
       const { data: rows } = await supabase.rpc("team_invite_info", { _code: code });
       setInfo((rows?.[0] as Info | undefined) ?? null);
       setState("ready");
@@ -62,7 +60,7 @@ function JoinPage() {
         {state === "signedOut" && (
           <div className="mt-4 space-y-3 text-sm">
             <p>Connecte-toi ou crée ton compte, puis l'invitation s'ouvrira de nouveau.</p>
-            <Link to="/auth" search={{ mode: "signup" } as never} className="inline-block rounded-lg bg-primary px-5 py-2.5 font-semibold text-primary-foreground">Se connecter / créer un compte</Link>
+            <Link to="/auth" search={{ mode: "signup", next: `/rejoindre/${code}` }} className="inline-block rounded-lg bg-primary px-5 py-2.5 font-semibold text-primary-foreground">Se connecter / créer un compte</Link>
           </div>
         )}
         {state === "ready" && !info && <p className="mt-4 text-sm">{MSG.introuvable}</p>}
