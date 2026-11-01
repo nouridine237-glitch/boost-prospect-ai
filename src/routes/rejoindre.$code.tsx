@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { Brand } from "@/components/brand";
 import { supabase } from "@/integrations/supabase/client";
 
-export const PENDING_TEAM_KEY = "mlm-team-invite";
+const PENDING_TEAM_KEY = "mlm-team-invite";
 
 export const Route = createFileRoute("/rejoindre/$code")({
   head: () => ({ meta: [

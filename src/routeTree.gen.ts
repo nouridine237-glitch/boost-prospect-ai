@@ -31,6 +31,7 @@ import { Route as AuthenticatedScriptsRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedStatistiquesRouteImport } from './routes/_authenticated/statistiques'
 import { Route as AuthenticatedTramesVocalesRouteImport } from './routes/_authenticated/trames-vocales'
 import { Route as PPseudoRouteImport } from './routes/p.$pseudo'
+import { Route as RejoindreCodeRouteImport } from './routes/rejoindre.$code'
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
 import { Route as AuthenticatedAcademieNiveauRouteImport } from './routes/_authenticated/academie_.$niveau'
 import { Route as ApiPublicSaspayWebhookRouteImport } from './routes/api/public/saspay-webhook'
@@ -151,6 +152,11 @@ const PPseudoRoute = PPseudoRouteImport.update({
   path: '/p/$pseudo',
   getParentRoute: () => rootRouteImport,
 } as any)
+const RejoindreCodeRoute = RejoindreCodeRouteImport.update({
+  id: '/rejoindre/$code',
+  path: '/rejoindre/$code',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DotlovableOauthConsentRoute = DotlovableOauthConsentRouteImport.update({
   id: '/.lovable/oauth/consent',
   path: '/.lovable/oauth/consent',
@@ -206,6 +212,7 @@ export interface FileRoutesByFullPath {
   '/statistiques': typeof AuthenticatedStatistiquesRoute
   '/trames-vocales': typeof AuthenticatedTramesVocalesRoute
   '/p/$pseudo': typeof PPseudoRoute
+  '/rejoindre/$code': typeof RejoindreCodeRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/academie/$niveau': typeof AuthenticatedAcademieNiveauRoute
   '/api/public/saspay-webhook': typeof ApiPublicSaspayWebhookRoute
@@ -235,6 +242,7 @@ export interface FileRoutesByTo {
   '/statistiques': typeof AuthenticatedStatistiquesRoute
   '/trames-vocales': typeof AuthenticatedTramesVocalesRoute
   '/p/$pseudo': typeof PPseudoRoute
+  '/rejoindre/$code': typeof RejoindreCodeRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/academie/$niveau': typeof AuthenticatedAcademieNiveauRoute
   '/api/public/saspay-webhook': typeof ApiPublicSaspayWebhookRoute
@@ -266,6 +274,7 @@ export interface FileRoutesById {
   '/_authenticated/statistiques': typeof AuthenticatedStatistiquesRoute
   '/_authenticated/trames-vocales': typeof AuthenticatedTramesVocalesRoute
   '/p/$pseudo': typeof PPseudoRoute
+  '/rejoindre/$code': typeof RejoindreCodeRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/_authenticated/academie_/$niveau': typeof AuthenticatedAcademieNiveauRoute
   '/api/public/saspay-webhook': typeof ApiPublicSaspayWebhookRoute
@@ -297,6 +306,7 @@ export interface FileRouteTypes {
     | '/statistiques'
     | '/trames-vocales'
     | '/p/$pseudo'
+    | '/rejoindre/$code'
     | '/.lovable/oauth/consent'
     | '/academie/$niveau'
     | '/api/public/saspay-webhook'
@@ -326,6 +336,7 @@ export interface FileRouteTypes {
     | '/statistiques'
     | '/trames-vocales'
     | '/p/$pseudo'
+    | '/rejoindre/$code'
     | '/.lovable/oauth/consent'
     | '/academie/$niveau'
     | '/api/public/saspay-webhook'
@@ -356,6 +367,7 @@ export interface FileRouteTypes {
     | '/_authenticated/statistiques'
     | '/_authenticated/trames-vocales'
     | '/p/$pseudo'
+    | '/rejoindre/$code'
     | '/.lovable/oauth/consent'
     | '/_authenticated/academie_/$niveau'
     | '/api/public/saspay-webhook'
@@ -373,6 +385,7 @@ export interface RootRouteChildren {
   ResetPasswordRoute: typeof ResetPasswordRoute
   Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   PPseudoRoute: typeof PPseudoRoute
+  RejoindreCodeRoute: typeof RejoindreCodeRoute
   DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
   ApiPublicSaspayWebhookRoute: typeof ApiPublicSaspayWebhookRoute
   LovableEmailAuthPreviewRoute: typeof LovableEmailAuthPreviewRoute
@@ -536,6 +549,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PPseudoRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/rejoindre/$code': {
+      id: '/rejoindre/$code'
+      path: '/rejoindre/$code'
+      fullPath: '/rejoindre/$code'
+      preLoaderRoute: typeof RejoindreCodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/.lovable/oauth/consent': {
       id: '/.lovable/oauth/consent'
       path: '/.lovable/oauth/consent'
@@ -630,6 +650,7 @@ const rootRouteChildren: RootRouteChildren = {
   Char91DotwellKnownChar93OauthProtectedResourceRoute:
     Char91DotwellKnownChar93OauthProtectedResourceRoute,
   PPseudoRoute: PPseudoRoute,
+  RejoindreCodeRoute: RejoindreCodeRoute,
   DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
   ApiPublicSaspayWebhookRoute: ApiPublicSaspayWebhookRoute,
   LovableEmailAuthPreviewRoute: LovableEmailAuthPreviewRoute,
