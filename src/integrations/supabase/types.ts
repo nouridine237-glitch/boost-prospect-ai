@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      academy_progress: {
+        Row: {
+          attempts: number
+          best_score: number
+          level: number
+          passed: boolean
+          passed_at: string | null
+          total: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          attempts?: number
+          best_score?: number
+          level: number
+          passed?: boolean
+          passed_at?: string | null
+          total?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          attempts?: number
+          best_score?: number
+          level?: number
+          passed?: boolean
+          passed_at?: string | null
+          total?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       ai_generations: {
         Row: {
           created_at: string
@@ -494,6 +527,42 @@ export type Database = {
         }
         Relationships: []
       }
+      team_links: {
+        Row: {
+          accepted_at: string | null
+          created_at: string
+          ended_at: string | null
+          expires_at: string
+          id: string
+          invite_code: string
+          leader_id: string
+          member_id: string | null
+          status: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          created_at?: string
+          ended_at?: string | null
+          expires_at?: string
+          id?: string
+          invite_code?: string
+          leader_id: string
+          member_id?: string | null
+          status?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          created_at?: string
+          ended_at?: string | null
+          expires_at?: string
+          id?: string
+          invite_code?: string
+          leader_id?: string
+          member_id?: string | null
+          status?: string
+        }
+        Relationships: []
+      }
       user_goals_weekly: {
         Row: {
           contacts_goal: number
@@ -545,6 +614,7 @@ export type Database = {
     }
     Functions: {
       _ai_bonus_left: { Args: { _user_id: string }; Returns: number }
+      _can_lead: { Args: { _u: string }; Returns: boolean }
       _paid_plan_of: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["plan_type"]
@@ -584,6 +654,24 @@ export type Database = {
         Returns: boolean
       }
       my_ai_bonus: { Args: never; Returns: number }
+      my_team_leader: {
+        Args: never
+        Returns: {
+          accepted_at: string
+          leader_name: string
+          link_id: string
+        }[]
+      }
+      record_academy_result: {
+        Args: {
+          _level: number
+          _passed: boolean
+          _score: number
+          _total: number
+          _user_id: string
+        }
+        Returns: undefined
+      }
       reserve_ai_generation: {
         Args: { _type: Database["public"]["Enums"]["ai_generation_type"] }
         Returns: string
@@ -596,6 +684,31 @@ export type Database = {
           _phone: string
           _slug: string
         }
+        Returns: string
+      }
+      team_create_invite: { Args: never; Returns: string }
+      team_end_link: { Args: { _link_id: string }; Returns: string }
+      team_invite_info: {
+        Args: { _code: string }
+        Returns: {
+          expired: boolean
+          is_self: boolean
+          leader_name: string
+          status: string
+        }[]
+      }
+      team_member_progress: {
+        Args: never
+        Returns: {
+          accepted_at: string
+          last_passed_at: string
+          levels_passed: number
+          link_id: string
+          member_name: string
+        }[]
+      }
+      team_respond_invite: {
+        Args: { _accept: boolean; _code: string }
         Returns: string
       }
     }
