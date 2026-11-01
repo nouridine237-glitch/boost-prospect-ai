@@ -1,6 +1,6 @@
 import { Link, useLocation } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { BarChart3, Bot, Gift, Globe, ContactRound, CreditCard, FileText, GraduationCap, LayoutDashboard, Lock, LogOut, Menu, Mic, Settings, ShieldCheck, ShieldQuestion, Users } from "lucide-react";
+import { BarChart3, Bot, Gift, Globe, ContactRound, CreditCard, FileText, GraduationCap, LayoutDashboard, Lock, LogOut, Menu, Mic, Settings, ShieldCheck, ShieldQuestion, Users, Route as RouteIcon } from "lucide-react";
 import { Brand } from "@/components/brand";
 import { supabase } from "@/integrations/supabase/client";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
@@ -18,6 +18,7 @@ const nav = [
   { icon: Mic, label: "Trames vocales", to: "/trames-vocales" },
   { icon: BarChart3, label: "Statistiques", to: "/statistiques" },
   { icon: GraduationCap, label: "Académie", to: "/academie" },
+  { icon: RouteIcon, label: "Duplication", to: "/duplication" },
   { icon: Users, label: "Former mon équipe", to: "/former-equipe" },
   { icon: Gift, label: "Parrainage", to: "/parrainage" },
   { icon: CreditCard, label: "Abonnement", to: "/abonnement" },
@@ -49,7 +50,7 @@ export function AppShell({ children, user, title }: { children: React.ReactNode;
     <main className="min-h-screen bg-background pb-20 lg:pl-64 lg:pb-0">
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col border-r border-border bg-card lg:flex">
         <div className="p-6"><Brand /></div>
-        <nav className="mt-4 flex-1 space-y-1 px-3">
+        <nav className="mt-4 flex-1 space-y-1 overflow-y-auto px-3">
           {items.map(({ icon: Icon, label, to }) => {
             const active = location.pathname === to;
             return (
