@@ -8,6 +8,10 @@ import { Brand } from "@/components/brand";
 import { lessons } from "@/lib/academy-content";
 import { PASS_RATIO, quizzes } from "@/lib/academy-quiz";
 import { downloadCertificate } from "@/lib/certificate";
+import { toast } from "sonner";
+import { useServerFn } from "@tanstack/react-start";
+import { supabase } from "@/integrations/supabase/client";
+import { submitAcademyQuiz } from "@/lib/academy.functions";
 
 export const Route = createFileRoute("/formation")({
   validateSearch: z.object({ parrain: z.string().optional() }),
@@ -32,8 +36,23 @@ function FormationPage() {
   const [view, setView] = useState<View>({ kind: "home" });
 
   useEffect(() => {
-    try { const s = JSON.parse(localStorage.getItem(KEY) ?? "{}"); setPassed(s.passed ?? []); setName(s.name ?? ""); } catch { /* ignore */ }
+    let local: number[] = [];
+    try { const s = JSON.parse(localStorage.getItem(KEY) ?? "{}"); local = s.passed ?? []; setPassed(local); setName(s.name ?? ""); } catch { /* ignore */ }
+    // Compte connecté : on ajoute les niveaux validés enregistrés en base (jamais l'inverse).
+    supabase.auth.getSession().then(async ({ data }) => {
+      if (!data.session) return;
+      setSignedIn(true);
+      const { data: rows } = await supabase.from("academy_progress").select("level").eq("user_id", data.session.user.id).eq("passed", true);
+      const db = (rows ?? []).map((r) => r.level);
+      setPassed((p) => [...new Set([...p, ...db])].sort((a, b) => a - b));
+    }).catch(() => {});
   }, []);
+  const [signedIn, setSignedIn] = useState(false);
+  const submitFn = useServerFn(submitAcademyQuiz);
+  const record = (n: number, answers: number[]) => {
+    if (!signedIn) return;
+    submitFn({ data: { level: n, answers } }).catch(() => toast.error("Résultat non enregistré sur ton compte, réessaie plus tard."));
+  };
   const save = (p: number[], n = name) => { setPassed(p); localStorage.setItem(KEY, JSON.stringify({ passed: p, name: n })); };
   const go = (v: View) => { setView(v); window.scrollTo(0, 0); };
   const unlocked = (n: number) => n === 1 || passed.includes(n - 1);
@@ -78,6 +97,7 @@ function FormationPage() {
         {view.kind === "lesson" && <LessonView n={view.n} onBack={() => go({ kind: "home" })} onQuiz={() => go({ kind: "quiz", n: view.n })} />}
         {view.kind === "quiz" && (
           <QuizView n={view.n} onBack={() => go({ kind: "lesson", n: view.n })}
+            onSubmitted={(a) => record(view.n, a)}
             onPass={() => { if (!passed.includes(view.n)) save([...passed, view.n]); }}
             onNext={() => go(view.n < lessons.length ? { kind: "lesson", n: view.n + 1 } : { kind: "home" })} />
         )}
@@ -104,12 +124,12 @@ function LessonView({ n, onBack, onQuiz }: { n: number; onBack: () => void; onQu
   );
 }
 
-function QuizView({ n, onBack, onPass, onNext }: { n: number; onBack: () => void; onPass: () => void; onNext: () => void }) {
+function QuizView({ n, onBack, onPass, onNext, onSubmitted }: { n: number; onBack: () => void; onPass: () => void; onNext: () => void; onSubmitted: (answers: number[]) => void }) {
   const qs = quizzes[n] ?? [];
   const [answers, setAnswers] = useState<(number | null)[]>(qs.map(() => null));
   const [result, setResult] = useState<number | null>(null);
   const ok = result !== null && result / qs.length >= PASS_RATIO;
-  const submit = () => { const s = qs.filter((q, i) => answers[i] === q.answer).length; setResult(s); if (s / qs.length >= PASS_RATIO) onPass(); };
+  const submit = () => { const s = qs.filter((q, i) => answers[i] === q.answer).length; setResult(s); onSubmitted(answers as number[]); if (s / qs.length >= PASS_RATIO) onPass(); };
   return (
     <>
       <button onClick={onBack} className="flex items-center gap-1 text-sm text-muted-foreground hover:text-primary"><ArrowLeft className="size-4" />Revoir la leçon</button>

@@ -16,7 +16,7 @@ export function TeamTabs({ tab, onChange, count }: { tab: "prospects" | "team"; 
     <div role="tablist" className="team-tabs relative inline-grid grid-cols-2 rounded-full border border-border bg-secondary/60 p-1">
       <span aria-hidden className="team-tab-indicator" style={{ transform: tab === "team" ? "translateX(100%)" : "translateX(0)" }} />
       <button role="tab" aria-selected={tab === "prospects"} onClick={() => onChange("prospects")} className={`relative z-10 min-h-11 rounded-full px-5 text-sm font-semibold transition-colors duration-200 ${tab === "prospects" ? "text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}>Prospects</button>
-      <button role="tab" aria-selected={tab === "team"} onClick={() => onChange("team")} className={`relative z-10 flex min-h-11 items-center justify-center gap-2 rounded-full px-5 text-sm font-semibold transition-colors duration-200 ${tab === "team" ? "text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}>Mes recrues <span className="team-badge">{count}</span></button>
+      <button role="tab" aria-selected={tab === "team"} onClick={() => onChange("team")} className={`relative z-10 flex min-h-11 items-center justify-center gap-2 rounded-full px-5 text-sm font-semibold transition-colors duration-200 ${tab === "team" ? "text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}>Recrues CRM <span className="team-badge">{count}</span></button>
     </div>
   );
 }
@@ -60,7 +60,7 @@ export function TeamPanel({ crm }: { crm: Crm }) {
       <section className="team-hero">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
-            <span className="eyebrow">Mes recrues</span>
+            <span className="eyebrow">Mes recrues (prospects CRM devenus clients)</span>
             <h2 className="mt-2 text-2xl font-extrabold">Tes recrues</h2>
           </div>
           <p className="team-count" aria-live="polite">{count}<span className="ml-2 text-base font-semibold text-muted-foreground">{members.length > 1 ? "membres" : "membre"}</span></p>

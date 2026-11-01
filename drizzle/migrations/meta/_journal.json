@@ -113,6 +113,20 @@
       "when": 1793388984875,
       "tag": "0015_company_templates_plan_pro",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1793508717899,
+      "tag": "0016_academy_progress_team_links",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1793508888713,
+      "tag": "0017_academy_team_revoke_writes",
+      "breakpoints": true
     }
   ]
 }

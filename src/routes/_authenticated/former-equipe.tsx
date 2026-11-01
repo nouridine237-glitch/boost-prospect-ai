@@ -6,6 +6,7 @@ import { AppShell } from "@/components/app-shell";
 import { UpgradeCard } from "@/components/plan-gate";
 import { usePlan } from "@/hooks/use-plan";
 import { hasFeature } from "@/lib/plans";
+import { TeamPartners } from "@/components/team-partners";
 
 export const Route = createFileRoute("/_authenticated/former-equipe")({
   head: () => ({ meta: [
@@ -56,6 +57,7 @@ function FormerEquipePage() {
           </div>
         </section>
         )}
+        {allowed && !planInfo.loading && <TeamPartners userId={user.id} />}
       </div>
     </AppShell>
   );
