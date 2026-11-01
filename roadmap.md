@@ -10,4 +10,4 @@
 - [x] Conversion étape 1 — calculs purs + tests (sans interface)
 - [x] Conversion étape 2 — carte Statistiques
 - [x] Académie & Duplication phase 1 — progression en base, invitations d'équipe, vue leader agrégée
-- [ ] Phase 2 — parcours 7 jours + kits (à valider)
+- [ ] Phase 2 — parcours 7 jours + kits statiques payants, progression persistante et vérifications
