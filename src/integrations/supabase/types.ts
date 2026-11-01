@@ -184,6 +184,33 @@ export type Database = {
         }
         Relationships: []
       }
+      duplication_progress: {
+        Row: {
+          checked_actions: number[]
+          completed_at: string | null
+          day: number
+          track: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          checked_actions?: number[]
+          completed_at?: string | null
+          day: number
+          track: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          checked_actions?: number[]
+          completed_at?: string | null
+          day?: number
+          track?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       payment_requests: {
         Row: {
           capture_paiement: string | null
@@ -675,6 +702,15 @@ export type Database = {
       reserve_ai_generation: {
         Args: { _type: Database["public"]["Enums"]["ai_generation_type"] }
         Returns: string
+      }
+      save_duplication_progress: {
+        Args: {
+          _actions: number[]
+          _complete?: boolean
+          _day: number
+          _track: string
+        }
+        Returns: undefined
       }
       submit_capture_lead: {
         Args: {
