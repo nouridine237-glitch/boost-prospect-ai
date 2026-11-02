@@ -1,106 +1,61 @@
-# Académie intelligente & Duplication 2.0 — audit et plan progressif
+# Plan — Académie vidéo MLM Boost AI (plan seulement, rien modifié ni publié)
 
-Aucun code, aucune migration, aucune publication. Ce document est un plan à valider.
+## 1. Audit de l'existant
 
-## 1. Audit : faits vérifiés dans le code
-
-| Domaine | Présent | Fichiers |
+| Élément | Où | Constat |
 |---|---|---|
-| Contenu Académie | 6 niveaux en Markdown statique (titre, objectifs, corps, durée) | `src/content/academie/niveau-1..6.md`, `src/lib/academy-content.ts` (`lessons`, `getLesson`) |
-| Quiz | 5 questions par niveau, seuil 80 % (`PASS_RATIO`) | `src/lib/academy-quiz.ts` |
-| Certificat | PDF généré côté navigateur | `src/lib/certificate.ts` |
-| Pages Académie (connecté) | Liste + page de niveau, verrou plan (Gratuit = 2 niveaux, `academyLevels`) | `src/routes/_authenticated/academie.tsx`, `academie_.$niveau.tsx` |
-| Formation publique des filleuls | Page sans compte, nom du parrain passé en `?parrain=`, progression **dans le navigateur seulement** (`localStorage` clé `mlm-formation-progress`) | `src/routes/formation.tsx` |
-| Former mon équipe | Lien de partage WhatsApp/copie, réservé Business (`teamTraining`) | `src/routes/_authenticated/former-equipe.tsx`, `src/lib/plans.ts` |
-| Mon équipe | « Recrues » = prospects au statut Client (`joined_team_at`), objectif d'équipe dans `profiles.preferences` | `src/components/team.tsx`, `src/components/crm.tsx` |
-| Parrainage app | Table `referrals` (referrer_id → referred_id) entre **comptes MLM Boost AI**, récompenses par triggers | `src/lib/referral.functions.ts`, migrations parrainage |
-| Coach quotidien V1–V3 | Missions, priorités, séries, bilan, sans IA automatique | `src/lib/coach.ts`, `coach-card.tsx`, `coach-week.tsx` |
-| IA | Génération serveur avec réservation atomique de quota (`reserve_ai_generation`) et remboursement | `src/lib/ai.functions.ts`, `ai_usage_log`, `ai_generations` |
-| Modèles | `public.scripts` (génériques + templates entreprise, lecture RLS par plan, écriture admin), objections, trames vocales (statiques) | `src/lib/scripts.functions.ts`, `objections.ts`, `voice-scripts.ts` |
-| Plans | `hasFeature` / `FEATURE_MIN_PLAN`, `effective_plan()` SQL avec 3 jours de grâce | `src/lib/plans.ts` |
+| Contenu Académie | `src/lib/academy-content.ts` + `src/content/academie/niveau-1..6.md` | 6 leçons texte, livrées dans le code, pas en base. |
+| Quiz | `src/lib/academy-quiz.ts` | 5 questions par niveau, avec les bonnes réponses dans le même fichier. Seuil 80 % (`PASS_RATIO`). |
+| Notation | `academy-score.ts`, `academy.functions.ts` | Score recalculé côté serveur, écrit via `record_academy_result` (garde le meilleur score). Fiable. |
+| Progression | table `academy_progress` (clé user + `level` 1–20) | Liée aux 6 niveaux fixes ; ne peut pas suivre des cours/leçons multiples. |
+| Verrouillage | `plans.ts` : `canAccessAcademyLevel`, `FEATURE_MIN_PLAN.academyFull = pro` | À réutiliser tel quel. |
+| Admin | `user_roles` + `has_role()`, contrôle dans `admin.functions.ts` | Même modèle que `public.scripts` (lecture connectés, écriture admin). |
+| Quotas IA | `reserve_ai_generation(_type)` + enum `ai_generation_type` (4 valeurs) | Le coach devra réserver une génération comme le reste. |
+| Certificats | `src/lib/certificate.ts` (PDF navigateur) | Réutilisable par cours. |
+| Équipe | `team_member_progress()` agrège `academy_progress` | Ne doit pas casser. |
 
-### Lacunes réelles (vérifiées)
-- Aucune progression Académie enregistrée sur le compte : rien n'écrit en base depuis les pages Académie ; la formation publique stocke tout dans le navigateur. Un leader ne peut donc voir **aucune** progression de ses filleuls.
-- Aucune notion de « partenaire » rattaché à un leader avec un compte : les recrues sont des fiches prospects, et `referrals` ne sert qu'aux récompenses.
-- Pas de parcours 7 jours, pas de kits de duplication, pas de modèles créés par un utilisateur, pas de partage de modèles, pas de formateur IA, pas de coach leader.
+## 2. Risques identifiés
+1. **Réponses des quiz visibles dans le navigateur** : `academy-quiz.ts` contient les réponses ; si importé côté page, elles sont lisibles. Les nouveaux quiz doivent rester en base, sans réponse envoyée au navigateur.
+2. **YouTube ne protège pas le contenu payant** : une vidéo « non répertoriée » reste partageable. Le verrouillage par plan limite seulement l'accès dans l'app. Acceptable au lancement ; la vraie protection viendra avec l'hébergement direct (liens signés).
+3. **Droits sur les formations externes** : il faut garder une trace (auteur, source, date/preuve d'autorisation) obligatoire avant publication.
+4. **Transcriptions = contenu payant** : ne jamais les envoyer à un plan non autorisé ; le coach les lit côté serveur seulement.
+5. **Compatibilité** : les 6 niveaux, `academy_progress`, les certificats et la vue équipe restent intacts ; la nouvelle Académie s'ajoute à côté.
+6. **Coût IA** : coach seulement au clic, sous quota existant, contexte tronqué (transcription limitée).
+7. **Ajout d'une valeur d'enum** (`coach_academie`) : changement additif, sans risque, mais fait seul dans sa migration.
 
-### Suppositions à vérifier avant construction
-- Que le certificat n'est pas non plus enregistré en base (non lu en détail).
-- Que `referrals` contient bien un lien fiable pour tous les filleuls inscrits (dépend de la capture `?ref=`).
-- Volume réel de contenu Académie (taille des 6 fichiers) pour dimensionner le formateur IA.
+## 3. Découpage en phases
 
-## 2. Principe d'architecture
+**Phase A — Catalogue vidéo et lecture (≈3–4 crédits)**
+- Tables `academy_courses`, `academy_lessons` (vidéo YouTube, durée, notes, transcription, plan minimal, statut brouillon/publié, source interne/externe + autorisation).
+- Admin seul crée/publie (RLS `has_role`) ; connectés lisent les cours publiés ; transcription renvoyée par fonction serveur après contrôle du plan.
+- Pages : liste des cours, page leçon mobile (lecteur YouTube `youtube-nocookie`, chargé au clic), notes.
+- Onglet admin « Académie » : formulaire cours/leçons, refus de publier une formation externe sans autorisation.
 
-```text
-Leader (compte)  ──team_links──>  Partenaire (compte)
-     │                                  │
-     ├─ kits (modèles perso) ──partage──┤
-     ├─ parcours 7 jours ───────────────┤ progression (academy_progress)
-     └─ coach leader (lecture agrégée)  └─ formateur IA (contenu Académie)
-```
-- Le contenu de formation reste en Markdown versionné (pas de CMS) : zéro coût, déjà en place.
-- La relation équipe réutilise `referrals` comme source d'invitation, avec une table dédiée seulement pour le lien leader–partenaire consenti.
-- Le leader ne voit que des **indicateurs agrégés** (niveaux validés, jours du parcours, nombre d'actions), jamais les prospects ni les messages de ses partenaires.
+**Phase B — Progression, quiz, exercices (≈3–4 crédits)**
+- `academy_lesson_progress` (leçon vue/terminée), `academy_lesson_quizzes` (questions, réponses gardées côté serveur), `academy_quiz_attempts`, `academy_exercises` + `academy_exercise_submissions` (réponse texte, privée au membre).
+- Notation serveur réutilisant la logique de `scoreQuiz` (80 %), certificat par cours via `certificate.ts`.
+- Les 6 niveaux actuels restent ; option ultérieure de les migrer en cours « Fondamentaux ».
 
-## 3. Phases recommandées
+**Phase C — Coach IA contextuel (≈2–3 crédits)**
+- Bouton « Demander au coach » sur la leçon : fonction serveur qui vérifie le plan, réserve via `reserve_ai_generation('coach_academie')`, envoie titre + notes + extrait de transcription au modèle, ton éthique (aucune promesse de revenus).
 
-### Phase 1 — V1 utile, sans IA (≈ 3–5 crédits)
-Comportement : la progression Académie (niveaux validés, scores, date) est sauvegardée sur le compte ; un partenaire inscrit via le lien d'un leader peut accepter de rejoindre son équipe ; le leader voit, dans « Former mon équipe », la liste de ses partenaires et leur progression.
-- Nouvelle table `academy_progress` (user_id, level, score, passed_at) — RLS propriétaire ; insertion via fonction serveur qui recalcule le score (pas de score fourni par le navigateur).
-- Nouvelle table `team_links` (leader_id, member_id, status invite/actif/quitté, created_at) — un seul leader actif par membre ; création par fonction serveur avec code d'invitation ; le membre peut quitter.
-- Fonction SQL SECURITY DEFINER `team_member_progress()` renvoyant au leader uniquement niveau max, nombre de niveaux validés, dernière activité (date) de ses membres actifs.
-- Migration douce : à la première visite, reprise unique de la progression `localStorage` existante.
-- Fichiers : `academie_.$niveau.tsx`, `formation.tsx` (garde l'accès sans compte), `former-equipe.tsx`, nouveau `src/lib/academy.functions.ts`, `src/lib/team.functions.ts`.
-- Accès : progression perso pour tous ; tableau d'équipe Business (`teamTraining`, existant).
+**Phase D (plus tard) — Hébergement vidéo direct**
+- Stockage privé + liens signés courts ; colonne `video_provider` déjà prévue, donc sans refonte.
 
-### Phase 2 — Parcours 7 jours + kits de duplication (≈ 4–6 crédits)
-- Parcours par défaut statique (`src/lib/onboarding-path.ts`) : 1 tâche/jour reliée à l'existant (niveau Académie, script, trame vocale, 5 premiers prospects, première relance du coach).
-- Personnalisation leader : table `kits` (owner_id, title, kind parcours/modèles, content jsonb, visibility privé/équipe) et `kit_items` si nécessaire ; un membre lit les kits `visibility = équipe` de son leader actif (RLS via `team_links`).
-- Suivi : `onboarding_progress` (user_id, kit_id, day, done_at) ; le leader voit seulement le jour atteint.
-- Les tâches réutilisent `prospect_events` pour se valider automatiquement (ex. premier contact enregistré).
-- Accès : suivre un parcours = tous les plans ; créer/partager des kits = Business.
+## 4. Fichiers et tables à toucher
 
-### Phase 3 — Formateur IA (≈ 2–3 crédits)
-- Bouton « Poser une question au formateur » sur une leçon : envoie la question + **le texte du niveau courant seulement** (pas toute l'Académie) à la fonction IA existante, nouveau type de génération `formateur`.
-- Réponses limitées au contenu fourni ; consigne de refus si la question sort du contenu ; aucune promesse de revenu ni allégation santé.
-- Quota : réutilise `reserve_ai_generation` (1 génération par question), aucun appel automatique.
-- Accès : Pro et plus (Gratuit : ses 5 générations habituelles).
+Tables nouvelles : `academy_courses`, `academy_lessons`, `academy_lesson_progress`, `academy_lesson_quizzes`, `academy_quiz_attempts`, `academy_exercises`, `academy_exercise_submissions`. Enum : `ai_generation_type` + `coach_academie`. Tables existantes non modifiées.
 
-### Phase 4 — Coach IA du leader (≈ 2–4 crédits)
-- Carte « Coach d'équipe » sans IA d'abord : règles simples (membre inactif 3 jours, bloqué au jour X, niveau non validé) + message d'encouragement pré-rédigé à envoyer via WhatsApp **par le leader**.
-- Option IA au clic : « Rédiger un message pour ce partenaire », avec seulement les indicateurs agrégés en contexte, sous quota.
-- Accès : Business.
+Fichiers nouveaux : `src/lib/academy-video.functions.ts`, `src/lib/academy-video-rules.ts` (+ tests), `src/routes/_authenticated/academie_.cours.$slug.tsx`, `src/routes/_authenticated/academie_.cours.$slug.$lecon.tsx`, `src/components/academy/video-player.tsx`, `lesson-quiz.tsx`, `lesson-coach.tsx`, `admin-academy.tsx`.
 
-### Phase 5 — Partage sécurisé et permissions avancées (≈ 2–3 crédits)
-- Partage d'un kit par lien à usage limité vers un autre leader (copie, pas accès partagé) ; révocation ; signalement.
-- Règles de contenu vérifiées côté serveur (liste de termes interdits : guérit, revenu garanti, montants) avant publication en équipe.
+Fichiers modifiés (minimum) : `academie.tsx` (section « Cours vidéo »), `admin.tsx` (onglet), `plans.ts` (rien de nouveau si on réutilise `academyFull`), `certificate.ts` (titre de cours), `ai.functions.ts` (coach), `AGENTS.md`.
 
-Total estimé : 13–21 crédits, la Phase 1 seule apportant déjà la valeur principale. Estimations approximatives, l'outil ne fournit pas le coût exact.
+## 5. Tests prévus
+- Plan minimal par leçon (gratuit/pro/expert/business).
+- Notation 80 % et refus des réponses invalides.
+- Publication externe refusée sans autorisation.
+- RLS : non-admin ne peut ni créer ni publier ; un membre ne lit pas les réponses/exercices d'un autre ; transcription non servie à un plan non autorisé.
 
-## 4. Sécurité et séparation des équipes
-- Toutes les nouvelles tables : RLS activée, GRANT explicites, `user_id` en UUID sans clé étrangère vers `auth.users`.
-- Un leader ne lit jamais `prospects`, `prospect_events`, `ai_generations` d'un membre ; seulement des agrégats via fonctions SECURITY DEFINER qui vérifient `team_links.status = 'actif'` et `leader_id = auth.uid()`.
-- Le membre doit accepter l'invitation et peut quitter : le leader perd alors l'accès immédiatement.
-- Scores et validations calculés côté serveur ; kits écrits uniquement par leur propriétaire.
-- Rôle admin inchangé (`user_roles`, `has_role`).
-
-## 5. Quotas et coûts IA
-- Aucune IA automatique ; 1 clic = 1 génération réservée atomiquement, remboursée en cas d'échec.
-- Contexte court (un niveau ou des agrégats) pour limiter la taille des requêtes.
-- Phases 1, 2 et la partie règles de la Phase 4 : zéro appel IA.
-
-## 6. Tests à prévoir
-- Calculs purs : score quiz, déblocage des niveaux, jour courant du parcours, règles du coach leader.
-- RLS en transaction annulée : membre A ne lit pas la progression de B ; leader ne lit que ses membres actifs ; ancien leader perd l'accès ; non-Business ne crée pas de kit.
-- Quota : question au formateur décompte 1 génération, refusée quand le quota est épuisé.
-- Navigateur : parcours invitation → acceptation → niveau validé visible chez le leader.
-
-## 7. Risques
-- Confusion entre « recrues » (fiches prospects) et « partenaires » (comptes) : libellés à clarifier dans « Mon équipe ».
-- Vie privée des partenaires : limiter strictement aux agrégats, demander le consentement.
-- Contenu des kits rédigé par les leaders : risque d'allégations interdites, d'où le filtre Phase 5 (une version simple peut être avancée en Phase 2).
-- Perte de progression `localStorage` si la reprise n'est pas faite.
-- Crédits limités : construire et valider phase par phase.
-
-## Recommandation
-Commencer par la Phase 1 seule (progression sur le compte + lien leader–partenaire + tableau d'équipe), sans IA.
+## Hypothèses à confirmer
+- Accès : leçon par leçon avec un plan minimal choisi par l'admin (par défaut Pro), le premier cours restant gratuit.
+- Exercices = réponse texte libre, sans correction IA en phase B.
