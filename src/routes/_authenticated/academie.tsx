@@ -5,6 +5,7 @@ import { canAccessAcademyLevel } from "@/lib/plans";
 import { AppShell } from "@/components/app-shell";
 import { lessons } from "@/lib/academy-content";
 import { MyLeaderCard } from "@/components/team-partners";
+import { VideoCoursesSection } from "@/components/academy/video-courses-section";
 
 export const Route = createFileRoute("/_authenticated/academie")({
   head: () => ({ meta: [
