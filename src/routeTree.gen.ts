@@ -36,6 +36,7 @@ import { Route as RejoindreCodeRouteImport } from './routes/rejoindre.$code'
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
 import { Route as AuthenticatedAcademieNiveauRouteImport } from './routes/_authenticated/academie_.$niveau'
 import { Route as ApiPublicSaspayWebhookRouteImport } from './routes/api/public/saspay-webhook'
+import { Route as AuthenticatedAcademieCoursSlugRouteImport } from './routes/_authenticated/academie_.cours.$slug'
 import { Route as LovableEmailAuthPreviewRouteImport } from './routes/lovable/email/auth/preview'
 import { Route as LovableEmailAuthWebhookRouteImport } from './routes/lovable/email/auth/webhook'
 import { Route as LovableEmailTransactionalPreviewRouteImport } from './routes/lovable/email/transactional/preview'
@@ -180,6 +181,12 @@ const ApiPublicSaspayWebhookRoute = ApiPublicSaspayWebhookRouteImport.update({
   path: '/api/public/saspay-webhook',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedAcademieCoursSlugRoute =
+  AuthenticatedAcademieCoursSlugRouteImport.update({
+    id: '/academie_/cours/$slug',
+    path: '/academie/cours/$slug',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const LovableEmailAuthPreviewRoute = LovableEmailAuthPreviewRouteImport.update({
   id: '/lovable/email/auth/preview',
   path: '/lovable/email/auth/preview',
@@ -224,6 +231,7 @@ export interface FileRoutesByFullPath {
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/academie/$niveau': typeof AuthenticatedAcademieNiveauRoute
   '/api/public/saspay-webhook': typeof ApiPublicSaspayWebhookRoute
+  '/academie/cours/$slug': typeof AuthenticatedAcademieCoursSlugRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
@@ -255,6 +263,7 @@ export interface FileRoutesByTo {
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/academie/$niveau': typeof AuthenticatedAcademieNiveauRoute
   '/api/public/saspay-webhook': typeof ApiPublicSaspayWebhookRoute
+  '/academie/cours/$slug': typeof AuthenticatedAcademieCoursSlugRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
@@ -288,6 +297,7 @@ export interface FileRoutesById {
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/_authenticated/academie_/$niveau': typeof AuthenticatedAcademieNiveauRoute
   '/api/public/saspay-webhook': typeof ApiPublicSaspayWebhookRoute
+  '/_authenticated/academie_/cours/$slug': typeof AuthenticatedAcademieCoursSlugRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
@@ -321,6 +331,7 @@ export interface FileRouteTypes {
     | '/.lovable/oauth/consent'
     | '/academie/$niveau'
     | '/api/public/saspay-webhook'
+    | '/academie/cours/$slug'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
     | '/lovable/email/transactional/preview'
@@ -352,6 +363,7 @@ export interface FileRouteTypes {
     | '/.lovable/oauth/consent'
     | '/academie/$niveau'
     | '/api/public/saspay-webhook'
+    | '/academie/cours/$slug'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
     | '/lovable/email/transactional/preview'
@@ -384,6 +396,7 @@ export interface FileRouteTypes {
     | '/.lovable/oauth/consent'
     | '/_authenticated/academie_/$niveau'
     | '/api/public/saspay-webhook'
+    | '/_authenticated/academie_/cours/$slug'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
     | '/lovable/email/transactional/preview'
@@ -597,6 +610,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicSaspayWebhookRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/academie_/cours/$slug': {
+      id: '/_authenticated/academie_/cours/$slug'
+      path: '/academie/cours/$slug'
+      fullPath: '/academie/cours/$slug'
+      preLoaderRoute: typeof AuthenticatedAcademieCoursSlugRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/lovable/email/auth/preview': {
       id: '/lovable/email/auth/preview'
       path: '/lovable/email/auth/preview'
@@ -638,6 +658,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedStatistiquesRoute: typeof AuthenticatedStatistiquesRoute
   AuthenticatedTramesVocalesRoute: typeof AuthenticatedTramesVocalesRoute
   AuthenticatedAcademieNiveauRoute: typeof AuthenticatedAcademieNiveauRoute
+  AuthenticatedAcademieCoursSlugRoute: typeof AuthenticatedAcademieCoursSlugRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -657,6 +678,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedStatistiquesRoute: AuthenticatedStatistiquesRoute,
   AuthenticatedTramesVocalesRoute: AuthenticatedTramesVocalesRoute,
   AuthenticatedAcademieNiveauRoute: AuthenticatedAcademieNiveauRoute,
+  AuthenticatedAcademieCoursSlugRoute: AuthenticatedAcademieCoursSlugRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =

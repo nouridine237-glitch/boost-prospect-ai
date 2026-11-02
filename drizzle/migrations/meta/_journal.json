@@ -134,6 +134,13 @@
       "when": 1793510267869,
       "tag": "0018_duplication_progress",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1793651400965,
+      "tag": "0019_academy_video_catalog",
+      "breakpoints": true
     }
   ]
 }

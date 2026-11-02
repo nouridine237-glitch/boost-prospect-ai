@@ -2,6 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { Clock, ShieldCheck, Users, Wallet } from "lucide-react";
+import { AdminAcademySection } from "@/components/academy/admin-academy";
 import { AppShell } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -288,6 +289,7 @@ function AdminPage() {
 
         <PaymentNumbersSection />
         <AiCreditsSection />
+        <AdminAcademySection />
 
 
         <h2 id="paiements" className="mt-10 mb-3 text-lg font-bold">Paiements en attente</h2>
