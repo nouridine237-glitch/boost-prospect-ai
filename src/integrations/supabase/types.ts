@@ -14,6 +14,116 @@ export type Database = {
   }
   public: {
     Tables: {
+      academy_courses: {
+        Row: {
+          authorization_note: string
+          authorized_at: string | null
+          created_at: string
+          description: string
+          id: string
+          min_plan: Database["public"]["Enums"]["plan_type"]
+          slug: string
+          sort_order: number
+          source_author: string
+          source_type: string
+          source_url: string
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          authorization_note?: string
+          authorized_at?: string | null
+          created_at?: string
+          description?: string
+          id?: string
+          min_plan?: Database["public"]["Enums"]["plan_type"]
+          slug: string
+          sort_order?: number
+          source_author?: string
+          source_type?: string
+          source_url?: string
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          authorization_note?: string
+          authorized_at?: string | null
+          created_at?: string
+          description?: string
+          id?: string
+          min_plan?: Database["public"]["Enums"]["plan_type"]
+          slug?: string
+          sort_order?: number
+          source_author?: string
+          source_type?: string
+          source_url?: string
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      academy_lessons: {
+        Row: {
+          course_id: string
+          created_at: string
+          duration_minutes: number
+          id: string
+          notes: string
+          slug: string
+          sort_order: number
+          status: string
+          summary: string
+          title: string
+          transcript: string
+          updated_at: string
+          video_id: string
+          video_provider: string
+        }
+        Insert: {
+          course_id: string
+          created_at?: string
+          duration_minutes?: number
+          id?: string
+          notes?: string
+          slug: string
+          sort_order?: number
+          status?: string
+          summary?: string
+          title: string
+          transcript?: string
+          updated_at?: string
+          video_id: string
+          video_provider?: string
+        }
+        Update: {
+          course_id?: string
+          created_at?: string
+          duration_minutes?: number
+          id?: string
+          notes?: string
+          slug?: string
+          sort_order?: number
+          status?: string
+          summary?: string
+          title?: string
+          transcript?: string
+          updated_at?: string
+          video_id?: string
+          video_provider?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "academy_lessons_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "academy_courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       academy_progress: {
         Row: {
           attempts: number
