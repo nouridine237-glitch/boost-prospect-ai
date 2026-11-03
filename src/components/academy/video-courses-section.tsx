@@ -18,7 +18,7 @@ export function VideoCoursesSection() {
             <h3 className="mt-2 font-bold">{c.title}</h3>
             {c.description && <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{c.description}</p>}
             {c.external && <p className="mt-1 text-xs text-muted-foreground">Par {c.author}, avec autorisation</p>}
-            {!c.unlocked && <span className="mt-3 flex items-center gap-1 text-sm font-semibold text-muted-foreground"><Lock className="size-4" />Plan {planDef(c.minPlan).name}</span>}
+            {!c.unlocked && <span className="mt-3 flex items-center gap-1 text-sm font-semibold text-muted-foreground"><Lock className="size-4" />Plan {planDef(c.minPlan).label}</span>}
           </Link>
         ))}
       </div>
