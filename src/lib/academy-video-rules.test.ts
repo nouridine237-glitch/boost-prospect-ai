@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "bun:test";
 import { canAccessCourse, canPublishCourse, parseYouTubeId } from "./academy-video-rules";
 
 describe("canAccessCourse", () => {

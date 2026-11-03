@@ -50,7 +50,7 @@ function CoursePage() {
 
         {!data.unlocked ? (
           <div className="surface mt-6 rounded-lg p-5 text-sm">
-            <p className="flex items-center gap-2 font-semibold"><Lock className="size-4" />Cours disponible avec le plan {planDef(data.course.minPlan).name}.</p>
+            <p className="flex items-center gap-2 font-semibold"><Lock className="size-4" />Cours disponible avec le plan {planDef(data.course.minPlan).label}.</p>
             <Link to="/abonnement" className="mt-3 inline-block font-semibold text-primary">Voir les plans →</Link>
           </div>
         ) : current?.videoId ? (
