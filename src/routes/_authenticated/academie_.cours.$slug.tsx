@@ -5,6 +5,8 @@ import { ArrowLeft, Clock, Lock } from "lucide-react";
 import { z } from "zod";
 import { AppShell } from "@/components/app-shell";
 import { VideoPlayer } from "@/components/academy/video-player";
+import { LessonCoach } from "@/components/academy/lesson-coach";
+import { hasCoachContext } from "@/lib/academy-coach";
 import { getVideoCourse } from "@/lib/academy-video.functions";
 import { planDef } from "@/lib/plans";
 
@@ -69,6 +71,7 @@ function CoursePage() {
                 </div>
               </div>
             )}
+            {hasCoachContext(current) && <LessonCoach key={current.id} lessonId={current.id} />}
           </section>
         ) : null}
 
