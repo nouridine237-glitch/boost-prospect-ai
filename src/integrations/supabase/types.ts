@@ -864,6 +864,7 @@ export type Database = {
         | "reponse_prospect"
         | "script_appel"
         | "post_reseau_social"
+        | "coach_academie"
       app_role: "user" | "admin"
       paid_plan: "pro" | "expert" | "business"
       payment_request_status: "en_attente" | "valide" | "refuse" | "echoue"
@@ -1008,6 +1009,7 @@ export const Constants = {
         "reponse_prospect",
         "script_appel",
         "post_reseau_social",
+        "coach_academie",
       ],
       app_role: ["user", "admin"],
       paid_plan: ["pro", "expert", "business"],
