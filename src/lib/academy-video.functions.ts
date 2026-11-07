@@ -2,6 +2,15 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { canAccessCourse, canPublishCourse, parseYouTubeId } from "@/lib/academy-video-rules";
+import { courseProgress, lessonProgress, resumeLesson, type ProgressRow } from "@/lib/academy-progress";
+
+async function myRows(context: Ctx, courseIds: string[]): Promise<ProgressRow[]> {
+  if (!courseIds.length) return [];
+  const { data } = await context.supabase.from("academy_lesson_progress")
+    .select("lesson_id, status, position_seconds, watched_seconds, duration_seconds, last_activity_at")
+    .eq("user_id", context.userId).in("course_id", courseIds);
+  return (data ?? []) as ProgressRow[];
+}
 
 type Ctx = { supabase: any; userId: string };
 
@@ -18,7 +27,7 @@ async function assertAdmin(context: Ctx) {
   if (!(await isAdmin(context))) throw new Error("Accès réservé aux administrateurs.");
 }
 
-export type VideoCourseCard = { id: string; slug: string; title: string; description: string; minPlan: string; unlocked: boolean; lessons: number; minutes: number; external: boolean; author: string };
+export type VideoCourseCard = { id: string; slug: string; title: string; description: string; minPlan: string; unlocked: boolean; lessons: number; minutes: number; external: boolean; author: string; done: number; percent: number; resumeSlug: string | null };
 
 /** Catalogue publié (cours visibles même verrouillés ; contenu jamais envoyé ici). */
 export const listVideoCourses = createServerFn({ method: "GET" })
@@ -32,15 +41,20 @@ export const listVideoCourses = createServerFn({ method: "GET" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const ids = (courses ?? []).map((c: any) => c.id);
     const { data: lessons } = ids.length
-      ? await supabaseAdmin.from("academy_lessons").select("course_id, duration_minutes").eq("status", "publie").in("course_id", ids)
+      ? await supabaseAdmin.from("academy_lessons").select("id, slug, course_id, duration_minutes").order("sort_order").order("created_at").eq("status", "publie").in("course_id", ids)
       : { data: [] as any[] };
+    const rows = await myRows(context, ids);
     return (courses ?? []).map((c: any): VideoCourseCard => {
       const ls = (lessons ?? []).filter((l: any) => l.course_id === c.id);
+      const lids = ls.map((l: any) => l.id as string);
+      const cp = courseProgress(lids, rows);
+      const rid = resumeLesson(lids, rows);
       return {
         id: c.id, slug: c.slug, title: c.title, description: c.description, minPlan: c.min_plan,
         unlocked: canAccessCourse(plan, c.min_plan), lessons: ls.length,
         minutes: ls.reduce((s: number, l: any) => s + l.duration_minutes, 0),
         external: c.source_type === "externe", author: c.source_author,
+        done: cp.done, percent: cp.percent, resumeSlug: rid ? (ls.find((l: any) => l.id === rid)?.slug ?? null) : null,
       };
     }).filter((c: VideoCourseCard) => c.lessons > 0);
   });
@@ -59,7 +73,10 @@ export const getVideoCourse = createServerFn({ method: "GET" })
     const { data: lessons } = await supabaseAdmin.from("academy_lessons")
       .select("id, slug, title, summary, video_id, duration_minutes, notes, transcript")
       .eq("course_id", c.id).eq("status", "publie").order("sort_order").order("created_at");
+    const rows = await myRows(context, [c.id]);
+    const lids = (lessons ?? []).map((l: any) => l.id as string);
     return {
+      progress: { ...courseProgress(lids, rows), resumeLessonId: resumeLesson(lids, rows) },
       course: { slug: c.slug, title: c.title, description: c.description, minPlan: c.min_plan as string, external: c.source_type === "externe", author: c.source_author, sourceUrl: c.source_url },
       unlocked,
       lessons: (lessons ?? []).map((l: any) => ({
@@ -67,6 +84,7 @@ export const getVideoCourse = createServerFn({ method: "GET" })
         videoId: unlocked ? (l.video_id as string) : null,
         notes: unlocked ? (l.notes as string) : "",
         transcript: unlocked ? (l.transcript as string) : "",
+        progress: lessonProgress(rows.find((r) => r.lesson_id === l.id), (l.duration_minutes as number) * 60),
       })),
     };
   });

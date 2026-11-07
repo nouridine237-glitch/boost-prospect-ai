@@ -148,6 +148,20 @@
       "when": 1793772672198,
       "tag": "0020_ai_type_coach_academie",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1794043949027,
+      "tag": "0021_academy_lesson_progress",
+      "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1794044093098,
+      "tag": "0022_academy_lesson_progress_revoke_writes",
+      "breakpoints": true
     }
   ]
 }

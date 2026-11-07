@@ -65,6 +65,66 @@ export type Database = {
         }
         Relationships: []
       }
+      academy_lesson_progress: {
+        Row: {
+          completed_at: string | null
+          completion_method: string | null
+          course_id: string
+          duration_seconds: number | null
+          last_activity_at: string
+          lesson_id: string
+          playing: boolean
+          position_seconds: number
+          started_at: string
+          status: string
+          user_id: string
+          watched_seconds: number
+        }
+        Insert: {
+          completed_at?: string | null
+          completion_method?: string | null
+          course_id: string
+          duration_seconds?: number | null
+          last_activity_at?: string
+          lesson_id: string
+          playing?: boolean
+          position_seconds?: number
+          started_at?: string
+          status?: string
+          user_id: string
+          watched_seconds?: number
+        }
+        Update: {
+          completed_at?: string | null
+          completion_method?: string | null
+          course_id?: string
+          duration_seconds?: number | null
+          last_activity_at?: string
+          lesson_id?: string
+          playing?: boolean
+          position_seconds?: number
+          started_at?: string
+          status?: string
+          user_id?: string
+          watched_seconds?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "academy_lesson_progress_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "academy_courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "academy_lesson_progress_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "academy_lessons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       academy_lessons: {
         Row: {
           course_id: string
@@ -808,6 +868,17 @@ export type Database = {
           _user_id: string
         }
         Returns: undefined
+      }
+      record_lesson_progress: {
+        Args: {
+          _lesson_id: string
+          _manual?: boolean
+          _player_duration: number
+          _playing: boolean
+          _position: number
+          _user_id: string
+        }
+        Returns: string
       }
       reserve_ai_generation: {
         Args: { _type: Database["public"]["Enums"]["ai_generation_type"] }
