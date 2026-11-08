@@ -217,6 +217,109 @@ export type Database = {
         }
         Relationships: []
       }
+      action_plan_weeks: {
+        Row: {
+          adjust_note: string
+          adjusted: boolean
+          contacts_target: number
+          id: string
+          plan_id: string
+          posts_target: number
+          relances_target: number
+          reviewed_at: string | null
+          updated_at: string
+          user_id: string
+          week_index: number
+        }
+        Insert: {
+          adjust_note?: string
+          adjusted?: boolean
+          contacts_target?: number
+          id?: string
+          plan_id: string
+          posts_target?: number
+          relances_target?: number
+          reviewed_at?: string | null
+          updated_at?: string
+          user_id?: string
+          week_index: number
+        }
+        Update: {
+          adjust_note?: string
+          adjusted?: boolean
+          contacts_target?: number
+          id?: string
+          plan_id?: string
+          posts_target?: number
+          relances_target?: number
+          reviewed_at?: string | null
+          updated_at?: string
+          user_id?: string
+          week_index?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "action_plan_weeks_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "action_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      action_plans: {
+        Row: {
+          campaign_id: string | null
+          created_at: string
+          ends_on: string | null
+          goal: string
+          id: string
+          minutes_per_day: number
+          rest_days: number[]
+          starts_on: string
+          status: string
+          target: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          campaign_id?: string | null
+          created_at?: string
+          ends_on?: string | null
+          goal: string
+          id?: string
+          minutes_per_day: number
+          rest_days?: number[]
+          starts_on: string
+          status?: string
+          target: number
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          campaign_id?: string | null
+          created_at?: string
+          ends_on?: string | null
+          goal?: string
+          id?: string
+          minutes_per_day?: number
+          rest_days?: number[]
+          starts_on?: string
+          status?: string
+          target?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "action_plans_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_generations: {
         Row: {
           created_at: string

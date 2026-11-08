@@ -34,15 +34,15 @@ export function planDef(key: string | null | undefined): PlanDef {
   return PLANS[(key as PlanKey) in PLANS ? (key as PlanKey) : "gratuit"];
 }
 
-export type Feature = "academyFull" | "csv" | "advancedStats" | "teamTraining" | "companyTemplates" | "duplicationPath" | "duplicationKits";
-export const FEATURE_MIN_PLAN: Record<Feature, PlanKey> = { academyFull: "pro", csv: "pro", advancedStats: "expert", teamTraining: "business", companyTemplates: "pro", duplicationPath: "pro", duplicationKits: "pro" };
+export type Feature = "academyFull" | "csv" | "advancedStats" | "teamTraining" | "companyTemplates" | "duplicationPath" | "duplicationKits" | "actionPlan";
+export const FEATURE_MIN_PLAN: Record<Feature, PlanKey> = { academyFull: "pro", csv: "pro", advancedStats: "expert", teamTraining: "business", companyTemplates: "pro", duplicationPath: "pro", duplicationKits: "pro", actionPlan: "pro" };
 
 export function hasFeature(plan: string, feature: Feature) {
   const d = planDef(plan);
   if (feature === "academyFull") return d.academyLevels >= 6;
   if (feature === "csv") return d.csv;
   if (feature === "advancedStats") return d.advancedStats;
-  if (feature === "companyTemplates" || feature === "duplicationPath" || feature === "duplicationKits") return PLAN_ORDER.indexOf(d.key) >= PLAN_ORDER.indexOf(FEATURE_MIN_PLAN[feature]);
+  if (feature === "companyTemplates" || feature === "duplicationPath" || feature === "duplicationKits" || feature === "actionPlan") return PLAN_ORDER.indexOf(d.key) >= PLAN_ORDER.indexOf(FEATURE_MIN_PLAN[feature]);
   return d.teamTraining;
 }
 

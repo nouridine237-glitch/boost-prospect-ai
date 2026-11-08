@@ -11,9 +11,9 @@ export const ASSISTANT_MODES: Record<AssistantMode, string> = {
 export type CommandAction =
   | { id: string; label: string; reason: string; kind: "objection"; objectionId: string | null }
   | { id: string; label: string; reason: string; kind: "assistant"; mode: AssistantMode; context: string }
-  | { id: string; label: string; reason: string; kind: "page"; to: "/prospects" | "/academie" | "/duplication" | "/statistiques" | "/abonnement" | "/simulateur" | "/planificateur" | "/campagnes"; locked?: boolean };
+  | { id: string; label: string; reason: string; kind: "page"; to: "/prospects" | "/academie" | "/duplication" | "/statistiques" | "/abonnement" | "/simulateur" | "/planificateur" | "/campagnes" | "/plan-action"; locked?: boolean };
 
-export type Intent = "campagne" | "simulation" | "objection" | "relance" | "post" | "appel" | "message" | "prospect" | "formation" | "equipe" | "stats";
+export type Intent = "plan" | "campagne" | "simulation" | "objection" | "relance" | "post" | "appel" | "message" | "prospect" | "formation" | "equipe" | "stats";
 
 export const normalize = (v: string) => v.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/\s+/g, " ").trim();
 export const clampRequest = (v: string) => v.trim().slice(0, MAX_REQUEST);
@@ -21,6 +21,7 @@ export const clampRequest = (v: string) => v.trim().slice(0, MAX_REQUEST);
 /** Ordre = priorité : une objection l'emporte sur une demande de rédaction. */
 const INTENT_KEYWORDS: [Intent, string[]][] = [
   ["campagne", ["campagne"]],
+  ["plan", ["plan d'action", "plan d action", "30 jours", "objectif du mois", "mon plan"]],
   ["simulation", ["entrainer", "entraine", "simul", "s'exercer", "m'exercer", "jeu de role", "pratiquer"]],
   ["objection", ["objection", "il dit", "elle dit", "me dit", "repondre a", "pyramid", "arnaque", "trop cher", "pas le temps", "reflechir", "pas interesse", "interesse pas"]],
   ["relance", ["relance", "relancer", "suivi", "rappeler", "recontacter", "sans reponse", "repond plus", "repond pas"]],
@@ -48,6 +49,9 @@ export function routeRequest(text: string, plan: string): CommandAction[] {
   const out: CommandAction[] = [];
   const objectionId = matchObjectionId(request) ?? matchObjectionId(normalize(request));
   for (const i of intents) {
+    if (i === "plan") out.push(hasFeature(plan, "actionPlan")
+      ? { id: "plan-action", kind: "page", to: "/plan-action", label: "Ouvrir mon plan d'action 30 jours", reason: "Objectifs de la semaine et suivi du jour" }
+      : { id: "plan-action", kind: "page", to: "/abonnement", locked: true, label: "Plan d'action 30 jours (plan Pro)", reason: "Réservé aux plans payants" });
     if (i === "campagne") out.push({ id: "campagnes", kind: "page", to: "/campagnes", label: "Suivre mes campagnes", reason: "Statuts publiés, prospects attribués, conversions réelles" });
     if (i === "simulation") out.push({ id: "simulateur", kind: "page", to: "/simulateur", label: "Ouvrir le Simulateur de conversations", reason: "Entraînement face à un prospect virtuel, sans envoi réel" });
     if (i === "objection") {
@@ -89,19 +93,24 @@ export type BriefItem =
   | { id: "inactif"; title: string; reason: string; prospectId: string }
   | { id: "lecon"; title: string; reason: string; slug: string; lesson: string }
   | { id: "duplication"; title: string; reason: string; day: number }
-  | { id: "statut"; title: string; reason: string };
+  | { id: "statut"; title: string; reason: string }
+  | { id: "plan"; title: string; reason: string };
 
 export type BriefInput = {
   mission?: { prospectId: string; name: string; reason: string } | null;
   stuck?: { id: string; name: string; idleDays: number }[] | null;
   course?: { slug: string; title: string; percent: number; resumeSlug: string | null; unlocked: boolean }[] | null;
   statut?: { title: string; reason: string } | null;
+  plan?: { day: number; remaining: number; reviewPending: boolean } | null;
   duplication?: { allowed: boolean; days: { day: number; title: string }[]; progress: { day: number; completed_at: string | null }[] } | null;
 };
 
 /** Au plus 3 recommandations, une par source, sans doublon de prospect. Sources absentes ignorées. */
 export function buildBrief(input: BriefInput): BriefItem[] {
   const items: BriefItem[] = [];
+  const pl = input.plan;
+  if (pl?.reviewPending) items.push({ id: "plan", title: "Bilan de semaine à valider", reason: "Plan d'action 30 jours : comparez prévu et réalisé" });
+  else if (pl && pl.remaining > 0) items.push({ id: "plan", title: `Plan 30 jours : ${pl.remaining} action${pl.remaining > 1 ? "s" : ""} aujourd'hui`, reason: `Jour ${pl.day}/28 · contacts, relances et statuts` });
   const m = input.mission;
   if (m) items.push({ id: "coach", prospectId: m.prospectId, title: `Contacter ${m.name}`, reason: `Priorité du Coach : ${m.reason.charAt(0).toLowerCase()}${m.reason.slice(1)}`, context: `Message pour ${m.name}. ${m.reason}.` });
   if (input.statut) items.push({ id: "statut", title: input.statut.title, reason: input.statut.reason });

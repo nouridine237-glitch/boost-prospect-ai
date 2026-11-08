@@ -11,6 +11,8 @@ import { suggestNextAction } from "@/lib/ai.functions";
 import { objections } from "@/lib/objections";
 import { buildDailyMissions, cheer, dailyRecap, DEFAULT_COACH, isRestDay, localDay, matchObjectionId, readCoachSettings, type CoachEvent, type Mission, type Priority } from "@/lib/coach";
 import { logProspectEvent, onProspectEvent } from "@/lib/prospect-events";
+import { useActionPlan } from "@/components/action-plan-data";
+import { canUseActionPlan } from "@/lib/action-plan";
 
 const priorityStyle: Record<Priority, string> = {
   haute: "bg-destructive/15 text-destructive",
@@ -47,6 +49,12 @@ export function CoachCard({ crm, userId }: { crm: Crm; userId: string }) {
   const missions = useMemo(() => buildDailyMissions(crm.prospects, events, today, settings.missions, settings), [crm.prospects, events, today, settings]);
   const recap = useMemo(() => dailyRecap(crm.prospects, events, goals, today), [crm.prospects, events, goals, today]);
   const handled = missions.filter(m => m.done || m.skipped).length;
+  const planOk = !crm.planInfo.loading && canUseActionPlan(crm.planInfo.plan);
+  const actionPlan = useActionPlan(userId, planOk);
+  const pp = actionPlan.data?.plan.status === "actif" && actionPlan.data.progress.status === "en_cours" ? actionPlan.data.progress : null;
+  // Avec un plan actif, l'objectif du jour vient du plan (fait aujourd'hui + part restante), sinon objectif hebdo ÷ 5.
+  const contactsGoal = pp ? recap.contacts + pp.today.contacts : recap.contactsGoal;
+  const relancesGoal = pp ? recap.relances + pp.today.relances : recap.relancesGoal;
 
   return (
     <section className="surface mt-6 rounded-lg">
@@ -71,10 +79,11 @@ export function CoachCard({ crm, userId }: { crm: Crm; userId: string }) {
       <div className="border-t border-border p-5">
         <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Bilan du jour</p>
         <div className="mt-3 grid grid-cols-3 gap-3 text-center">
-          <div><p className="text-xl font-extrabold">{recap.contacts}<span className="text-sm text-muted-foreground"> / {recap.contactsGoal}</span></p><p className="text-xs text-muted-foreground">Contacts</p></div>
-          <div><p className="text-xl font-extrabold">{recap.relances}<span className="text-sm text-muted-foreground"> / {recap.relancesGoal}</span></p><p className="text-xs text-muted-foreground">Relances</p></div>
+          <div><p className="text-xl font-extrabold">{recap.contacts}<span className="text-sm text-muted-foreground"> / {contactsGoal}</span></p><p className="text-xs text-muted-foreground">Contacts</p></div>
+          <div><p className="text-xl font-extrabold">{recap.relances}<span className="text-sm text-muted-foreground"> / {relancesGoal}</span></p><p className="text-xs text-muted-foreground">Relances</p></div>
           <div><p className="text-xl font-extrabold">{recap.nouveaux}</p><p className="text-xs text-muted-foreground">Nouveaux</p></div>
         </div>
+        {pp && <Link to="/plan-action" className="mt-3 block rounded-md border border-primary/40 bg-primary/10 p-3 text-sm">Plan 30 jours · jour {pp.day}/28 : encore {pp.today.contacts} contact(s), {pp.today.relances} relance(s) et {pp.today.posts} statut(s) aujourd'hui <span className="font-semibold text-primary">→</span></Link>}
         <p className="mt-3 text-sm text-muted-foreground">{cheer(today)}</p>
       </div>
     </section>

@@ -6,6 +6,8 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Crm } from "@/components/crm";
 import { DEFAULT_COACH, localDay, mondayOf, readCoachSettings, streak, suggestNextGoals, weeklyRecap, type CoachEvent } from "@/lib/coach";
 import { onProspectEvent } from "@/lib/prospect-events";
+import { useActionPlan } from "@/components/action-plan-data";
+import { canUseActionPlan, weekStart } from "@/lib/action-plan";
 
 type Goals = { contacts_goal: number; relances_goal: number; recrues_goal: number };
 const DEFAULTS: Goals = { contacts_goal: 10, relances_goal: 5, recrues_goal: 1 };
@@ -29,6 +31,8 @@ export function CoachWeekCard({ crm, userId }: { crm: Crm; userId: string }) {
     return onProspectEvent(() => { void load(); });
   }, [userId]);
 
+  const ap = useActionPlan(userId, !crm.planInfo.loading && canUseActionPlan(crm.planInfo.plan));
+  const planWeek = ap.data && ap.data.plan.status !== "abandonne" ? ap.data.weeks.find(w => weekStart(ap.data!.plan, w.week_index) === prevMonday) ?? null : null;
   const days = streak(events, today, settings, 60);
   const recap = useMemo(() => weeklyRecap(crm.prospects, events, prevMonday), [crm.prospects, events, prevMonday]);
   const next = suggestNextGoals(goals, recap);
@@ -67,6 +71,7 @@ export function CoachWeekCard({ crm, userId }: { crm: Crm; userId: string }) {
                 </div>
               ))}
             </div>
+            {planWeek && <p className="mt-3 text-xs text-muted-foreground">Prévu par votre plan 30 jours (semaine {planWeek.week_index}) : {planWeek.contacts_target} contacts · {planWeek.relances_target} relances · {planWeek.posts_target} statuts</p>}
             {recap.bestDay && <p className="mt-3 text-xs text-muted-foreground">Meilleur jour : <span className="font-semibold text-foreground">{fmt(recap.bestDay)}</span></p>}
             {changed ? (
               <div className="mt-4 flex flex-wrap items-center justify-between gap-3">

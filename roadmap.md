@@ -9,6 +9,7 @@
 - [x] Simulateur de conversations — prospect virtuel IA, bilan structuré (quota IA partagé, sans stockage)
 - [x] Planificateur de statuts V1 — calendrier hebdo, brouillons/prévu/publié, génération Post à la demande, rappel du jour (bibliothèque de scripts reportée)
 - [x] Suivi des campagnes V1 — campagnes, statuts liés, attribution manuelle des prospects, indicateurs réels et recommandations (Gratuit : 1 campagne active)
+- [x] Plan d'action 30 jours V1 — 4 semaines, suivi du jour, bilan et adaptation proposée, lié au Coach et au Centre de commande (plans payants)
 - [x] Centre de commande — brief du jour + « Que voulez-vous faire ? » (routeur local, sans IA)
 - [x] Conversion étape 1 — calculs purs + tests (sans interface)
 - [x] Conversion étape 2 — carte Statistiques

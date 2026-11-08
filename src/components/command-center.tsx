@@ -13,6 +13,8 @@ import { duplicationOptions } from "@/lib/duplication";
 import { hasFeature } from "@/lib/plans";
 import { buildBrief, clampRequest, EXAMPLES, MAX_REQUEST, routeRequest, type BriefItem, type CommandAction } from "@/lib/command-center";
 import { onProspectEvent } from "@/lib/prospect-events";
+import { useActionPlan } from "@/components/action-plan-data";
+import { canUseActionPlan } from "@/lib/action-plan";
 import { contentPostsKey, todayReminder } from "@/lib/content-planner";
 
 const linkCls = "group flex min-h-14 items-center justify-between gap-3 rounded-md border border-border bg-secondary/60 px-4 py-3 text-left transition-colors hover:border-primary/60";
@@ -26,6 +28,7 @@ function Row({ title, reason, locked }: { title: string; reason: string; locked?
 
 function BriefLink({ item }: { item: BriefItem }) {
   if (item.id === "coach") return <Link to="/assistant" search={{ context: clampRequest(item.context), mode: "prospection" }} className={linkCls}><Row title={item.title} reason={item.reason} /></Link>;
+  if (item.id === "plan") return <Link to="/plan-action" className={linkCls}><Row title={item.title} reason={item.reason} /></Link>;
   if (item.id === "statut") return <Link to="/planificateur" className={linkCls}><Row title={item.title} reason={item.reason} /></Link>;
   if (item.id === "inactif") return <Link to="/prospects" className={linkCls}><Row title={item.title} reason={item.reason} /></Link>;
   if (item.id === "lecon") return <Link to="/academie/cours/$slug" params={{ slug: item.slug }} search={{ l: item.lesson }} className={linkCls}><Row title={item.title} reason={item.reason} /></Link>;
@@ -68,12 +71,22 @@ export function CommandCenter({ crm, userId }: { crm: Crm; userId: string }) {
   const dupAllowed = !crm.planInfo.loading && hasFeature(plan, "duplicationPath");
   const dup = useQuery({ ...duplicationOptions(userId), enabled: dupAllowed });
 
+  const planOk = !crm.planInfo.loading && canUseActionPlan(plan);
+  const ap = useActionPlan(userId, planOk);
+  const planBrief = useMemo(() => {
+    const x = ap.data;
+    if (!x || x.plan.status !== "actif") return null;
+    const pr = x.progress;
+    const reviewPending = x.weeks.some(w => !w.reviewed_at && (w.week_index < pr.weekIndex || pr.status === "fini"));
+    if (pr.status !== "en_cours" && !reviewPending) return null;
+    return { day: pr.day, remaining: pr.today.contacts + pr.today.relances + pr.today.posts, reviewPending };
+  }, [ap.data]);
   const brief = useMemo(() => {
     const names = new Map(crm.prospects.map(p => [p.id, p.name]));
     const mission = events && settings ? buildDailyMissions(crm.prospects, events, today, settings.missions, settings).find(m => !m.done && !m.skipped) ?? null : null;
     const stuck = events ? stuckProspects(crm.prospects, events.map(e => ({ ...e, content: e.content ?? "" })), new Date()).stuck.map(s => ({ id: s.id, idleDays: s.idleDays, name: names.get(s.id) ?? "" })).filter(s => s.name) : null;
-    return buildBrief({ mission, stuck, statut: todayReminder(todayPosts.data ?? [], today), course: courses.data ?? null, duplication: dupAllowed ? dup.data ?? null : null });
-  }, [crm.prospects, events, settings, today, todayPosts.data, courses.data, dup.data, dupAllowed]);
+    return buildBrief({ mission, stuck, statut: todayReminder(todayPosts.data ?? [], today), course: courses.data ?? null, duplication: dupAllowed ? dup.data ?? null : null, plan: planBrief });
+  }, [crm.prospects, events, settings, today, todayPosts.data, courses.data, dup.data, dupAllowed, planBrief]);
 
   const actions = useMemo(() => submitted ? routeRequest(submitted, plan) : [], [submitted, plan]);
   const loading = events === null || settings === null;
