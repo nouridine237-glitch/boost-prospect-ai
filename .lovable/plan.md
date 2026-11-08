@@ -1,57 +1,99 @@
-# Audit comparatif — vision « assistant IA central » (aucune modification)
+# Audit et prochaine étape : Planificateur de statuts V1
 
-## 1. Matrice des capacités (constaté dans le code)
+Audit seulement. Aucun fichier, table, migration, réglage ni déploiement n'a été modifié ou publié.
 
-| Capacité cible | État | Preuves dans le dépôt |
+## 1. Où en est chaque fonctionnalité
+
+| Fonctionnalité de la vision | État | Ce qui existe déjà |
 |---|---|---|
-| Coach quotidien | Implémenté et testé | `src/lib/coach.ts` (missions, priorités, séries, bilan semaine, objectifs proposés), `coach-card.tsx`, `coach-week.tsx`, tests `coach.test.ts` ; réglages dans `profiles.preferences.coach` |
-| Prospection (rédaction) | Implémenté | `/assistant`, `AiAssistantPanel` (crm.tsx), `generateProspectingContent` avec 5 modes, quota atomique `reserve_ai_generation` + remboursement ; scripts (`/scripts`), trames vocales, page de capture `/p/$pseudo` |
-| Vente / closing | Partiel | Gestionnaire d'objections (`objections.ts`, `/objections`), mode « Réponse à un prospect », `suggestNextAction` ; pas de parcours de closing guidé par étape du pipeline |
-| Marketing | Partiel | Mode « Post réseau social » seulement ; pas de calendrier ni planificateur de statuts |
-| CRM | Implémenté | `/prospects`, pipeline, relances, import/export CSV, `prospect_events`, outils MCP (create/update/followups) |
-| Leadership / duplication | Partiel | `team_links`, `team_member_progress()` agrégé, `/duplication` (7 jours + kits Pro) ; pas de coach leader (phase 4 du plan Académie) |
-| Formation | Implémenté | Académie 6 niveaux + quiz serveur + certificat, Académie vidéo, coach IA par leçon, suivi de progression des leçons |
-| Analyse de performance | Partiel | `/statistiques`, `conversion.ts` + carte Expert/Business ; pas d'interprétation proactive reliée aux actions |
-| Organisation | Partiel | Objectifs hebdo, relances, jours de repos du Coach ; « Planificateur de statuts » absent |
-| Stratégie | Absent | Aucun module de plan stratégique mensuel |
-| Assistant central qui coordonne | Absent | Chaque capacité est une page/carte séparée ; le dashboard empile les cartes sans point d'entrée unique ni orientation vers la bonne capacité |
+| Coach quotidien (missions, séries, bilan de la semaine) | Fait | Coach V1 à V3 : `coach.ts`, `coach-card.tsx`, `coach-week.tsx` |
+| Orientation quotidienne | Fait | Centre de commande : brief du jour et routeur de demandes, sans IA |
+| Prospection, réponses, scripts d'appel | Fait | Assistant IA avec 4 modes, scripts, objections, trames vocales |
+| Entraînement | Fait | Simulateur de conversations |
+| CRM et relances | Fait | Prospects, pipeline, relances, historique `prospect_events`, import/export |
+| Formation | Fait | Académie (quiz et vidéos), coach par leçon, suivi de progression |
+| Leadership et duplication | Fait | Parcours 7 jours, kits, équipe avec agrégats |
+| Analyse de performance | Partiel | Statistiques et carte Conversion (Expert/Business), objectifs hebdomadaires. Aucune analyse des contenus |
+| Génération de contenus | Partiel | Mode « Post réseau social » de l'Assistant, à la demande. Pas de bibliothèque ni de calendrier |
+| Planification de statuts WhatsApp/Facebook | Prévu, pas commencé | Rien dans le code : ni calendrier, ni brouillon, ni rappel. Il existe un composant `ui/calendar.tsx` inutilisé |
+| Rappels / notifications | Absent | Aucun push ni e-mail de rappel. Les rappels n'apparaissent que dans l'application (Coach et Centre de commande) |
+| Campagnes et suivi de leur performance | Absent | Aucune donnée de publication ni de résultat. `prospects.source` peut servir à une attribution simple plus tard |
+| Publication automatique WhatsApp/Facebook | Absent | Aucune intégration officielle. Seulement des liens `wa.me` dans `whatsapp-actions.tsx`, que l'utilisateur ouvre lui-même |
+| Stratégie | Partiel | Objectifs proposés par le Coach V3. Pas de plan stratégique |
 
-Roadmap : « Planificateur de statuts » ouvert (non implémenté) ; « Phase 2 duplication » encore non cochée alors que le code (migration 0018, `/duplication`) existe — à cocher, incohérence documentaire seulement.
+## 2. Recommandation : le Planificateur de statuts V1
 
-## 2. Recommandation unique : « Demandez à votre assistant » + brief du jour
+C'est toujours le meilleur prochain chantier, pour trois raisons :
+- c'est le seul grand pan de la vision qui n'est pas couvert du tout ;
+- il donne enfin un usage régulier au mode « Post » de l'Assistant ;
+- il crée les données (contenus prévus et publiés) dont une future analyse de campagnes aura besoin.
 
-Une seule zone en haut du dashboard, qui devient la porte d'entrée de l'app :
+Les campagnes et leur performance viendront après : aujourd'hui, aucune donnée ne permettrait de les mesurer.
 
-- **Brief du jour (sans IA)** : 3 lignes maximum composées à partir des calculs existants — mission prioritaire du Coach, prospect inactif ≥7 jours (`conversion.ts`), leçon à reprendre (`resumeLesson`) ou jour de duplication en cours. Chaque ligne a un bouton qui ouvre l'outil existant.
-- **Champ « Que voulez-vous faire ? »** : l'utilisateur écrit sa demande (ex. « mon prospect dit que c'est une pyramide »). Un orienteur local, sans IA et sans quota, détecte l'intention et propose 1 à 3 actions vers les outils existants, pré-remplies : objection correspondante (réutilise `matchObjectionId`), Assistant IA avec `?context=` et mode suggéré, script, leçon, statistiques, duplication, fiche prospect.
-- **Rien ne s'envoie et aucune génération n'est consommée** : la génération IA ne part que si l'utilisateur clique « Générer » dans l'Assistant existant (même quota). Aucun message WhatsApp n'est envoyé automatiquement.
-- Respect des plans : les actions vers des fonctions verrouillées (stats avancées, kits) affichent le cadenas et le lien Abonnement, comme aujourd'hui.
+## 3. Ce que contient la V1
 
-Pourquoi ce choix : transforme l'usage quotidien en « un seul endroit où demander », sans nouvelle table, sans nouvelle IA, et sans dupliquer Coach, CRM, Assistant, objections ni Académie.
+- **Calendrier de la semaine,** lisible sur mobile, avec une liste par jour (lundi à dimanche) et la navigation entre semaines.
+- **Brouillons,** chacun avec :
+  - un texte de 2 000 caractères maximum ;
+  - le réseau : statut WhatsApp, Facebook ou autre ;
+  - un objectif : notoriété, produit, témoignage éthique, invitation, éducation ;
+  - une date et un moment de la journée (matin, midi ou soir).
+- **Fréquence cible :** par exemple 1 statut par jour, enregistrée dans les préférences du profil comme l'objectif d'équipe. Le calendrier signale les jours vides.
+- **Génération à la demande :** un bouton « Générer avec l'Assistant » réutilise le mode Post existant et son quota (1 génération par clic). Le texte reste modifiable avant d'être enregistré, et rien n'est généré automatiquement.
+- **Bibliothèque :** on peut réutiliser un ancien statut ou un script de la bibliothèque existante pour créer un nouveau brouillon.
+- **Publication manuelle :** les boutons « Copier » et « Ouvrir WhatsApp » (lien `wa.me` existant) laissent l'utilisateur publier lui-même. Il marque ensuite le statut « publié », avec la date. Aucune publication automatique.
+- **Rappels dans l'application seulement :** le Centre de commande affiche « Statut prévu aujourd'hui » ou « Aucun statut prévu ». Pas de push ni d'e-mail en V1.
+- **Hors V1 :** publication automatique, campagnes, mesure des vues ou des clics, rappels push ou e-mail.
 
-## 3. Détails techniques
+## 4. Ce qu'on réutilise et ce qu'il faut créer
 
-Fichiers :
-- Nouveau `src/lib/assistant-router.ts` : fonctions pures `detectIntent(text)` (mots-clés FR normalisés sans accents → `objection|redaction|relance|post|formation|equipe|stats|prospect`) et `buildDailyBrief(inputs)`.
-- Nouveau `src/lib/assistant-router.test.ts` (bun:test) : une intention par règle, priorité objection > rédaction, brief limité à 3, actions verrouillées selon le plan.
-- Nouveau `src/components/central-assistant.tsx` : carte brief + champ + suggestions (liens TanStack `Link` avec `search`).
-- Modifié `src/routes/_authenticated/dashboard.tsx` : monter la carte au-dessus de `CoachCard`.
-- Éventuel : `src/routes/_authenticated/assistant.tsx` accepte `mode` en recherche (validé Zod) pour présélectionner le mode.
-- `roadmap.md` (ajout + cocher Phase 2), `AGENTS.md` (règle : l'orienteur est local et ne déclenche ni IA ni envoi).
+**Réutilisé**
+- `generateProspectingContent`, mode « Post réseau social », dans `ai.functions.ts` : quota et remboursement déjà gérés.
+- `whatsapp-actions.tsx` pour les liens WhatsApp, `scripts.functions.ts` pour la bibliothèque.
+- `command-center.ts` : une nouvelle ligne de brief, plus le mot-clé « statut », qui mène aujourd'hui à l'Assistant et mènera au Planificateur.
+- `app-shell.tsx` pour le menu, `plan-gate.tsx` pour les restrictions de plan, `ui/calendar.tsx` et `ui/tabs.tsx` pour l'affichage.
+- `profiles.preferences` pour la fréquence cible.
 
-Dépendances : données déjà chargées par `useCrm`, `readCoachSettings`, `buildDailyMissions`, `conversion.ts`, requêtes de progression Académie/duplication déjà propriétaire-scopées ; `hasFeature`. Aucune migration, aucune policy RLS, aucune fonction serveur nouvelle.
+**À créer**
+- Une table `content_posts`, nécessaire pour retrouver les brouillons sur un autre appareil. Colonnes :
+  - `id`, `user_id` ;
+  - `channel` (`whatsapp` | `facebook` | `autre`) ;
+  - `objective`, `body` (2 000 caractères maximum) ;
+  - `planned_on` (date), `slot` (`matin` | `midi` | `soir`) ;
+  - `status` (`brouillon` | `prevu` | `publie`), `published_at` ;
+  - `created_at`, `updated_at`.
+  - Droits d'accès :
+    - chaque utilisateur ne lit et ne modifie que ses propres lignes ;
+    - le visiteur non connecté n'a aucun accès ;
+    - un index sur (`user_id`, `planned_on`) ;
+    - une limite de création côté serveur, au maximum 60 statuts par semaine.
+- Un module de règles pures `src/lib/content-planner.ts` : semaine, jours vides, fréquence, transitions de statut, limite du plan.
+- Ses tests `content-planner.test.ts`, une page `src/routes/_authenticated/planificateur.tsx` et un composant de saisie.
 
-Risques :
-- Détection par mots-clés imparfaite → toujours afficher une action de repli « Ouvrir l'Assistant IA avec ce texte ».
-- Surcharge du dashboard → la carte remplace visuellement l'en-tête, brief plafonné à 3 lignes.
-- Requêtes supplémentaires (progression Académie) → réutiliser les query options existantes, chargement non bloquant.
-- Texte saisi transmis en URL → limité à 2 000 caractères (règle déjà en place sur `/assistant`).
+## 5. Plans, quotas et sécurité
 
-Critères d'acceptation :
-- Le dashboard affiche un brief de 1 à 3 actions issues des données de l'utilisateur seulement.
-- « c'est une pyramide » propose la fiche objection correspondante ; « écris un post » ouvre l'Assistant en mode Post avec le texte pré-rempli.
-- Aucune génération IA n'est comptée tant que l'utilisateur n'a pas cliqué « Générer ».
-- Un utilisateur Gratuit voit les actions réservées verrouillées, sans contenu payant.
-- Tests du module pur verts, typecheck et build OK.
+- **Gratuit :** planification sur 7 jours, au maximum 7 statuts prévus.
+- **Pro et plus :** illimité, avec l'historique et la bibliothèque. La règle passe par `hasFeature` avec une nouvelle fonctionnalité `contentPlanner` à partir de Pro, sans changer aucun tarif.
+- **Quota IA :** la génération passe uniquement par la fonction IA existante. Aucun nouveau type de génération.
+- **Données privées :** chaque utilisateur ne voit que ses statuts. Le contenu n'est jamais partagé avec le leader.
+- **Risques :**
+  - textes collés très longs : limite de 2 000 caractères, vérifiée à la saisie et en base ;
+  - confusion entre jour et date à cause du fuseau horaire : on stocke une date seule et on calcule le jour sur l'appareil, comme pour les relances ;
+  - double clic sur « Générer » : bouton désactivé pendant la génération ;
+  - aucune promesse de revenu : on réutilise les consignes déjà présentes dans l'Assistant.
 
-Estimation : 2 à 3 crédits Lovable (module pur + tests, une carte, une modification du dashboard).
+## 6. Critères d'acceptation
+
+1. Un utilisateur crée, modifie, déplace et supprime un brouillon. Il le retrouve après rechargement ou sur un autre appareil.
+2. « Générer » consomme exactement 1 génération et ne lance rien sans clic. Le texte reste modifiable avant d'être enregistré.
+3. « Copier » et « Ouvrir WhatsApp » n'envoient rien automatiquement. « Marquer publié » enregistre la date.
+4. Le Centre de commande affiche le statut prévu aujourd'hui.
+5. Un compte Gratuit est bloqué au-delà de 7 statuts prévus et voit l'explication avec le bouton « Voir les plans ».
+6. Un autre utilisateur ne peut ni lire ni modifier ces statuts, ce qui est vérifié directement en base.
+7. Les tests des règles pures, le typage et la compilation passent.
+
+## 7. Estimation
+
+Environ 3 à 4 crédits Lovable : 1 changement en base, 1 page, 1 module de règles avec ses tests, et l'intégration au Centre de commande. C'est une estimation : le coût réel n'est pas mesuré ici.
+
+Rien n'a été modifié ni publié dans cette étape.
