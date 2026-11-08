@@ -29,6 +29,7 @@ import { Route as AuthenticatedParametresRouteImport } from './routes/_authentic
 import { Route as AuthenticatedParrainageRouteImport } from './routes/_authenticated/parrainage'
 import { Route as AuthenticatedProspectsRouteImport } from './routes/_authenticated/prospects'
 import { Route as AuthenticatedScriptsRouteImport } from './routes/_authenticated/scripts'
+import { Route as AuthenticatedSimulateurRouteImport } from './routes/_authenticated/simulateur'
 import { Route as AuthenticatedStatistiquesRouteImport } from './routes/_authenticated/statistiques'
 import { Route as AuthenticatedTramesVocalesRouteImport } from './routes/_authenticated/trames-vocales'
 import { Route as PPseudoRouteImport } from './routes/p.$pseudo'
@@ -143,6 +144,11 @@ const AuthenticatedScriptsRoute = AuthenticatedScriptsRouteImport.update({
   path: '/scripts',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedSimulateurRoute = AuthenticatedSimulateurRouteImport.update({
+  id: '/simulateur',
+  path: '/simulateur',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedStatistiquesRoute =
   AuthenticatedStatistiquesRouteImport.update({
     id: '/statistiques',
@@ -224,6 +230,7 @@ export interface FileRoutesByFullPath {
   '/parrainage': typeof AuthenticatedParrainageRoute
   '/prospects': typeof AuthenticatedProspectsRoute
   '/scripts': typeof AuthenticatedScriptsRoute
+  '/simulateur': typeof AuthenticatedSimulateurRoute
   '/statistiques': typeof AuthenticatedStatistiquesRoute
   '/trames-vocales': typeof AuthenticatedTramesVocalesRoute
   '/p/$pseudo': typeof PPseudoRoute
@@ -256,6 +263,7 @@ export interface FileRoutesByTo {
   '/parrainage': typeof AuthenticatedParrainageRoute
   '/prospects': typeof AuthenticatedProspectsRoute
   '/scripts': typeof AuthenticatedScriptsRoute
+  '/simulateur': typeof AuthenticatedSimulateurRoute
   '/statistiques': typeof AuthenticatedStatistiquesRoute
   '/trames-vocales': typeof AuthenticatedTramesVocalesRoute
   '/p/$pseudo': typeof PPseudoRoute
@@ -290,6 +298,7 @@ export interface FileRoutesById {
   '/_authenticated/parrainage': typeof AuthenticatedParrainageRoute
   '/_authenticated/prospects': typeof AuthenticatedProspectsRoute
   '/_authenticated/scripts': typeof AuthenticatedScriptsRoute
+  '/_authenticated/simulateur': typeof AuthenticatedSimulateurRoute
   '/_authenticated/statistiques': typeof AuthenticatedStatistiquesRoute
   '/_authenticated/trames-vocales': typeof AuthenticatedTramesVocalesRoute
   '/p/$pseudo': typeof PPseudoRoute
@@ -324,6 +333,7 @@ export interface FileRouteTypes {
     | '/parrainage'
     | '/prospects'
     | '/scripts'
+    | '/simulateur'
     | '/statistiques'
     | '/trames-vocales'
     | '/p/$pseudo'
@@ -356,6 +366,7 @@ export interface FileRouteTypes {
     | '/parrainage'
     | '/prospects'
     | '/scripts'
+    | '/simulateur'
     | '/statistiques'
     | '/trames-vocales'
     | '/p/$pseudo'
@@ -389,6 +400,7 @@ export interface FileRouteTypes {
     | '/_authenticated/parrainage'
     | '/_authenticated/prospects'
     | '/_authenticated/scripts'
+    | '/_authenticated/simulateur'
     | '/_authenticated/statistiques'
     | '/_authenticated/trames-vocales'
     | '/p/$pseudo'
@@ -561,6 +573,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedScriptsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/simulateur': {
+      id: '/_authenticated/simulateur'
+      path: '/simulateur'
+      fullPath: '/simulateur'
+      preLoaderRoute: typeof AuthenticatedSimulateurRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/statistiques': {
       id: '/_authenticated/statistiques'
       path: '/statistiques'
@@ -655,6 +674,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedParrainageRoute: typeof AuthenticatedParrainageRoute
   AuthenticatedProspectsRoute: typeof AuthenticatedProspectsRoute
   AuthenticatedScriptsRoute: typeof AuthenticatedScriptsRoute
+  AuthenticatedSimulateurRoute: typeof AuthenticatedSimulateurRoute
   AuthenticatedStatistiquesRoute: typeof AuthenticatedStatistiquesRoute
   AuthenticatedTramesVocalesRoute: typeof AuthenticatedTramesVocalesRoute
   AuthenticatedAcademieNiveauRoute: typeof AuthenticatedAcademieNiveauRoute
@@ -675,6 +695,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedParrainageRoute: AuthenticatedParrainageRoute,
   AuthenticatedProspectsRoute: AuthenticatedProspectsRoute,
   AuthenticatedScriptsRoute: AuthenticatedScriptsRoute,
+  AuthenticatedSimulateurRoute: AuthenticatedSimulateurRoute,
   AuthenticatedStatistiquesRoute: AuthenticatedStatistiquesRoute,
   AuthenticatedTramesVocalesRoute: AuthenticatedTramesVocalesRoute,
   AuthenticatedAcademieNiveauRoute: AuthenticatedAcademieNiveauRoute,

@@ -6,6 +6,7 @@
 - [x] Coach V2 — priorisation, réglages, conseil IA au clic, objections
 - [x] Coach V3 — séries, bilan de semaine, objectifs proposés
 - [x] Templates par entreprise (Longrich) — accès dès le plan Pro
+- [x] Simulateur de conversations — prospect virtuel IA, bilan structuré (quota IA partagé, sans stockage)
 - [ ] Planificateur de statuts
 - [x] Centre de commande — brief du jour + « Que voulez-vous faire ? » (routeur local, sans IA)
 - [x] Conversion étape 1 — calculs purs + tests (sans interface)
