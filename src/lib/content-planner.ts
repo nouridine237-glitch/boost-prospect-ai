@@ -13,7 +13,7 @@ export const MAX_BODY = 2000;
 export const FREE_WEEK_LIMIT = 7;
 export const PAID_WEEK_LIMIT = 60;
 
-export type PostDraft = { channel: string; objective: string; body: string; planned_on: string; slot: string; status: string };
+export type PostDraft = { channel: string; objective: string; body: string; planned_on: string; slot: string; status: string; campaign_id?: string | null };
 export type Post = PostDraft & { id: string; published_at: string | null };
 
 const DAY_RE = /^\d{4}-\d{2}-\d{2}$/;

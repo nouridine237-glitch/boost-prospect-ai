@@ -297,6 +297,48 @@ export type Database = {
         }
         Relationships: []
       }
+      campaigns: {
+        Row: {
+          archived: boolean
+          channel: string
+          created_at: string
+          ends_on: string
+          id: string
+          name: string
+          note: string
+          objective: string
+          starts_on: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          archived?: boolean
+          channel: string
+          created_at?: string
+          ends_on: string
+          id?: string
+          name: string
+          note?: string
+          objective: string
+          starts_on: string
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          archived?: boolean
+          channel?: string
+          created_at?: string
+          ends_on?: string
+          id?: string
+          name?: string
+          note?: string
+          objective?: string
+          starts_on?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       capture_pages: {
         Row: {
           created_at: string
@@ -357,6 +399,7 @@ export type Database = {
       content_posts: {
         Row: {
           body: string
+          campaign_id: string | null
           channel: string
           created_at: string
           id: string
@@ -370,6 +413,7 @@ export type Database = {
         }
         Insert: {
           body?: string
+          campaign_id?: string | null
           channel?: string
           created_at?: string
           id?: string
@@ -383,6 +427,7 @@ export type Database = {
         }
         Update: {
           body?: string
+          campaign_id?: string | null
           channel?: string
           created_at?: string
           id?: string
@@ -394,7 +439,15 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "content_posts_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       duplication_progress: {
         Row: {
@@ -544,6 +597,7 @@ export type Database = {
       }
       prospects: {
         Row: {
+          campaign_id: string | null
           created_at: string
           first_contact_at: string | null
           id: string
@@ -558,11 +612,13 @@ export type Database = {
           product_interest: string
           social_network: string | null
           source: string
+          source_post_id: string | null
           status: Database["public"]["Enums"]["prospect_status"]
           updated_at: string
           user_id: string
         }
         Insert: {
+          campaign_id?: string | null
           created_at?: string
           first_contact_at?: string | null
           id?: string
@@ -577,11 +633,13 @@ export type Database = {
           product_interest?: string
           social_network?: string | null
           source?: string
+          source_post_id?: string | null
           status?: Database["public"]["Enums"]["prospect_status"]
           updated_at?: string
           user_id: string
         }
         Update: {
+          campaign_id?: string | null
           created_at?: string
           first_contact_at?: string | null
           id?: string
@@ -596,11 +654,27 @@ export type Database = {
           product_interest?: string
           social_network?: string | null
           source?: string
+          source_post_id?: string | null
           status?: Database["public"]["Enums"]["prospect_status"]
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "prospects_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prospects_source_post_id_fkey"
+            columns: ["source_post_id"]
+            isOneToOne: false
+            referencedRelation: "content_posts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       referral_codes: {
         Row: {

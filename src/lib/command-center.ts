@@ -11,15 +11,16 @@ export const ASSISTANT_MODES: Record<AssistantMode, string> = {
 export type CommandAction =
   | { id: string; label: string; reason: string; kind: "objection"; objectionId: string | null }
   | { id: string; label: string; reason: string; kind: "assistant"; mode: AssistantMode; context: string }
-  | { id: string; label: string; reason: string; kind: "page"; to: "/prospects" | "/academie" | "/duplication" | "/statistiques" | "/abonnement" | "/simulateur" | "/planificateur"; locked?: boolean };
+  | { id: string; label: string; reason: string; kind: "page"; to: "/prospects" | "/academie" | "/duplication" | "/statistiques" | "/abonnement" | "/simulateur" | "/planificateur" | "/campagnes"; locked?: boolean };
 
-export type Intent = "simulation" | "objection" | "relance" | "post" | "appel" | "message" | "prospect" | "formation" | "equipe" | "stats";
+export type Intent = "campagne" | "simulation" | "objection" | "relance" | "post" | "appel" | "message" | "prospect" | "formation" | "equipe" | "stats";
 
 export const normalize = (v: string) => v.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/\s+/g, " ").trim();
 export const clampRequest = (v: string) => v.trim().slice(0, MAX_REQUEST);
 
 /** Ordre = priorité : une objection l'emporte sur une demande de rédaction. */
 const INTENT_KEYWORDS: [Intent, string[]][] = [
+  ["campagne", ["campagne"]],
   ["simulation", ["entrainer", "entraine", "simul", "s'exercer", "m'exercer", "jeu de role", "pratiquer"]],
   ["objection", ["objection", "il dit", "elle dit", "me dit", "repondre a", "pyramid", "arnaque", "trop cher", "pas le temps", "reflechir", "pas interesse", "interesse pas"]],
   ["relance", ["relance", "relancer", "suivi", "rappeler", "recontacter", "sans reponse", "repond plus", "repond pas"]],
@@ -47,6 +48,7 @@ export function routeRequest(text: string, plan: string): CommandAction[] {
   const out: CommandAction[] = [];
   const objectionId = matchObjectionId(request) ?? matchObjectionId(normalize(request));
   for (const i of intents) {
+    if (i === "campagne") out.push({ id: "campagnes", kind: "page", to: "/campagnes", label: "Suivre mes campagnes", reason: "Statuts publiés, prospects attribués, conversions réelles" });
     if (i === "simulation") out.push({ id: "simulateur", kind: "page", to: "/simulateur", label: "Ouvrir le Simulateur de conversations", reason: "Entraînement face à un prospect virtuel, sans envoi réel" });
     if (i === "objection") {
       out.push({ id: "objection", kind: "objection", objectionId, label: "Voir la réponse dans le gestionnaire d'objections", reason: objectionId ? "Objection reconnue dans votre demande" : "Réponses éthiques en 3 temps" });

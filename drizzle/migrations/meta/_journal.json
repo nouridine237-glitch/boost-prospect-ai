@@ -176,6 +176,20 @@
       "when": 1794167934811,
       "tag": "0024_content_posts_revoke_anon",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1794168770776,
+      "tag": "0025_campaigns",
+      "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1794169057882,
+      "tag": "0026_campaign_link_guard_fix",
+      "breakpoints": true
     }
   ]
 }

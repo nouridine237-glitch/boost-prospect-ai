@@ -13,6 +13,7 @@ import type { User } from "@supabase/supabase-js";
 import { WhatsAppActions } from "@/components/whatsapp-actions";
 import { toast } from "sonner";
 import { logProspectEvent } from "@/lib/prospect-events";
+import { useCampaigns } from "@/components/campaign-picker";
 import { usePlan } from "@/hooks/use-plan";
 import { planDef } from "@/lib/plans";
 import { LimitError } from "@/components/plan-gate";
@@ -20,7 +21,7 @@ import { FilterBar, ImportExportButtons, applyFilters, emptyFilters, type Filter
 
 export type Prospect = Tables<"prospects"> & { joined_team_at?: string | null };
 export type Status = Prospect["status"];
-export type ProspectPatch = Partial<Pick<Prospect, "name" | "phone" | "notes" | "next_followup_date" | "source" | "product_interest" | "main_objection" | "interest_level" | "first_contact_at">>;
+export type ProspectPatch = Partial<Pick<Prospect, "name" | "phone" | "notes" | "next_followup_date" | "source" | "product_interest" | "main_objection" | "interest_level" | "first_contact_at" | "campaign_id" | "source_post_id">>;
 export const statuses = ["nouveau", "contacté", "discussion", "intéressé", "client", "non_intéressé"] as const satisfies readonly Status[];
 export const statusLabels: Record<Status, string> = { nouveau: "Nouveau", "contacté": "Contacté", discussion: "Discussion", "intéressé": "Intéressé", client: "Client", "non_intéressé": "Non intéressé" };
 export const baseModes = ["Message de prospection", "Réponse à un prospect", "Script d'appel", "Post réseau social"] as const;
@@ -117,7 +118,8 @@ export function useCrm(user: User, opts?: { onJoinTeam?: (p: Prospect) => void }
     if (e) setError(e.message); else setProspects(items => items.map(p => p.id === id ? { ...p, ...patch } : p));
   }
 
-  return { lastMessages, setLastMessages, markContacted, prospects, generationCount, monthlyGenerations, setMonthlyGenerations, setGenerationCount, limits, planInfo, pendingPayment, error, setError, displayName, clients, conversion, addProspect, importProspects, changeStatus, updateProspect };
+  const patchLocal = (id: string, patch: ProspectPatch) => setProspects(items => items.map(p => p.id === id ? { ...p, ...patch } : p));
+  return { userId: user.id, patchLocal, lastMessages, setLastMessages, markContacted, prospects, generationCount, monthlyGenerations, setMonthlyGenerations, setGenerationCount, limits, planInfo, pendingPayment, error, setError, displayName, clients, conversion, addProspect, importProspects, changeStatus, updateProspect };
 }
 
 export type Crm = ReturnType<typeof useCrm>;
@@ -146,6 +148,7 @@ export function ProspectsPanel({ crm, limit, excludeClients, onOpen }: { crm: Cr
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [filters, setFilters] = useState<Filters>(emptyFilters);
+  const campaigns = useCampaigns(limit ? undefined : crm.userId);
   const filtered = useMemo(() => applyFilters(crm.prospects.filter(p => (!excludeClients || p.status !== "client") && (p.name.toLowerCase().includes(query.toLowerCase()) || (p.phone ?? "").includes(query))), limit ? emptyFilters : filters), [crm.prospects, query, excludeClients, filters, limit]);
   const shown = limit ? filtered.slice(0, limit) : filtered;
 
@@ -166,7 +169,7 @@ export function ProspectsPanel({ crm, limit, excludeClients, onOpen }: { crm: Cr
           <Button size="sm" onClick={() => setAdding(!adding)}><Plus /> Ajouter</Button>
         </div>
       </div>
-      {!limit && <FilterBar f={filters} set={setFilters} statuses={excludeClients ? statuses.filter(s => s !== "client") : statuses} />}
+      {!limit && <FilterBar f={filters} set={setFilters} campaigns={campaigns.data ?? []} statuses={excludeClients ? statuses.filter(s => s !== "client") : statuses} />}
       {adding && <form onSubmit={submit} className="grid gap-3 border-b border-border p-4 sm:grid-cols-[1fr_1fr_auto]"><Input value={name} onChange={e => setName(e.target.value)} placeholder="Nom du prospect" required /><Input value={phone} onChange={e => setPhone(e.target.value)} placeholder="Téléphone" /><Button>Enregistrer</Button></form>}
       {crm.error && <LimitError message={crm.error} />}
       <div className="divide-y divide-border">{shown.length ? shown.map(p => <ProspectCard key={p.id} prospect={p} onOpen={onOpen} onChangeStatus={crm.changeStatus} onUpdate={crm.updateProspect} />) : <div className="p-10 text-center"><ContactRound className="mx-auto size-8 text-muted-foreground" /><p className="mt-3 text-sm font-semibold">Aucun prospect pour le moment</p><p className="mt-1 text-xs text-muted-foreground">Ajoutez votre premier contact pour commencer.</p></div>}</div>

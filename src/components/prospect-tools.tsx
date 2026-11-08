@@ -14,6 +14,55 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { WhatsAppActions } from "@/components/whatsapp-actions";
 import { slugStatus, statusLabels, type Crm, type Prospect, type ProspectPatch } from "@/components/crm";
+import { Megaphone } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { CampaignSelect, useCampaigns } from "@/components/campaign-picker";
+import { campaignDbError } from "@/lib/campaigns";
+
+/** Attribution manuelle : campagne et/ou statut publié à l'origine du contact. Contrôlé en base. */
+function CampaignAttribution({ prospect, crm }: { prospect: Prospect; crm: Crm }) {
+  const [campaignId, setCampaignId] = useState<string | null>(prospect.campaign_id ?? null);
+  const [postId, setPostId] = useState<string | null>(prospect.source_post_id ?? null);
+  const [err, setErr] = useState("");
+  const [busy, setBusy] = useState(false);
+  const campaigns = useCampaigns(crm.userId);
+  const posts = useQuery({
+    queryKey: ["published-posts", crm.userId],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("content_posts").select("id, body, campaign_id, published_at, channel").eq("user_id", crm.userId).eq("status", "publie").order("published_at", { ascending: false }).limit(50);
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+  const options = (posts.data ?? []).filter(p => !campaignId || p.campaign_id === campaignId || p.id === postId);
+  async function save(nextCampaign: string | null, nextPost: string | null) {
+    setBusy(true); setErr("");
+    const patch: ProspectPatch = { campaign_id: nextCampaign, source_post_id: nextPost };
+    const { error } = await supabase.from("prospects").update(patch).eq("id", prospect.id).eq("user_id", crm.userId);
+    setBusy(false);
+    if (error) { setErr(campaignDbError(error.message)); setCampaignId(prospect.campaign_id ?? null); setPostId(prospect.source_post_id ?? null); return; }
+    crm.patchLocal(prospect.id, patch);
+    const name = campaigns.data?.find(c => c.id === nextCampaign)?.name;
+    void logProspectEvent(prospect.id, "campagne_attribuée", nextCampaign ? `Campagne : ${name ?? "—"}${nextPost ? " · contenu source indiqué" : ""}` : nextPost ? "Contenu source indiqué" : "Attribution retirée");
+  }
+  const sel = "mt-1 h-10 w-full rounded-md border border-input bg-background px-3 text-sm font-normal text-foreground";
+  return <details className="rounded-md border border-border p-3" open={!!(prospect.campaign_id || prospect.source_post_id)}>
+    <summary className="cursor-pointer text-xs font-semibold text-muted-foreground">Origine du contact (campagne)</summary>
+    <div className="mt-3 grid gap-3 text-xs">
+      <CampaignSelect userId={crm.userId} value={campaignId} className={sel} onChange={id => {
+        const keepPost = id && postId && posts.data?.find(p => p.id === postId)?.campaign_id === id ? postId : null;
+        setCampaignId(id); setPostId(keepPost); void save(id, keepPost);
+      }} />
+      <label className="block text-sm font-semibold">Statut publié à l'origine (facultatif)
+        <select className={sel} value={postId ?? ""} disabled={busy} onChange={e => { const v = e.target.value || null; setPostId(v); void save(campaignId, v); }}>
+          <option value="">Aucun</option>
+          {options.map(p => <option key={p.id} value={p.id}>{p.published_at ? new Date(p.published_at).toLocaleDateString("fr-FR") : ""} — {p.body.slice(0, 40)}</option>)}
+        </select></label>
+      <p className="text-muted-foreground">Indiquez-le vous-même : l'application ne devine jamais d'où vient un contact.</p>
+      {err && <p role="alert" className="text-destructive">{err}</p>}
+    </div>
+  </details>;
+}
 
 export const sources = ["Facebook", "WhatsApp", "Marché chaud", "Recommandation", "Autre"] as const;
 export const interestLevels = [
@@ -144,6 +193,7 @@ function SheetBody({ prospect, crm, autoSuggest }: { prospect: Prospect; crm: Cr
           <label className={label}>Premier contact<Input type="date" value={d.first_contact_at} onChange={e => set("first_contact_at", e.target.value)} /></label>
           <label className={label}>Prochaine relance<Input type="date" value={d.next_followup_date} onChange={e => set("next_followup_date", e.target.value)} /></label>
         </div>
+        <CampaignAttribution prospect={prospect} crm={crm} />
         <label className={label}>Notes<Textarea className="min-h-28 resize-none" value={d.notes} onFocus={() => { notesAtFocus.current = d.notes; }} onBlur={() => { if (d.notes.trim() !== notesAtFocus.current.trim()) { notesAtFocus.current = d.notes; void logProspectEvent(prospect.id, "note_modifiée", d.notes.trim()); } }} onChange={e => set("notes", e.target.value)} /></label>
       </div>}
     </>
@@ -200,6 +250,7 @@ const eventMeta: Record<ProspectEventType, { label: string; icon: typeof Clock; 
   "note_modifiée": { label: "Note modifiée", icon: StickyNote, cls: "bg-secondary text-foreground" },
   "mission_faite": { label: "Mission du coach faite", icon: Check, cls: "bg-success/15 text-success" },
   "mission_passée": { label: "Mission du coach passée", icon: Clock, cls: "bg-secondary text-foreground" },
+  "campagne_attribuée": { label: "Attribution à une campagne", icon: Megaphone, cls: "bg-primary/15 text-primary" },
 };
 function relativeTime(iso: string) {
   const s = Math.round((Date.now() - new Date(iso).getTime()) / 1000);

@@ -12,6 +12,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { usePlan } from "@/hooks/use-plan";
 import { generateProspectingContent } from "@/lib/ai.functions";
 import { localDay } from "@/lib/coach";
+import { CampaignSelect, useCampaigns } from "@/components/campaign-picker";
+import { campaignDbError } from "@/lib/campaigns";
 import {
   addDays, canPlace, CHANNELS, dayLabel, dbError, generationContext, MAX_BODY, mondayOf, OBJECTIVES, SLOTS, STATUSES, validatePost, weekDays, weekLimit,
   contentPostsKey, type Post, type PostDraft,
@@ -28,7 +30,7 @@ export const Route = createFileRoute("/_authenticated/planificateur")({
   component: PlannerPage,
 });
 
-const COLS = "id, channel, objective, body, planned_on, slot, status, published_at";
+const COLS = "id, channel, objective, body, planned_on, slot, status, published_at, campaign_id";
 
 function PlannerPage() {
   const { user } = Route.useRouteContext();
@@ -38,6 +40,8 @@ function PlannerPage() {
   const [monday, setMonday] = useState(() => mondayOf(today));
   const [editing, setEditing] = useState<(PostDraft & { id?: string }) | null>(null);
   const days = weekDays(monday);
+  const campaigns = useCampaigns(user.id);
+  const campaignName = (id?: string | null) => (id && campaigns.data?.find(c => c.id === id)?.name) || null;
 
   const posts = useQuery({
     queryKey: [...contentPostsKey(user.id), monday],
@@ -95,10 +99,10 @@ function PlannerPage() {
           </div>
           {posts.isLoading ? <p className="mt-2 text-xs text-muted-foreground">Chargement…</p>
             : !items.length ? <p className="mt-2 text-xs text-muted-foreground">Aucun statut prévu.</p>
-            : <ul className="mt-3 space-y-3">{items.map(p => <PostCard key={p.id} p={p} busy={update.isPending || remove.isPending}
+            : <ul className="mt-3 space-y-3">{items.map(p => <PostCard key={p.id} p={p} campaign={campaignName(p.campaign_id)} busy={update.isPending || remove.isPending}
                 onEdit={() => setEditing(p)} onDelete={() => { if (confirm("Supprimer ce statut ?")) remove.mutate(p.id); }}
                 onPublish={() => update.mutate({ id: p.id, patch: { status: "publie" } }, { onSuccess: () => toast.success("Marqué comme publié") })}
-                onDuplicate={() => setEditing({ channel: p.channel, objective: p.objective, body: p.body, planned_on: addDays(p.planned_on, 7), slot: p.slot, status: "brouillon" })} />)}</ul>}
+                onDuplicate={() => setEditing({ channel: p.channel, objective: p.objective, body: p.body, planned_on: addDays(p.planned_on, 7), slot: p.slot, status: "brouillon", campaign_id: p.campaign_id ?? null })} />)}</ul>}
         </li>;
       })}</ol>
       <p className="mt-8 text-center text-xs text-muted-foreground">Aucun revenu garanti — publication manuelle par vous-même</p>
@@ -107,13 +111,14 @@ function PlannerPage() {
   </AppShell>;
 }
 
-function PostCard({ p, busy, onEdit, onDelete, onPublish, onDuplicate }: { p: Post; busy: boolean; onEdit: () => void; onDelete: () => void; onPublish: () => void; onDuplicate: () => void }) {
+function PostCard({ p, campaign, busy, onEdit, onDelete, onPublish, onDuplicate }: { p: Post; campaign: string | null; busy: boolean; onEdit: () => void; onDelete: () => void; onPublish: () => void; onDuplicate: () => void }) {
   const copy = async () => { try { await navigator.clipboard.writeText(p.body); toast.success("Texte copié"); } catch { toast.error("Copie impossible"); } };
   const badge = p.status === "publie" ? "bg-primary/15 text-primary" : p.status === "prevu" ? "bg-secondary text-foreground" : "border border-dashed border-border text-muted-foreground";
   return <li className="rounded-md border border-border bg-secondary/40 p-3">
     <div className="flex flex-wrap items-center gap-2 text-[11px]">
       <span className={`rounded-full px-2 py-0.5 font-semibold ${badge}`}>{STATUSES[p.status as keyof typeof STATUSES]}</span>
       <span className="text-muted-foreground">{SLOTS[p.slot as keyof typeof SLOTS]} · {CHANNELS[p.channel as keyof typeof CHANNELS]} · {OBJECTIVES[p.objective as keyof typeof OBJECTIVES]}</span>
+      {campaign && <span className="rounded-full border border-primary/40 px-2 py-0.5 text-primary">{campaign}</span>}
     </div>
     <p className="mt-2 line-clamp-4 whitespace-pre-wrap text-sm">{p.body || <span className="italic text-muted-foreground">Brouillon sans texte</span>}</p>
     {p.published_at && <p className="mt-1 text-[11px] text-muted-foreground">Publié le {new Date(p.published_at).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" })}</p>}
@@ -161,12 +166,12 @@ function PostEditor({ userId, initial, plan, weekPosts, onClose, onSaved }: { us
     // Vérification locale de la limite si on change de semaine ; la base revérifie toujours.
     if ((!initial.id || initial.planned_on !== d.planned_on) && mondayOf(d.planned_on) === mondayOf(initial.planned_on) && !canPlace(weekPosts, d.planned_on, plan, initial.id)) { setError("Limite hebdomadaire atteinte pour votre plan."); return; }
     setSaving(true); setError(null);
-    const row = { channel: d.channel, objective: d.objective, body: d.body, planned_on: d.planned_on, slot: d.slot, status: d.status };
+    const row = { channel: d.channel, objective: d.objective, body: d.body, planned_on: d.planned_on, slot: d.slot, status: d.status, campaign_id: d.campaign_id ?? null };
     const { error: e } = initial.id
       ? await supabase.from("content_posts").update(row).eq("id", initial.id).eq("user_id", userId)
       : await supabase.from("content_posts").insert({ ...row, user_id: userId });
     setSaving(false);
-    if (e) { setError(dbError(e.message)); return; }
+    if (e) { setError(/CAMPAGNE/.test(e.message) ? campaignDbError(e.message) : dbError(e.message)); return; }
     toast.success("Statut enregistré"); onSaved();
   }
 
@@ -181,6 +186,7 @@ function PostEditor({ userId, initial, plan, weekPosts, onClose, onSaved }: { us
           <Select label="Objectif" value={d.objective} options={OBJECTIVES} onChange={v => set("objective", v)} />
         </div>
         <Select label="État" value={d.status} options={STATUSES} onChange={v => set("status", v)} />
+        <CampaignSelect userId={userId} value={d.campaign_id ?? null} onChange={id => set("campaign_id", id)} />
         <div className="rounded-md border border-border p-3">
           <label className="block text-sm font-semibold">Idée pour l'IA (facultatif)
             <input value={idea} maxLength={300} onChange={e => setIdea(e.target.value)} placeholder="Ex. : témoignage d'une cliente satisfaite du produit X" className="mt-1 h-11 w-full rounded-md border border-input bg-background px-3 text-sm font-normal" /></label>

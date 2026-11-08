@@ -118,18 +118,19 @@ export function ImportExportButtons({ crm }: { crm: Crm }) {
   </>;
 }
 
-export type Filters = { status: Status | ""; interest: string; source: string; overdue: boolean; sort: "created" | "followup" | "name" };
-export const emptyFilters: Filters = { status: "", interest: "", source: "", overdue: false, sort: "created" };
+export type Filters = { status: Status | ""; interest: string; source: string; overdue: boolean; sort: "created" | "followup" | "name"; campaign?: string };
+export const emptyFilters: Filters = { status: "", interest: "", source: "", overdue: false, sort: "created", campaign: "" };
 
 export function applyFilters(list: Prospect[], f: Filters) {
   const today = new Date().toISOString().slice(0, 10);
-  const out = list.filter(p => (!f.status || p.status === f.status) && (!f.interest || String(p.interest_level ?? "") === f.interest) && (!f.source || norm(p.source ?? "") === norm(f.source)) && (!f.overdue || (!!p.next_followup_date && p.next_followup_date < today)));
+  const out = list.filter(p => (!f.status || p.status === f.status) && (!f.interest || String(p.interest_level ?? "") === f.interest) && (!f.source || norm(p.source ?? "") === norm(f.source)) && (!f.overdue || (!!p.next_followup_date && p.next_followup_date < today)) && (!f.campaign || p.campaign_id === f.campaign));
   return [...out].sort((a, b) => f.sort === "name" ? a.name.localeCompare(b.name, "fr") : f.sort === "followup" ? (a.next_followup_date ?? "9999").localeCompare(b.next_followup_date ?? "9999") : b.created_at.localeCompare(a.created_at));
 }
 
 const sel = "h-9 rounded-md border border-input bg-background px-2 text-xs outline-none focus:ring-1 focus:ring-ring";
-export function FilterBar({ f, set, statuses }: { f: Filters; set: (f: Filters) => void; statuses: readonly Status[] }) {
+export function FilterBar({ f, set, statuses, campaigns = [] }: { f: Filters; set: (f: Filters) => void; statuses: readonly Status[]; campaigns?: { id: string; name: string }[] }) {
   const chips: { label: string; clear: Partial<Filters> }[] = [];
+  if (f.campaign) chips.push({ label: `Campagne : ${campaigns.find(c => c.id === f.campaign)?.name ?? "…"}`, clear: { campaign: "" } });
   if (f.status) chips.push({ label: `Statut : ${STATUS_LABELS[f.status]}`, clear: { status: "" } });
   if (f.interest) chips.push({ label: `Intérêt : ${INTEREST[Number(f.interest)]}`, clear: { interest: "" } });
   if (f.source) chips.push({ label: `Source : ${f.source}`, clear: { source: "" } });
@@ -139,6 +140,7 @@ export function FilterBar({ f, set, statuses }: { f: Filters; set: (f: Filters) 
       <select aria-label="Filtrer par statut" className={sel} value={f.status} onChange={e => set({ ...f, status: e.target.value as Status | "" })}><option value="">Tous statuts</option>{statuses.map(s => <option key={s} value={s}>{STATUS_LABELS[s]}</option>)}</select>
       <select aria-label="Filtrer par intérêt" className={sel} value={f.interest} onChange={e => set({ ...f, interest: e.target.value })}><option value="">Tout intérêt</option><option value="3">Chaud</option><option value="2">Tiède</option><option value="1">Froid</option></select>
       <select aria-label="Filtrer par source" className={sel} value={f.source} onChange={e => set({ ...f, source: e.target.value })}><option value="">Toutes sources</option>{SOURCES.map(s => <option key={s}>{s}</option>)}</select>
+      {campaigns.length > 0 && <select aria-label="Filtrer par campagne" className={sel} value={f.campaign ?? ""} onChange={e => set({ ...f, campaign: e.target.value })}><option value="">Toutes campagnes</option>{campaigns.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select>}
       <label className="flex h-9 cursor-pointer items-center gap-2 rounded-md border border-input px-3 text-xs"><input type="checkbox" checked={f.overdue} onChange={e => set({ ...f, overdue: e.target.checked })} className="accent-primary" /> Relance en retard</label>
       <select aria-label="Trier" className={`${sel} ml-auto`} value={f.sort} onChange={e => set({ ...f, sort: e.target.value as Filters["sort"] })}><option value="created">Tri : date d'ajout</option><option value="followup">Tri : date de relance</option><option value="name">Tri : nom</option></select>
     </div>

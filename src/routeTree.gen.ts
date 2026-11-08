@@ -20,6 +20,7 @@ import { Route as AuthenticatedAbonnementRouteImport } from './routes/_authentic
 import { Route as AuthenticatedAcademieRouteImport } from './routes/_authenticated/academie'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedAssistantRouteImport } from './routes/_authenticated/assistant'
+import { Route as AuthenticatedCampagnesRouteImport } from './routes/_authenticated/campagnes'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedDuplicationRouteImport } from './routes/_authenticated/duplication'
 import { Route as AuthenticatedFormerEquipeRouteImport } from './routes/_authenticated/former-equipe'
@@ -96,6 +97,11 @@ const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
 const AuthenticatedAssistantRoute = AuthenticatedAssistantRouteImport.update({
   id: '/assistant',
   path: '/assistant',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedCampagnesRoute = AuthenticatedCampagnesRouteImport.update({
+  id: '/campagnes',
+  path: '/campagnes',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
@@ -228,6 +234,7 @@ export interface FileRoutesByFullPath {
   '/academie': typeof AuthenticatedAcademieRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/assistant': typeof AuthenticatedAssistantRoute
+  '/campagnes': typeof AuthenticatedCampagnesRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/duplication': typeof AuthenticatedDuplicationRoute
   '/former-equipe': typeof AuthenticatedFormerEquipeRoute
@@ -262,6 +269,7 @@ export interface FileRoutesByTo {
   '/academie': typeof AuthenticatedAcademieRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/assistant': typeof AuthenticatedAssistantRoute
+  '/campagnes': typeof AuthenticatedCampagnesRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/duplication': typeof AuthenticatedDuplicationRoute
   '/former-equipe': typeof AuthenticatedFormerEquipeRoute
@@ -298,6 +306,7 @@ export interface FileRoutesById {
   '/_authenticated/academie': typeof AuthenticatedAcademieRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/assistant': typeof AuthenticatedAssistantRoute
+  '/_authenticated/campagnes': typeof AuthenticatedCampagnesRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/duplication': typeof AuthenticatedDuplicationRoute
   '/_authenticated/former-equipe': typeof AuthenticatedFormerEquipeRoute
@@ -334,6 +343,7 @@ export interface FileRouteTypes {
     | '/academie'
     | '/admin'
     | '/assistant'
+    | '/campagnes'
     | '/dashboard'
     | '/duplication'
     | '/former-equipe'
@@ -368,6 +378,7 @@ export interface FileRouteTypes {
     | '/academie'
     | '/admin'
     | '/assistant'
+    | '/campagnes'
     | '/dashboard'
     | '/duplication'
     | '/former-equipe'
@@ -403,6 +414,7 @@ export interface FileRouteTypes {
     | '/_authenticated/academie'
     | '/_authenticated/admin'
     | '/_authenticated/assistant'
+    | '/_authenticated/campagnes'
     | '/_authenticated/dashboard'
     | '/_authenticated/duplication'
     | '/_authenticated/former-equipe'
@@ -521,6 +533,13 @@ declare module '@tanstack/react-router' {
       path: '/assistant'
       fullPath: '/assistant'
       preLoaderRoute: typeof AuthenticatedAssistantRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/campagnes': {
+      id: '/_authenticated/campagnes'
+      path: '/campagnes'
+      fullPath: '/campagnes'
+      preLoaderRoute: typeof AuthenticatedCampagnesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/dashboard': {
@@ -685,6 +704,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAcademieRoute: typeof AuthenticatedAcademieRoute
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
   AuthenticatedAssistantRoute: typeof AuthenticatedAssistantRoute
+  AuthenticatedCampagnesRoute: typeof AuthenticatedCampagnesRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedDuplicationRoute: typeof AuthenticatedDuplicationRoute
   AuthenticatedFormerEquipeRoute: typeof AuthenticatedFormerEquipeRoute
@@ -707,6 +727,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAcademieRoute: AuthenticatedAcademieRoute,
   AuthenticatedAdminRoute: AuthenticatedAdminRoute,
   AuthenticatedAssistantRoute: AuthenticatedAssistantRoute,
+  AuthenticatedCampagnesRoute: AuthenticatedCampagnesRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedDuplicationRoute: AuthenticatedDuplicationRoute,
   AuthenticatedFormerEquipeRoute: AuthenticatedFormerEquipeRoute,
