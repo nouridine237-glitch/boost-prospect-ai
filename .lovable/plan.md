@@ -1,99 +1,116 @@
-# Audit et prochaine étape : Planificateur de statuts V1
+# Suivi des campagnes MLM V1 — audit et plan
 
-Audit seulement. Aucun fichier, table, migration, réglage ni déploiement n'a été modifié ou publié.
+## 1. Données disponibles aujourd'hui et limites d'attribution
 
-## 1. Où en est chaque fonctionnalité
+Constats vérifiés dans le code et la base :
+- **content_posts** (Planificateur) : canal (whatsapp/facebook/autre), objectif, `planned_on`, statut brouillon/prévu/publié, et `published_at` fixé par le serveur. Il n'existe aucun lien vers une campagne ni vers un prospect.
+- **prospects** : `source` est un texte libre. Le formulaire propose la liste Facebook / WhatsApp / Marché chaud / Recommandation / Autre. La page de capture écrit « Page de capture » et l'import CSV recopie la valeur du fichier. Aujourd'hui en base : 11 prospects sans source et 1 « Facebook ». Les dates disponibles sont `created_at`, `first_contact_at` et `joined_team_at`, avec un statut actuel.
+- **prospect_events** : historique, dont `changement_statut` au format « Ancien → Nouveau ». Il est déjà lu par `src/lib/conversion.ts`.
+- **conversion.ts** : calculs purs déjà testés (`conversionRate`, `cohortConversion`, `statusTransitions`), qui renvoient « insufficient » quand les données manquent. La carte Statistiques s'appuie dessus.
 
-| Fonctionnalité de la vision | État | Ce qui existe déjà |
-|---|---|---|
-| Coach quotidien (missions, séries, bilan de la semaine) | Fait | Coach V1 à V3 : `coach.ts`, `coach-card.tsx`, `coach-week.tsx` |
-| Orientation quotidienne | Fait | Centre de commande : brief du jour et routeur de demandes, sans IA |
-| Prospection, réponses, scripts d'appel | Fait | Assistant IA avec 4 modes, scripts, objections, trames vocales |
-| Entraînement | Fait | Simulateur de conversations |
-| CRM et relances | Fait | Prospects, pipeline, relances, historique `prospect_events`, import/export |
-| Formation | Fait | Académie (quiz et vidéos), coach par leçon, suivi de progression |
-| Leadership et duplication | Fait | Parcours 7 jours, kits, équipe avec agrégats |
-| Analyse de performance | Partiel | Statistiques et carte Conversion (Expert/Business), objectifs hebdomadaires. Aucune analyse des contenus |
-| Génération de contenus | Partiel | Mode « Post réseau social » de l'Assistant, à la demande. Pas de bibliothèque ni de calendrier |
-| Planification de statuts WhatsApp/Facebook | Prévu, pas commencé | Rien dans le code : ni calendrier, ni brouillon, ni rappel. Il existe un composant `ui/calendar.tsx` inutilisé |
-| Rappels / notifications | Absent | Aucun push ni e-mail de rappel. Les rappels n'apparaissent que dans l'application (Coach et Centre de commande) |
-| Campagnes et suivi de leur performance | Absent | Aucune donnée de publication ni de résultat. `prospects.source` peut servir à une attribution simple plus tard |
-| Publication automatique WhatsApp/Facebook | Absent | Aucune intégration officielle. Seulement des liens `wa.me` dans `whatsapp-actions.tsx`, que l'utilisateur ouvre lui-même |
-| Stratégie | Partiel | Objectifs proposés par le Coach V3. Pas de plan stratégique |
+Limites à afficher clairement dans l'app :
+- Il n'y a ni vues, ni clics, ni portée, ni revenus. WhatsApp et Facebook ne renvoient aucune donnée, donc rien de cela ne sera affiché.
+- L'attribution sera **uniquement manuelle**, faite par l'utilisateur dans la fiche prospect. Rien ne sera déduit automatiquement de la date ou du canal.
+- Une « conversion » = prospect attribué dont le statut **actuel** est Client, comme dans les Statistiques. On affiche aussi les prospects ayant rejoint l'équipe (`joined_team_at`) comme second indicateur, sans les additionner aux clients.
+- Les prospects existants restent non attribués. Aucun rattrapage automatique.
 
-## 2. Recommandation : le Planificateur de statuts V1
+## 2. UX et parcours
 
-C'est toujours le meilleur prochain chantier, pour trois raisons :
-- c'est le seul grand pan de la vision qui n'est pas couvert du tout ;
-- il donne enfin un usage régulier au mode « Post » de l'Assistant ;
-- il crée les données (contenus prévus et publiés) dont une future analyse de campagnes aura besoin.
+Nouvelle page **« Campagnes »**, accessible depuis le menu et le Centre de commande avec l'intention « campagne ».
+1. **Liste des campagnes** : nom, objectif, période et canal, avec 4 chiffres réels (statuts publiés, prospects attribués, clients, taux). Filtres par période (en cours, terminées, toutes, ou dates personnalisées), par canal et par campagne. Archiver remplace supprimer, pour garder l'historique.
+2. **Créer / modifier une campagne** : nom (80 caractères max), objectif (mêmes 5 valeurs que le Planificateur), canal (WhatsApp, Facebook, autre ou multi), date de début et date de fin. Note optionnelle de 500 caractères max.
+3. **Détail d'une campagne** :
+   - indicateurs avec la mention « Aucune donnée » quand il n'y en a pas ;
+   - liste des statuts liés et des prospects attribués ;
+   - recommandations simples (section 2b).
+4. **Planificateur** : dans le formulaire d'un statut, un choix facultatif « Campagne », filtré sur les campagnes actives. Un badge s'affiche sur la carte du statut.
+5. **CRM, fiche prospect** : deux choix facultatifs, « Campagne » et « Contenu source ». Le second liste uniquement les statuts publiés, de la campagne choisie si elle est remplie. On ajoute aussi un filtre « Campagne » dans la liste des prospects. Chaque attribution est notée dans l'historique du prospect.
 
-Les campagnes et leur performance viendront après : aujourd'hui, aucune donnée ne permettrait de les mesurer.
+### 2b. Recommandations (règles locales, sans IA, sans quota)
+Uniquement à partir des chiffres affichés, avec un seuil minimal pour éviter les conclusions sur trop peu de données :
+- « Aucun statut publié pour cette campagne » → lien vers le Planificateur.
+- Des statuts sont publiés mais aucun prospect n'est attribué → « Pensez à indiquer la campagne dans la fiche des prospects qui vous ont contacté. »
+- Au moins 5 prospects attribués et 0 client → lien vers les relances ou les objections.
+- Au moins 2 campagnes avec au moins 5 prospects chacune → « La campagne X convertit le plus (n/N) », avec le rappel que l'échantillon est petit.
+- La campagne se termine dans 3 jours ou moins et a des prospects en discussion ou intéressés → les relancer.
 
-## 3. Ce que contient la V1
+Aucun message n'est envoyé. Chaque recommandation est un lien vers un outil existant.
 
-- **Calendrier de la semaine,** lisible sur mobile, avec une liste par jour (lundi à dimanche) et la navigation entre semaines.
-- **Brouillons,** chacun avec :
-  - un texte de 2 000 caractères maximum ;
-  - le réseau : statut WhatsApp, Facebook ou autre ;
-  - un objectif : notoriété, produit, témoignage éthique, invitation, éducation ;
-  - une date et un moment de la journée (matin, midi ou soir).
-- **Fréquence cible :** par exemple 1 statut par jour, enregistrée dans les préférences du profil comme l'objectif d'équipe. Le calendrier signale les jours vides.
-- **Génération à la demande :** un bouton « Générer avec l'Assistant » réutilise le mode Post existant et son quota (1 génération par clic). Le texte reste modifiable avant d'être enregistré, et rien n'est généré automatiquement.
-- **Bibliothèque :** on peut réutiliser un ancien statut ou un script de la bibliothèque existante pour créer un nouveau brouillon.
-- **Publication manuelle :** les boutons « Copier » et « Ouvrir WhatsApp » (lien `wa.me` existant) laissent l'utilisateur publier lui-même. Il marque ensuite le statut « publié », avec la date. Aucune publication automatique.
-- **Rappels dans l'application seulement :** le Centre de commande affiche « Statut prévu aujourd'hui » ou « Aucun statut prévu ». Pas de push ni d'e-mail en V1.
-- **Hors V1 :** publication automatique, campagnes, mesure des vues ou des clics, rappels push ou e-mail.
+## 3. Tables, champs et migrations (additives)
 
-## 4. Ce qu'on réutilise et ce qu'il faut créer
+Migration 0025 :
+- **Nouvelle table `campaigns`** : id, user_id (défaut `auth.uid()`), name, objective, channel, starts_on et ends_on (date seule), note, archived, created_at et updated_at.
+  - CHECK sur les longueurs, les valeurs autorisées et `ends_on >= starts_on`.
+  - Index sur (user_id, starts_on).
+- **Colonne `content_posts.campaign_id`** : uuid nullable qui référence `campaigns`, avec ON DELETE SET NULL.
+- **Colonnes `prospects.campaign_id` et `prospects.source_post_id`** : uuid nullables qui référencent `campaigns` et `content_posts`, avec ON DELETE SET NULL. Index partiels sur ces colonnes.
+- **Triggers BEFORE** :
+  - sur `content_posts`, ajout de la vérification dans le garde existant ;
+  - sur `prospects`, un nouveau garde léger.
+  - Ils refusent toute campagne ou tout contenu qui n'appartient pas au même utilisateur. Ils refusent aussi un `source_post_id` non publié, ou rattaché à une autre campagne que le `campaign_id` indiqué.
+- **Grants** : authenticated et service_role uniquement, avec `REVOKE ... FROM anon`.
+- **RLS** : 4 policies propriétaire `user_id = auth.uid()`.
 
-**Réutilisé**
-- `generateProspectingContent`, mode « Post réseau social », dans `ai.functions.ts` : quota et remboursement déjà gérés.
-- `whatsapp-actions.tsx` pour les liens WhatsApp, `scripts.functions.ts` pour la bibliothèque.
-- `command-center.ts` : une nouvelle ligne de brief, plus le mot-clé « statut », qui mène aujourd'hui à l'Assistant et mènera au Planificateur.
-- `app-shell.tsx` pour le menu, `plan-gate.tsx` pour les restrictions de plan, `ui/calendar.tsx` et `ui/tabs.tsx` pour l'affichage.
-- `profiles.preferences` pour la fréquence cible.
+Aucune colonne existante n'est modifiée ni supprimée. Le champ `source` reste tel quel, puisque le canal de la campagne apporte l'information.
 
-**À créer**
-- Une table `content_posts`, nécessaire pour retrouver les brouillons sur un autre appareil. Colonnes :
-  - `id`, `user_id` ;
-  - `channel` (`whatsapp` | `facebook` | `autre`) ;
-  - `objective`, `body` (2 000 caractères maximum) ;
-  - `planned_on` (date), `slot` (`matin` | `midi` | `soir`) ;
-  - `status` (`brouillon` | `prevu` | `publie`), `published_at` ;
-  - `created_at`, `updated_at`.
-  - Droits d'accès :
-    - chaque utilisateur ne lit et ne modifie que ses propres lignes ;
-    - le visiteur non connecté n'a aucun accès ;
-    - un index sur (`user_id`, `planned_on`) ;
-    - une limite de création côté serveur, au maximum 60 statuts par semaine.
-- Un module de règles pures `src/lib/content-planner.ts` : semaine, jours vides, fréquence, transitions de statut, limite du plan.
-- Ses tests `content-planner.test.ts`, une page `src/routes/_authenticated/planificateur.tsx` et un composant de saisie.
+## 4. Code réutilisé et nouveaux fichiers
 
-## 5. Plans, quotas et sécurité
+Réutilisé :
+- `conversion.ts` : `conversionRate` et `cohortConversion` appliqués au sous-ensemble des prospects attribués ;
+- `content-planner.ts` : OBJECTIVES, CHANNELS et `dbError` ;
+- `useCrm`, `prospect-tools.tsx` (formulaire de fiche) et `prospect-io.tsx` (Filters) ;
+- `logProspectEvent`, avec un nouveau type `campagne_attribuée` ;
+- `command-center.ts` (intention) et `plan-gate.tsx` (UpgradeCard) ;
+- AppShell et le menu.
 
-- **Gratuit :** planification sur 7 jours, au maximum 7 statuts prévus.
-- **Pro et plus :** illimité, avec l'historique et la bibliothèque. La règle passe par `hasFeature` avec une nouvelle fonctionnalité `contentPlanner` à partir de Pro, sans changer aucun tarif.
-- **Quota IA :** la génération passe uniquement par la fonction IA existante. Aucun nouveau type de génération.
-- **Données privées :** chaque utilisateur ne voit que ses statuts. Le contenu n'est jamais partagé avec le leader.
-- **Risques :**
-  - textes collés très longs : limite de 2 000 caractères, vérifiée à la saisie et en base ;
-  - confusion entre jour et date à cause du fuseau horaire : on stocke une date seule et on calcule le jour sur l'appareil, comme pour les relances ;
-  - double clic sur « Générer » : bouton désactivé pendant la génération ;
-  - aucune promesse de revenu : on réutilise les consignes déjà présentes dans l'Assistant.
+Nouveaux fichiers :
+- `src/lib/campaigns.ts` : règles pures (validation, période active, `campaignMetrics`, `recommendations`, filtres) ;
+- `src/lib/campaigns.test.ts` ;
+- `src/routes/_authenticated/campagnes.tsx`, avec un head() propre ;
+- `src/components/campaign-picker.tsx`, partagé entre le Planificateur et la fiche prospect.
 
-## 6. Critères d'acceptation
+Toutes les écritures passent par le client navigateur sous RLS, avec les triggers comme source de vérité, comme pour le Planificateur. Il n'y a ni appel IA ni nouvelle fonction serveur.
 
-1. Un utilisateur crée, modifie, déplace et supprime un brouillon. Il le retrouve après rechargement ou sur un autre appareil.
-2. « Générer » consomme exactement 1 génération et ne lance rien sans clic. Le texte reste modifiable avant d'être enregistré.
-3. « Copier » et « Ouvrir WhatsApp » n'envoient rien automatiquement. « Marquer publié » enregistre la date.
-4. Le Centre de commande affiche le statut prévu aujourd'hui.
-5. Un compte Gratuit est bloqué au-delà de 7 statuts prévus et voit l'explication avec le bouton « Voir les plans ».
-6. Un autre utilisateur ne peut ni lire ni modifier ces statuts, ce qui est vérifié directement en base.
-7. Les tests des règles pures, le typage et la compilation passent.
+## 5. Accès, RLS, plans et quotas
 
-## 7. Estimation
+- Les données sont strictement privées. Ni le leader, ni les membres, ni les visiteurs non connectés n'y ont accès. `team_member_progress` n'est pas modifié.
+- Aucun quota IA n'est consommé. Tarifs et quotas globaux inchangés.
+- **Décision à valider (proposition)** : créer des campagnes et attribuer des prospects est ouvert à tous les plans. Le Gratuit est limité à 1 campagne active, contrôlée par un trigger avec `effective_plan`. La comparaison entre campagnes et les filtres avancés (dates personnalisées, multi-canal) suivent la fonctionnalité existante `advancedStats` (Expert et Business). Autre option possible : tout ouvrir sans limite.
 
-Environ 3 à 4 crédits Lovable : 1 changement en base, 1 page, 1 module de règles avec ses tests, et l'intégration au Centre de commande. C'est une estimation : le coût réel n'est pas mesuré ici.
+## 6. Tests d'acceptation, risques et estimation
 
-Rien n'a été modifié ni publié dans cette étape.
+Tests `bun:test` :
+- validation (longueurs, valeurs autorisées, dates inversées) ;
+- campagne active selon les dates ;
+- indicateurs : les prospects non attribués sont exclus, 0 prospect → « insufficient », taux arrondi ;
+- seuils des recommandations : rien sous 5 prospects ;
+- filtres par période, canal et campagne ;
+- limite du plan Gratuit.
+
+Vérification en base :
+- refus d'une campagne appartenant à un autre utilisateur, même par appel direct ;
+- refus d'un contenu non publié ;
+- policies et droits vérifiés, anon sans accès.
+
+Vérification à l'écran sur mobile :
+- créer une campagne ;
+- lier un statut publié ;
+- attribuer un prospect, le passer en Client et voir le taux.
+
+Risques :
+- La qualité des chiffres dépend de la saisie manuelle. Un message explicatif sera affiché.
+- Les petits volumes donnent des taux trompeurs, d'où les seuils et la mention de l'échantillon.
+- Le taux est calculé sur le statut actuel, pas sur une date de conversion historique. Ce sera indiqué.
+- Le formulaire prospect est déjà dense : les nouveaux champs iront dans une section repliable.
+
+Estimation : 4 à 6 crédits (migration, règles et tests, page, intégrations Planificateur et CRM, vérification).
+
+## 7. Ordre d'implémentation
+1. Migration 0025, puis régénération des types et vérification des droits et triggers.
+2. `campaigns.ts` et ses tests.
+3. Page Campagnes : liste, création, archivage, filtres.
+4. Sélecteur de campagne dans le Planificateur.
+5. Fiche prospect (campagne et contenu source), filtre CRM et événement d'historique.
+6. Détail de campagne : indicateurs et recommandations, plus la gate du plan.
+7. Intention dans le Centre de commande et entrée dans le menu.
+8. Tests, vérification mobile, mise à jour de la roadmap et d'AGENTS.md, puis compte rendu.
