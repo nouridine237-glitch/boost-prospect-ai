@@ -162,6 +162,20 @@
       "when": 1794044093098,
       "tag": "0022_academy_lesson_progress_revoke_writes",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1794167791500,
+      "tag": "0023_content_posts",
+      "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1794167934811,
+      "tag": "0024_content_posts_revoke_anon",
+      "breakpoints": true
     }
   ]
 }

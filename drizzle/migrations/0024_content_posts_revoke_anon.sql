@@ -1,0 +1,1 @@
+REVOKE ALL ON public.content_posts FROM anon;

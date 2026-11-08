@@ -354,6 +354,48 @@ export type Database = {
         }
         Relationships: []
       }
+      content_posts: {
+        Row: {
+          body: string
+          channel: string
+          created_at: string
+          id: string
+          objective: string
+          planned_on: string
+          published_at: string | null
+          slot: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          body?: string
+          channel?: string
+          created_at?: string
+          id?: string
+          objective?: string
+          planned_on: string
+          published_at?: string | null
+          slot?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          body?: string
+          channel?: string
+          created_at?: string
+          id?: string
+          objective?: string
+          planned_on?: string
+          published_at?: string | null
+          slot?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       duplication_progress: {
         Row: {
           checked_actions: number[]

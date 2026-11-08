@@ -27,6 +27,7 @@ import { Route as AuthenticatedMaPageRouteImport } from './routes/_authenticated
 import { Route as AuthenticatedObjectionsRouteImport } from './routes/_authenticated/objections'
 import { Route as AuthenticatedParametresRouteImport } from './routes/_authenticated/parametres'
 import { Route as AuthenticatedParrainageRouteImport } from './routes/_authenticated/parrainage'
+import { Route as AuthenticatedPlanificateurRouteImport } from './routes/_authenticated/planificateur'
 import { Route as AuthenticatedProspectsRouteImport } from './routes/_authenticated/prospects'
 import { Route as AuthenticatedScriptsRouteImport } from './routes/_authenticated/scripts'
 import { Route as AuthenticatedSimulateurRouteImport } from './routes/_authenticated/simulateur'
@@ -134,6 +135,12 @@ const AuthenticatedParrainageRoute = AuthenticatedParrainageRouteImport.update({
   path: '/parrainage',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedPlanificateurRoute =
+  AuthenticatedPlanificateurRouteImport.update({
+    id: '/planificateur',
+    path: '/planificateur',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedProspectsRoute = AuthenticatedProspectsRouteImport.update({
   id: '/prospects',
   path: '/prospects',
@@ -228,6 +235,7 @@ export interface FileRoutesByFullPath {
   '/objections': typeof AuthenticatedObjectionsRoute
   '/parametres': typeof AuthenticatedParametresRoute
   '/parrainage': typeof AuthenticatedParrainageRoute
+  '/planificateur': typeof AuthenticatedPlanificateurRoute
   '/prospects': typeof AuthenticatedProspectsRoute
   '/scripts': typeof AuthenticatedScriptsRoute
   '/simulateur': typeof AuthenticatedSimulateurRoute
@@ -261,6 +269,7 @@ export interface FileRoutesByTo {
   '/objections': typeof AuthenticatedObjectionsRoute
   '/parametres': typeof AuthenticatedParametresRoute
   '/parrainage': typeof AuthenticatedParrainageRoute
+  '/planificateur': typeof AuthenticatedPlanificateurRoute
   '/prospects': typeof AuthenticatedProspectsRoute
   '/scripts': typeof AuthenticatedScriptsRoute
   '/simulateur': typeof AuthenticatedSimulateurRoute
@@ -296,6 +305,7 @@ export interface FileRoutesById {
   '/_authenticated/objections': typeof AuthenticatedObjectionsRoute
   '/_authenticated/parametres': typeof AuthenticatedParametresRoute
   '/_authenticated/parrainage': typeof AuthenticatedParrainageRoute
+  '/_authenticated/planificateur': typeof AuthenticatedPlanificateurRoute
   '/_authenticated/prospects': typeof AuthenticatedProspectsRoute
   '/_authenticated/scripts': typeof AuthenticatedScriptsRoute
   '/_authenticated/simulateur': typeof AuthenticatedSimulateurRoute
@@ -331,6 +341,7 @@ export interface FileRouteTypes {
     | '/objections'
     | '/parametres'
     | '/parrainage'
+    | '/planificateur'
     | '/prospects'
     | '/scripts'
     | '/simulateur'
@@ -364,6 +375,7 @@ export interface FileRouteTypes {
     | '/objections'
     | '/parametres'
     | '/parrainage'
+    | '/planificateur'
     | '/prospects'
     | '/scripts'
     | '/simulateur'
@@ -398,6 +410,7 @@ export interface FileRouteTypes {
     | '/_authenticated/objections'
     | '/_authenticated/parametres'
     | '/_authenticated/parrainage'
+    | '/_authenticated/planificateur'
     | '/_authenticated/prospects'
     | '/_authenticated/scripts'
     | '/_authenticated/simulateur'
@@ -559,6 +572,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedParrainageRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/planificateur': {
+      id: '/_authenticated/planificateur'
+      path: '/planificateur'
+      fullPath: '/planificateur'
+      preLoaderRoute: typeof AuthenticatedPlanificateurRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/prospects': {
       id: '/_authenticated/prospects'
       path: '/prospects'
@@ -672,6 +692,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedObjectionsRoute: typeof AuthenticatedObjectionsRoute
   AuthenticatedParametresRoute: typeof AuthenticatedParametresRoute
   AuthenticatedParrainageRoute: typeof AuthenticatedParrainageRoute
+  AuthenticatedPlanificateurRoute: typeof AuthenticatedPlanificateurRoute
   AuthenticatedProspectsRoute: typeof AuthenticatedProspectsRoute
   AuthenticatedScriptsRoute: typeof AuthenticatedScriptsRoute
   AuthenticatedSimulateurRoute: typeof AuthenticatedSimulateurRoute
@@ -693,6 +714,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedObjectionsRoute: AuthenticatedObjectionsRoute,
   AuthenticatedParametresRoute: AuthenticatedParametresRoute,
   AuthenticatedParrainageRoute: AuthenticatedParrainageRoute,
+  AuthenticatedPlanificateurRoute: AuthenticatedPlanificateurRoute,
   AuthenticatedProspectsRoute: AuthenticatedProspectsRoute,
   AuthenticatedScriptsRoute: AuthenticatedScriptsRoute,
   AuthenticatedSimulateurRoute: AuthenticatedSimulateurRoute,

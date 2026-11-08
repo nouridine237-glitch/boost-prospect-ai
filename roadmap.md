@@ -7,7 +7,7 @@
 - [x] Coach V3 — séries, bilan de semaine, objectifs proposés
 - [x] Templates par entreprise (Longrich) — accès dès le plan Pro
 - [x] Simulateur de conversations — prospect virtuel IA, bilan structuré (quota IA partagé, sans stockage)
-- [ ] Planificateur de statuts
+- [x] Planificateur de statuts V1 — calendrier hebdo, brouillons/prévu/publié, génération Post à la demande, rappel du jour (bibliothèque de scripts reportée)
 - [x] Centre de commande — brief du jour + « Que voulez-vous faire ? » (routeur local, sans IA)
 - [x] Conversion étape 1 — calculs purs + tests (sans interface)
 - [x] Conversion étape 2 — carte Statistiques

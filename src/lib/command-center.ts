@@ -11,7 +11,7 @@ export const ASSISTANT_MODES: Record<AssistantMode, string> = {
 export type CommandAction =
   | { id: string; label: string; reason: string; kind: "objection"; objectionId: string | null }
   | { id: string; label: string; reason: string; kind: "assistant"; mode: AssistantMode; context: string }
-  | { id: string; label: string; reason: string; kind: "page"; to: "/prospects" | "/academie" | "/duplication" | "/statistiques" | "/abonnement" | "/simulateur"; locked?: boolean };
+  | { id: string; label: string; reason: string; kind: "page"; to: "/prospects" | "/academie" | "/duplication" | "/statistiques" | "/abonnement" | "/simulateur" | "/planificateur"; locked?: boolean };
 
 export type Intent = "simulation" | "objection" | "relance" | "post" | "appel" | "message" | "prospect" | "formation" | "equipe" | "stats";
 
@@ -57,6 +57,7 @@ export function routeRequest(text: string, plan: string): CommandAction[] {
       out.push({ id: "relance-msg", kind: "assistant", mode: "prospection", context: request, label: "Préparer un message de relance", reason: "Brouillon à relire, rien n'est envoyé" });
     }
     if (i === "post") out.push({ id: "post", kind: "assistant", mode: "post", context: request, label: "Écrire une publication avec l'Assistant IA", reason: "Mode « Post réseau social »" });
+    if (i === "post") out.push({ id: "planificateur", kind: "page", to: "/planificateur", label: "Planifier mes statuts de la semaine", reason: "Calendrier, brouillons, publication manuelle" });
     if (i === "appel") out.push({ id: "appel", kind: "assistant", mode: "appel", context: request, label: "Préparer un script d'appel", reason: "Mode « Script d'appel »" });
     if (i === "message") out.push({ id: "message", kind: "assistant", mode: "prospection", context: request, label: "Rédiger un message de prospection", reason: "Mode « Message de prospection »" });
     if (i === "prospect") out.push({ id: "prospects", kind: "page", to: "/prospects", label: "Rechercher dans mes prospects", reason: "Recherche et filtres du CRM" });
@@ -85,12 +86,14 @@ export type BriefItem =
   | { id: "coach"; title: string; reason: string; prospectId: string; context: string }
   | { id: "inactif"; title: string; reason: string; prospectId: string }
   | { id: "lecon"; title: string; reason: string; slug: string; lesson: string }
-  | { id: "duplication"; title: string; reason: string; day: number };
+  | { id: "duplication"; title: string; reason: string; day: number }
+  | { id: "statut"; title: string; reason: string };
 
 export type BriefInput = {
   mission?: { prospectId: string; name: string; reason: string } | null;
   stuck?: { id: string; name: string; idleDays: number }[] | null;
   course?: { slug: string; title: string; percent: number; resumeSlug: string | null; unlocked: boolean }[] | null;
+  statut?: { title: string; reason: string } | null;
   duplication?: { allowed: boolean; days: { day: number; title: string }[]; progress: { day: number; completed_at: string | null }[] } | null;
 };
 
@@ -99,6 +102,7 @@ export function buildBrief(input: BriefInput): BriefItem[] {
   const items: BriefItem[] = [];
   const m = input.mission;
   if (m) items.push({ id: "coach", prospectId: m.prospectId, title: `Contacter ${m.name}`, reason: `Priorité du Coach : ${m.reason.charAt(0).toLowerCase()}${m.reason.slice(1)}`, context: `Message pour ${m.name}. ${m.reason}.` });
+  if (input.statut) items.push({ id: "statut", title: input.statut.title, reason: input.statut.reason });
   const s = (input.stuck ?? []).find(x => x.id !== m?.prospectId);
   if (s) items.push({ id: "inactif", prospectId: s.id, title: `Reprendre contact avec ${s.name}`, reason: `Aucune activité depuis ${s.idleDays} jours` });
   const c = (input.course ?? []).find(x => x.unlocked && x.resumeSlug && x.percent > 0 && x.percent < 100);
