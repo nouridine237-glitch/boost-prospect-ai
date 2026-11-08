@@ -127,8 +127,8 @@ export function AppShell({ children, user, title }: { children: React.ReactNode;
         {nav.slice(0, 6).map(({ icon: Icon, label, to }) => {
           const active = location.pathname === to;
           return (
-            <Link key={label} to={to} aria-label={label} className={`flex min-h-11 min-w-0 flex-1 flex-col items-center justify-center gap-1 text-[10px] ${active ? "text-primary" : "text-muted-foreground"}`}>
-              <Icon className="size-5" />
+            <Link key={label} to={to} aria-label={label} aria-current={active ? "page" : undefined} className={`flex min-h-11 min-w-0 flex-1 flex-col items-center justify-center gap-1 text-[10px] transition-colors duration-200 ${active ? "font-bold text-primary" : "text-muted-foreground"}`}>
+              <span className={`grid h-7 w-12 place-items-center rounded-full transition-colors duration-200 ${active ? "bg-primary/18" : ""}`}><Icon className="size-5" /></span>
               <span>{label === "Assistant IA" ? "Assistant" : label}</span>
             </Link>
           );

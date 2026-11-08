@@ -82,20 +82,20 @@ export function FollowupQueue({ crm }: { crm: Crm }) {
     .sort((a, b) => (a.next_followup_date! < b.next_followup_date! ? -1 : 1));
 
   return (
-    <section className="surface mb-6 rounded-lg">
-      <div className="flex items-center gap-3 border-b border-border p-5">
-        <span className="grid size-9 place-items-center rounded-md bg-primary/12 text-primary"><BellRing className="size-4" /></span>
+    <section className="card-premium mb-6 overflow-hidden">
+      <div className="flex items-center gap-3 border-b border-border/60 p-4 sm:p-5">
+        <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary/12 text-primary"><BellRing className="size-4" /></span>
         <div><h2 className="font-bold">À relancer aujourd'hui</h2><p className="text-xs text-muted-foreground">{due.length ? `${due.length} relance${due.length > 1 ? "s" : ""} en attente` : "Aucune relance en attente"}</p></div>
       </div>
       {due.length === 0 ? <p className="p-6 text-center text-sm font-semibold">Tout est à jour 🎉</p> : (
-        <div className="divide-y divide-border">
+        <div className="grid gap-3 p-3 sm:p-4">
           {due.map(p => {
             const late = daysLate(p.next_followup_date!);
             const msg = crm.lastMessages[p.id] ?? `Bonjour ${p.name}, je reviens vers toi comme convenu. As-tu eu le temps d'y réfléchir ?`;
             return (
-              <div key={p.id} className="p-4">
+              <div key={p.id} className="card-premium card-hover p-4 [&_button]:min-h-11 [&_button]:rounded-xl">
                 <div className="flex flex-wrap items-center gap-2">
-                  <p className="flex-1 text-sm font-semibold">{p.name}</p>
+                  <div className="min-w-0 flex-1"><p className="truncate text-[15px] font-semibold">{p.name}</p><p className="truncate text-xs text-muted-foreground">{p.phone || "Téléphone non renseigné"}</p></div>
                   <span className={`status status-${slugStatus(p.status)}`}>{statusLabels[p.status]}</span>
                   <span className={`rounded-full border px-2 py-0.5 text-[11px] font-bold ${late > 0 ? "border-destructive/50 bg-destructive/15 text-destructive" : "border-warning/50 bg-warning/15 text-warning"}`}>
                     {late > 0 ? `${late} j de retard` : "Aujourd'hui"}

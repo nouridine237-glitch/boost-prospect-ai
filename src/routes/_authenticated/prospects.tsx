@@ -34,7 +34,7 @@ function ProspectsPage() {
 
   return (
     <AppShell user={user} title="Prospects">
-      <div className="mx-auto max-w-[1100px] p-5 lg:p-8">
+      <div className="mx-auto max-w-[1100px] p-4 sm:p-5 lg:p-8">
         <div className="mb-4 flex justify-end"><ViewToggle view={view} onChange={v => { setView(v); if (v === "pipeline") setTab("prospects"); }} /></div>
         <span className="eyebrow">CRM</span>
         <h1 className="mt-2 text-3xl font-extrabold">{tab === "team" ? "Tes recrues." : "Vos prospects."}</h1>

@@ -17,7 +17,7 @@ import { useActionPlan } from "@/components/action-plan-data";
 import { canUseActionPlan } from "@/lib/action-plan";
 import { contentPostsKey, todayReminder } from "@/lib/content-planner";
 
-const linkCls = "group flex min-h-14 items-center justify-between gap-3 rounded-md border border-border bg-secondary/60 px-4 py-3 text-left transition-colors hover:border-primary/60";
+const linkCls = "group flex min-h-14 items-center justify-between gap-3 rounded-xl border border-border/60 bg-secondary/40 px-4 py-3 text-left transition-colors duration-200 hover:border-primary/60 hover:bg-secondary/70";
 
 function Row({ title, reason, locked }: { title: string; reason: string; locked?: boolean | undefined }) {
   return <>
@@ -93,24 +93,24 @@ export function CommandCenter({ crm, userId }: { crm: Crm; userId: string }) {
   const submit = (e: FormEvent) => { e.preventDefault(); setSubmitted(clampRequest(text)); };
 
   return (
-    <section className="surface mt-6 rounded-lg p-5 lg:p-6" aria-labelledby="command-center-title">
+    <section className="card-premium mt-6 p-5 lg:p-6" aria-labelledby="command-center-title">
       <div className="flex items-center gap-2"><Compass className="size-5 text-primary" /><h2 id="command-center-title" className="text-lg font-bold">Centre de commande</h2></div>
       <div className="mt-4 grid gap-6 lg:grid-cols-2">
         <div>
           <span className="eyebrow">Brief du jour</span>
           <div className="mt-3 grid gap-2">
             {brief.map(item => <BriefLink key={item.id} item={item} />)}
-            {!brief.length && <p className="rounded-md border border-dashed border-border px-4 py-3 text-sm text-muted-foreground">{loading ? "Préparation de votre brief…" : "Rien d'urgent aujourd'hui. Ajoutez un prospect ou reprenez une formation."}</p>}
+            {!brief.length && (loading ? <><span className="skeleton h-14" aria-label="Préparation de votre brief" /><span className="skeleton h-14" /></> : <p className="rounded-xl border border-dashed border-border/60 px-4 py-3 text-sm text-muted-foreground">Rien d'urgent aujourd'hui. Ajoutez un prospect ou reprenez une formation.</p>)}
           </div>
         </div>
         <div>
           <span className="eyebrow">Que voulez-vous faire ?</span>
           <form onSubmit={submit} className="mt-3 flex gap-2">
-            <Input aria-label="Que voulez-vous faire ?" maxLength={MAX_REQUEST} placeholder="Ex. : mon prospect dit que c'est une arnaque" value={text} onChange={e => setText(e.target.value)} className="h-11" />
-            <Button type="submit" className="h-11" disabled={!text.trim()}><Sparkles className="size-4" />Orienter</Button>
+            <Input aria-label="Que voulez-vous faire ?" maxLength={MAX_REQUEST} placeholder="Ex. : mon prospect dit que c'est une arnaque" value={text} onChange={e => setText(e.target.value)} className="h-11 rounded-xl" />
+            <Button type="submit" className="h-11 rounded-xl" disabled={!text.trim()}><Sparkles className="size-4" />Orienter</Button>
           </form>
           <div className="mt-3 flex flex-wrap gap-2">
-            {EXAMPLES.map(ex => <button key={ex} type="button" onClick={() => { setText(ex); setSubmitted(ex); }} className="rounded-full border border-border bg-secondary px-3 py-1.5 text-xs font-semibold text-muted-foreground transition-colors hover:text-foreground">{ex}</button>)}
+            {EXAMPLES.map(ex => <button key={ex} type="button" onClick={() => { setText(ex); setSubmitted(ex); }} className="chip">{ex}</button>)}
           </div>
           {actions.length > 0 && <div className="mt-4 grid gap-2" aria-live="polite">{actions.map(a => <ActionLink key={a.id} a={a} />)}</div>}
           <p className="mt-3 text-xs text-muted-foreground">Aucune génération IA ni aucun envoi n'a lieu ici : vous choisissez l'outil, puis vous décidez.</p>

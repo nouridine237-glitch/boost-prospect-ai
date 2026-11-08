@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { CalendarClock, MoreHorizontal, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -14,7 +15,7 @@ export function ViewToggle({ view, onChange }: { view: "liste" | "pipeline"; onC
     <div className="inline-flex rounded-full border border-border bg-secondary/50 p-1" role="tablist" aria-label="Affichage des prospects">
       {(["liste", "pipeline"] as const).map(v => (
         <button key={v} role="tab" aria-selected={view === v} onClick={() => onChange(v)}
-          className={`min-h-9 rounded-full px-5 text-sm font-semibold transition-colors ${view === v ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}>
+          className={`min-h-11 rounded-full px-5 transition-colors duration-150 text-sm font-semibold transition-colors ${view === v ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}>
           {v === "liste" ? "Liste" : "Pipeline"}
         </button>
       ))}
@@ -28,7 +29,7 @@ function PipelineCard({ p, crm, onOpen }: { p: Prospect; crm: Crm; onOpen: (p: P
   const followTxt = d === null ? "Pas de relance" : d < 0 ? `${-d} j de retard` : d === 0 ? "Relance aujourd'hui" : `Relance dans ${d} j`;
   const followCls = d === null ? "text-muted-foreground" : d < 0 ? "text-destructive" : d === 0 ? "text-warning" : "text-primary";
   return (
-    <article className="rounded-md border border-border bg-background p-3">
+    <article draggable onDragStart={e => { e.dataTransfer.setData("text/plain", p.id); e.dataTransfer.effectAllowed = "move"; e.currentTarget.classList.add("opacity-50"); }} onDragEnd={e => e.currentTarget.classList.remove("opacity-50")} className="card-premium card-hover cursor-grab p-3 active:cursor-grabbing">
       <div className="flex items-start gap-2">
         <button className="min-w-0 flex-1 text-left text-sm font-semibold hover:text-primary" onClick={() => onOpen(p)} aria-label={`Ouvrir la fiche de ${p.name}`}>{p.name}</button>
         <Button size="icon" variant="ghost" className="size-8 shrink-0 text-primary" title="Suggérer la prochaine action" aria-label={`Suggérer la prochaine action pour ${p.name}`} onClick={() => onOpen(p, true)}><Sparkles /></Button>
@@ -50,19 +51,25 @@ function PipelineCard({ p, crm, onOpen }: { p: Prospect; crm: Crm; onOpen: (p: P
 }
 
 export function PipelineBoard({ crm, onOpen }: { crm: Crm; onOpen: (p: Prospect) => void }) {
+  const [over, setOver] = useState<string | null>(null);
   return (
     <div className="-mx-5 overflow-x-auto px-5 pb-3 lg:mx-0 lg:px-0">
-      <div className="grid min-w-max auto-cols-[240px] grid-flow-col gap-3 xl:min-w-0 xl:auto-cols-fr">
+      <p className="mb-3 text-xs text-muted-foreground">Glisse une carte vers une autre colonne, ou utilise le menu « … » sur mobile.</p>
+      <div className="grid min-w-max auto-cols-[248px] grid-flow-col gap-3 xl:min-w-0 xl:auto-cols-fr">
         {statuses.map(s => {
           const items = crm.prospects.filter(p => p.status === s);
           return (
-            <section key={s} className="surface flex min-h-48 flex-col rounded-lg" aria-label={`Colonne ${statusLabels[s]}`}>
-              <header className="flex items-center justify-between gap-2 border-b border-border p-3">
+            <section key={s} aria-label={`Colonne ${statusLabels[s]}`}
+              onDragOver={e => { e.preventDefault(); if (over !== s) setOver(s); }}
+              onDragLeave={e => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setOver(null); }}
+              onDrop={e => { e.preventDefault(); setOver(null); const id = e.dataTransfer.getData("text/plain"); const p = crm.prospects.find(x => x.id === id); if (p && p.status !== s) void crm.changeStatus(id, s); }}
+              className={`card-premium col-${slugStatus(s)} flex min-h-48 flex-col transition-colors duration-200 ${over === s ? "drop-target" : ""}`}>
+              <header className="col-head flex items-center justify-between gap-2 p-3">
                 <span className={`status status-${slugStatus(s)}`}>{statusLabels[s]}</span>
                 <span className="grid min-w-6 place-items-center rounded-full bg-secondary px-2 text-xs font-bold">{items.length}</span>
               </header>
               <div className="grid content-start gap-2 p-2">
-                {items.length ? items.map(p => <PipelineCard key={p.id} p={p} crm={crm} onOpen={onOpen} />) : <p className="p-3 text-center text-xs text-muted-foreground">Aucun prospect</p>}
+                {!crm.loaded ? <><span className="skeleton h-20" /><span className="skeleton h-20" /></> : items.length ? items.map(p => <div key={p.id} className="fade-in"><PipelineCard p={p} crm={crm} onOpen={onOpen} /></div>) : <p className="rounded-xl border border-dashed border-border/60 p-4 text-center text-xs text-muted-foreground">Dépose un prospect ici</p>}
               </div>
             </section>
           );

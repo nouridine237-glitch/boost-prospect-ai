@@ -169,6 +169,21 @@
   .status-nouveau { background: oklch(0.65 0.22 251 / .13); color: var(--color-primary); }
   .status-contacte, .status-discussion { background: oklch(0.72 0.14 220 / .13); color: var(--color-info); }
   .status-interesse, .status-client { background: oklch(0.72 0.17 155 / .13); color: var(--color-success); }
+
+  /* Refonte premium : tableau de bord, prospects, relances */
+  .card-premium { border-radius: 16px; border: 1px solid oklch(1 0 0 / .08); background: linear-gradient(180deg, oklch(0.185 0.024 260), var(--color-card)); box-shadow: 0 1px 0 oklch(1 0 0 / .04) inset, 0 12px 32px -16px oklch(0.02 0.02 260 / .6); transition: border-color .2s ease, transform .2s ease, box-shadow .2s ease; }
+  .card-hover:hover { border-color: oklch(0.65 0.22 251 / .45); transform: translateY(-1px); box-shadow: 0 16px 36px -18px oklch(0.65 0.22 251 / .45); }
+  .card-hero { border-radius: 16px; border: 1px solid oklch(0.65 0.22 251 / .35); background: radial-gradient(120% 140% at 100% 0%, oklch(0.65 0.22 251 / .22), transparent 55%), linear-gradient(160deg, oklch(0.2 0.04 258), var(--color-card)); box-shadow: 0 20px 50px -24px oklch(0.65 0.22 251 / .55); }
+  .chip { display: inline-flex; flex-shrink: 0; align-items: center; gap: .35rem; min-height: 2.25rem; border-radius: 999px; border: 1px solid oklch(1 0 0 / .1); background: oklch(1 0 0 / .03); padding: 0 .9rem; font-size: .78rem; font-weight: 600; color: var(--color-muted-foreground); white-space: nowrap; transition: background-color .15s ease, color .15s ease, border-color .15s ease; }
+  .chip:hover { color: var(--color-foreground); border-color: oklch(1 0 0 / .2); }
+  .chip[aria-pressed="true"] { background: var(--color-primary); border-color: var(--color-primary); color: var(--color-primary-foreground); }
+  .chip-row { display: flex; gap: .5rem; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+  .chip-row::-webkit-scrollbar { display: none; }
+  .skeleton { border-radius: 12px; background: linear-gradient(90deg, oklch(1 0 0 / .04), oklch(1 0 0 / .09), oklch(1 0 0 / .04)); background-size: 200% 100%; animation: skeleton-shine 1.2s ease-in-out infinite; }
+  .fade-in { animation: fade-in .2s ease-out both; }
+  .col-nouveau { --col: var(--color-primary); } .col-contacte, .col-discussion { --col: var(--color-info); } .col-interesse, .col-client { --col: var(--color-success); } .col-non-interesse { --col: var(--color-destructive); }
+  .col-head { border-top: 3px solid var(--col); background: linear-gradient(180deg, color-mix(in oklab, var(--col) 14%, transparent), transparent); border-radius: 16px 16px 0 0; }
+  .drop-target { outline: 2px dashed var(--col); outline-offset: -4px; background: color-mix(in oklab, var(--col) 8%, var(--color-card)); }
   .status-non-interesse { background: oklch(0.577 0.245 27.325 / .13); color: var(--color-destructive); }
 }
 
@@ -325,3 +340,7 @@
   .lp-root { padding-bottom: 84px; }
 }
 @media (prefers-reduced-motion: reduce) { .lp-wa-fab, .lp-cta-bar { transition: none; } }
+
+@keyframes skeleton-shine { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+@keyframes fade-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .skeleton, .fade-in { animation: none; } .card-hover:hover { transform: none; } }

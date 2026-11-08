@@ -127,7 +127,7 @@ export function applyFilters(list: Prospect[], f: Filters) {
   return [...out].sort((a, b) => f.sort === "name" ? a.name.localeCompare(b.name, "fr") : f.sort === "followup" ? (a.next_followup_date ?? "9999").localeCompare(b.next_followup_date ?? "9999") : b.created_at.localeCompare(a.created_at));
 }
 
-const sel = "h-9 rounded-md border border-input bg-background px-2 text-xs outline-none focus:ring-1 focus:ring-ring";
+const sel = "h-9 shrink-0 rounded-full border border-input bg-background px-2 text-xs outline-none focus:ring-1 focus:ring-ring";
 export function FilterBar({ f, set, statuses, campaigns = [] }: { f: Filters; set: (f: Filters) => void; statuses: readonly Status[]; campaigns?: { id: string; name: string }[] }) {
   const chips: { label: string; clear: Partial<Filters> }[] = [];
   if (f.campaign) chips.push({ label: `Campagne : ${campaigns.find(c => c.id === f.campaign)?.name ?? "…"}`, clear: { campaign: "" } });
@@ -135,14 +135,18 @@ export function FilterBar({ f, set, statuses, campaigns = [] }: { f: Filters; se
   if (f.interest) chips.push({ label: `Intérêt : ${INTEREST[Number(f.interest)]}`, clear: { interest: "" } });
   if (f.source) chips.push({ label: `Source : ${f.source}`, clear: { source: "" } });
   if (f.overdue) chips.push({ label: "Relance en retard", clear: { overdue: false } });
-  return <div className="grid gap-3 border-b border-border p-4">
-    <div className="flex flex-wrap items-center gap-2">
-      <select aria-label="Filtrer par statut" className={sel} value={f.status} onChange={e => set({ ...f, status: e.target.value as Status | "" })}><option value="">Tous statuts</option>{statuses.map(s => <option key={s} value={s}>{STATUS_LABELS[s]}</option>)}</select>
-      <select aria-label="Filtrer par intérêt" className={sel} value={f.interest} onChange={e => set({ ...f, interest: e.target.value })}><option value="">Tout intérêt</option><option value="3">Chaud</option><option value="2">Tiède</option><option value="1">Froid</option></select>
+  return <div className="grid min-w-0 gap-3 border-b border-border/60 p-4">
+    <div className="chip-row -mx-4 px-4" role="group" aria-label="Filtrer par statut">
+      <button type="button" className="chip" aria-pressed={!f.status} onClick={() => set({ ...f, status: "" })}>Tous</button>
+      {statuses.map(s => <button key={s} type="button" className="chip" aria-pressed={f.status === s} onClick={() => set({ ...f, status: f.status === s ? "" : s })}>{STATUS_LABELS[s]}</button>)}
+      <span className="w-px shrink-0 bg-border" aria-hidden="true" />
+      {([["3", "🔥 Chaud"], ["2", "Tiède"], ["1", "Froid"]] as const).map(([v, l]) => <button key={v} type="button" className="chip" aria-pressed={f.interest === v} onClick={() => set({ ...f, interest: f.interest === v ? "" : v })}>{l}</button>)}
+      <button type="button" className="chip" aria-pressed={f.overdue} onClick={() => set({ ...f, overdue: !f.overdue })}>Relance en retard</button>
+    </div>
+    <div className="chip-row -mx-4 items-center px-4">
       <select aria-label="Filtrer par source" className={sel} value={f.source} onChange={e => set({ ...f, source: e.target.value })}><option value="">Toutes sources</option>{SOURCES.map(s => <option key={s}>{s}</option>)}</select>
       {campaigns.length > 0 && <select aria-label="Filtrer par campagne" className={sel} value={f.campaign ?? ""} onChange={e => set({ ...f, campaign: e.target.value })}><option value="">Toutes campagnes</option>{campaigns.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select>}
-      <label className="flex h-9 cursor-pointer items-center gap-2 rounded-md border border-input px-3 text-xs"><input type="checkbox" checked={f.overdue} onChange={e => set({ ...f, overdue: e.target.checked })} className="accent-primary" /> Relance en retard</label>
-      <select aria-label="Trier" className={`${sel} ml-auto`} value={f.sort} onChange={e => set({ ...f, sort: e.target.value as Filters["sort"] })}><option value="created">Tri : date d'ajout</option><option value="followup">Tri : date de relance</option><option value="name">Tri : nom</option></select>
+      <select aria-label="Trier" className={`${sel} sm:ml-auto`} value={f.sort} onChange={e => set({ ...f, sort: e.target.value as Filters["sort"] })}><option value="created">Tri : date d'ajout</option><option value="followup">Tri : date de relance</option><option value="name">Tri : nom</option></select>
     </div>
     {chips.length > 0 && <div className="flex flex-wrap gap-2">{chips.map(c => <button key={c.label} onClick={() => set({ ...f, ...c.clear })} className="flex items-center gap-1 rounded-full border border-primary/40 bg-primary/10 px-3 py-1 text-xs text-primary hover:bg-primary/20" aria-label={`Retirer le filtre ${c.label}`}>{c.label} <X className="size-3" /></button>)}<button onClick={() => set({ ...emptyFilters, sort: f.sort })} className="px-2 text-xs text-muted-foreground hover:text-foreground">Tout effacer</button></div>}
   </div>;

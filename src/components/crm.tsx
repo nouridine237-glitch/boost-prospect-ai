@@ -36,6 +36,7 @@ export function slugStatus(status: string) { return status.normalize("NFD").repl
 
 export function useCrm(user: User, opts?: { onJoinTeam?: (p: Prospect) => void }) {
   const [prospects, setProspects] = useState<Prospect[]>([]);
+  const [loaded, setLoaded] = useState(false);
   const [generationCount, setGenerationCount] = useState(0);
   const [monthlyGenerations, setMonthlyGenerations] = useState(0);
   const planInfo = usePlan(user.id);
@@ -48,7 +49,7 @@ export function useCrm(user: User, opts?: { onJoinTeam?: (p: Prospect) => void }
 
   useEffect(() => {
     supabase.from("profiles").upsert({ id: user.id, full_name: displayName });
-    supabase.from("prospects").select("*").order("created_at", { ascending: false }).then(({ data }) => setProspects(data ?? []));
+    supabase.from("prospects").select("*").order("created_at", { ascending: false }).then(({ data }) => { setProspects(data ?? []); setLoaded(true); });
     supabase.from("ai_generations").select("id", { count: "exact", head: true }).then(({ count }) => setGenerationCount(count ?? 0));
     supabase.from("ai_generations").select("prospect_id, generated_content").not("prospect_id", "is", null).order("created_at", { ascending: true }).then(({ data }) => {
       const map: Record<string, string> = {};
@@ -119,7 +120,7 @@ export function useCrm(user: User, opts?: { onJoinTeam?: (p: Prospect) => void }
   }
 
   const patchLocal = (id: string, patch: ProspectPatch) => setProspects(items => items.map(p => p.id === id ? { ...p, ...patch } : p));
-  return { userId: user.id, patchLocal, lastMessages, setLastMessages, markContacted, prospects, generationCount, monthlyGenerations, setMonthlyGenerations, setGenerationCount, limits, planInfo, pendingPayment, error, setError, displayName, clients, conversion, addProspect, importProspects, changeStatus, updateProspect };
+  return { loaded, userId: user.id, patchLocal, lastMessages, setLastMessages, markContacted, prospects, generationCount, monthlyGenerations, setMonthlyGenerations, setGenerationCount, limits, planInfo, pendingPayment, error, setError, displayName, clients, conversion, addProspect, importProspects, changeStatus, updateProspect };
 }
 
 export type Crm = ReturnType<typeof useCrm>;
@@ -138,9 +139,15 @@ export function PendingPaymentBanner({ crm }: { crm: Crm }) {
   );
 }
 
-export function Stat({ icon: Icon, label, value, note }: { icon: typeof UserRound; label: string; value: string; note: string }) {
-  return <article className="surface rounded-lg p-5"><div className="flex items-center justify-between"><span className="text-xs font-semibold text-muted-foreground">{label}</span><span className="grid size-8 place-items-center rounded-md bg-primary/12 text-primary"><Icon className="size-4" /></span></div><p className="mt-4 text-3xl font-extrabold">{value}</p><p className="mt-1 text-[11px] text-muted-foreground">{note}</p></article>;
+export function Stat({ icon: Icon, label, value, note }: { icon: typeof UserRound; label: string; value: string; note?: string }) {
+  return <article className="card-premium card-hover min-w-0 p-4 sm:p-5"><div className="flex items-start justify-between gap-2"><p className="text-3xl font-extrabold tabular-nums sm:text-4xl">{value}</p><Icon className="size-4 shrink-0 text-primary/70" aria-hidden="true" /></div><p className="mt-2 text-xs font-semibold text-muted-foreground">{label}</p>{note && <p className="mt-0.5 text-[11px] text-muted-foreground/80">{note}</p>}</article>;
 }
+
+export function ProspectSkeleton({ rows = 3 }: { rows?: number }) {
+  return <div className="grid gap-3 p-4" aria-busy="true" aria-label="Chargement des prospects">{Array.from({ length: rows }, (_, i) => <div key={i} className="card-premium flex items-center gap-3 p-4"><span className="skeleton size-11 shrink-0 rounded-full" /><span className="grid flex-1 gap-2"><span className="skeleton h-3.5 w-2/5" /><span className="skeleton h-3 w-1/3" /></span><span className="skeleton h-6 w-16 rounded-full" /></div>)}</div>;
+}
+
+const INTEREST_CHIP: Record<number, { label: string; cls: string }> = { 3: { label: "Chaud", cls: "border-destructive/40 bg-destructive/12 text-destructive" }, 2: { label: "Tiède", cls: "border-warning/40 bg-warning/12 text-warning" }, 1: { label: "Froid", cls: "border-primary/40 bg-primary/12 text-primary" } };
 
 export function ProspectsPanel({ crm, limit, excludeClients, onOpen }: { crm: Crm; limit?: number; excludeClients?: boolean; onOpen?: (p: Prospect, suggest?: boolean) => void }) {
   const [query, setQuery] = useState("");
@@ -160,19 +167,19 @@ export function ProspectsPanel({ crm, limit, excludeClients, onOpen }: { crm: Cr
   }
 
   return (
-    <section className="surface min-w-0 rounded-lg">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border p-5">
+    <section className="card-premium min-w-0 overflow-hidden">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/60 p-4 sm:p-5">
         <div><h2 className="font-bold">Prospects</h2><p className="mt-1 text-xs text-muted-foreground">{crm.prospects.length} contacts dans votre pipeline</p></div>
         <div className="flex flex-wrap items-center gap-2">
-          <label className="relative"><Search className="absolute left-3 top-2.5 size-4 text-muted-foreground" /><Input className="w-48 pl-9" placeholder="Rechercher…" value={query} onChange={e => setQuery(e.target.value)} /></label>
+          <label className="relative min-w-0 flex-1 sm:flex-none"><Search className="absolute left-3 top-3.5 size-4 text-muted-foreground" /><Input className="h-11 w-full min-w-0 rounded-xl pl-9 sm:w-48" placeholder="Rechercher…" value={query} onChange={e => setQuery(e.target.value)} /></label>
           {!limit && <ImportExportButtons crm={crm} />}
-          <Button size="sm" onClick={() => setAdding(!adding)}><Plus /> Ajouter</Button>
+          <Button className="h-11 rounded-xl" onClick={() => setAdding(!adding)}><Plus /> Ajouter</Button>
         </div>
       </div>
       {!limit && <FilterBar f={filters} set={setFilters} campaigns={campaigns.data ?? []} statuses={excludeClients ? statuses.filter(s => s !== "client") : statuses} />}
-      {adding && <form onSubmit={submit} className="grid gap-3 border-b border-border p-4 sm:grid-cols-[1fr_1fr_auto]"><Input value={name} onChange={e => setName(e.target.value)} placeholder="Nom du prospect" required /><Input value={phone} onChange={e => setPhone(e.target.value)} placeholder="Téléphone" /><Button>Enregistrer</Button></form>}
+      {adding && <form onSubmit={submit} className="fade-in grid gap-3 border-b border-border/60 p-4 sm:grid-cols-[1fr_1fr_auto]"><Input value={name} onChange={e => setName(e.target.value)} placeholder="Nom du prospect" required /><Input value={phone} onChange={e => setPhone(e.target.value)} placeholder="Téléphone" /><Button>Enregistrer</Button></form>}
       {crm.error && <LimitError message={crm.error} />}
-      <div className="divide-y divide-border">{shown.length ? shown.map(p => <ProspectCard key={p.id} prospect={p} onOpen={onOpen} onChangeStatus={crm.changeStatus} onUpdate={crm.updateProspect} />) : <div className="p-10 text-center"><ContactRound className="mx-auto size-8 text-muted-foreground" /><p className="mt-3 text-sm font-semibold">Aucun prospect pour le moment</p><p className="mt-1 text-xs text-muted-foreground">Ajoutez votre premier contact pour commencer.</p></div>}</div>
+      {!crm.loaded ? <ProspectSkeleton /> : <div className="grid gap-3 p-3 sm:p-4">{shown.length ? shown.map(p => <ProspectCard key={p.id} prospect={p} onOpen={onOpen} onChangeStatus={crm.changeStatus} onUpdate={crm.updateProspect} />) : <div className="px-4 py-10 text-center"><span className="mx-auto grid size-12 place-items-center rounded-2xl bg-primary/12 text-primary"><ContactRound className="size-6" /></span><p className="mt-3 text-sm font-semibold">{crm.prospects.length ? "Aucun prospect ne correspond" : "Ajoute ton premier prospect"}</p><p className="mt-1 text-xs text-muted-foreground">{crm.prospects.length ? "Modifie la recherche ou les filtres." : "Un nom et un numéro suffisent pour commencer."}</p>{!crm.prospects.length && <Button className="mt-4 h-11 rounded-xl" onClick={() => setAdding(true)}><Plus /> Ajouter un prospect</Button>}</div>}</div>}
     </section>
   );
 }
@@ -184,21 +191,31 @@ export function ProspectCard({ prospect: p, onChangeStatus, onUpdate, onOpen }: 
   const [saving, setSaving] = useState(false);
   const overdue = p.next_followup_date && p.next_followup_date < new Date().toISOString().slice(0, 10);
   async function save() { setSaving(true); await onUpdate(p.id, { notes: notes.trim(), next_followup_date: followup || null }); if (notes.trim() !== (p.notes ?? "").trim()) void logProspectEvent(p.id, "note_modifiée", notes.trim()); setSaving(false); }
-  return <div className="p-4">
-    <div className="flex flex-wrap items-center gap-3">
-      <span className="grid size-10 place-items-center rounded-full bg-secondary font-bold text-primary">{p.name.charAt(0).toUpperCase()}</span>
-      <div className={`min-w-32 flex-1 ${onOpen ? "cursor-pointer" : ""}`} onClick={onOpen ? () => onOpen(p) : undefined} role={onOpen ? "button" : undefined} aria-label={onOpen ? `Ouvrir la fiche de ${p.name}` : undefined}><p className={`text-sm font-semibold ${onOpen ? "hover:text-primary" : ""}`}>{p.name}</p><p className="text-xs text-muted-foreground">{p.phone || "Téléphone non renseigné"}</p>{p.next_followup_date && <p className={`mt-1 flex items-center gap-1 text-[11px] ${overdue ? "text-destructive" : "text-primary"}`}><CalendarClock className="size-3" /> Relance le {new Date(p.next_followup_date + "T00:00:00").toLocaleDateString("fr-FR", { day: "numeric", month: "long" })}</p>}</div>
-      <span className={`status status-${slugStatus(p.status)}`}>{statusLabels[p.status]}</span>
-      <label className="relative"><select aria-label={`Changer le statut de ${p.name}`} value={p.status} onChange={e => onChangeStatus(p.id, e.target.value as Status)} className="h-8 appearance-none rounded-md border border-input bg-background pl-3 pr-8 text-xs outline-none focus:ring-1 focus:ring-ring">{statuses.map(s => <option key={s} value={s}>{statusLabels[s]}</option>)}</select><ChevronDown className="pointer-events-none absolute right-2 top-2 size-3 text-muted-foreground" /></label>
-      {onOpen && <Button variant="ghost" size="icon" title="Suggérer la prochaine action" aria-label={`Suggérer la prochaine action pour ${p.name}`} onClick={() => onOpen(p, true)} className="text-primary"><Sparkles /></Button>}
-      <Button variant="ghost" size="icon" aria-label={`Notes et relance pour ${p.name}`} onClick={() => setOpen(!open)} className={open ? "text-primary" : "text-muted-foreground"}><NotebookPen /></Button>
+  const lvl = p.interest_level ? INTEREST_CHIP[p.interest_level] : undefined;
+  return <article className="card-premium card-hover p-4">
+    <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-3">
+      <span className="grid size-11 shrink-0 place-items-center rounded-full bg-primary/12 font-bold text-primary">{p.name.charAt(0).toUpperCase()}</span>
+      <div className={`min-w-0 ${onOpen ? "cursor-pointer" : ""}`} onClick={onOpen ? () => onOpen(p) : undefined} role={onOpen ? "button" : undefined} aria-label={onOpen ? `Ouvrir la fiche de ${p.name}` : undefined}>
+        <p className={`truncate text-[15px] font-semibold transition-colors duration-150 ${onOpen ? "hover:text-primary" : ""}`}>{p.name}</p>
+        <p className="truncate text-xs text-muted-foreground">{p.phone || "Téléphone non renseigné"}</p>
+      </div>
+      <span className={`status status-${slugStatus(p.status)} shrink-0 transition-colors duration-200`}>{statusLabels[p.status]}</span>
     </div>
-    {open && <div className="mt-4 grid gap-3 rounded-md border border-border bg-secondary/50 p-3">
+    <div className="mt-3 flex flex-wrap items-center gap-2 pl-14">
+      {lvl && <span className={`rounded-full border px-2.5 py-0.5 text-[11px] font-bold ${lvl.cls}`}>{lvl.label}</span>}
+      {p.next_followup_date ? <span className={`flex items-center gap-1 text-[11px] font-semibold ${overdue ? "text-destructive" : "text-primary"}`}><CalendarClock className="size-3" /> Relance le {new Date(p.next_followup_date + "T00:00:00").toLocaleDateString("fr-FR", { day: "numeric", month: "long" })}</span> : <span className="text-[11px] text-muted-foreground">Pas de relance prévue</span>}
+    </div>
+    <div className="mt-3 flex items-center gap-2 border-t border-border/50 pt-3">
+      <label className="relative min-w-0 flex-1"><select aria-label={`Changer le statut de ${p.name}`} value={p.status} onChange={e => onChangeStatus(p.id, e.target.value as Status)} className="h-11 w-full appearance-none rounded-xl border border-input bg-background pl-3 pr-8 text-sm outline-none transition-colors focus:ring-1 focus:ring-ring">{statuses.map(s => <option key={s} value={s}>{statusLabels[s]}</option>)}</select><ChevronDown className="pointer-events-none absolute right-3 top-4 size-3 text-muted-foreground" /></label>
+      {onOpen && <Button variant="ghost" size="icon" title="Suggérer la prochaine action" aria-label={`Suggérer la prochaine action pour ${p.name}`} onClick={() => onOpen(p, true)} className="size-11 rounded-xl text-primary"><Sparkles /></Button>}
+      <Button variant="ghost" size="icon" aria-label={`Notes et relance pour ${p.name}`} onClick={() => setOpen(!open)} className={`size-11 rounded-xl ${open ? "text-primary" : "text-muted-foreground"}`}><NotebookPen /></Button>
+    </div>
+    {open && <div className="fade-in mt-3 grid gap-3 rounded-xl border border-border/60 bg-secondary/50 p-3">
       <label className="grid gap-1.5"><span className="text-xs font-semibold text-muted-foreground">Notes</span><Textarea className="min-h-20 resize-none bg-background" placeholder="Contexte, échanges, prochaines étapes…" value={notes} onChange={e => setNotes(e.target.value)} /></label>
       <label className="grid gap-1.5"><span className="text-xs font-semibold text-muted-foreground">Prochaine relance</span><Input type="date" className="w-44 bg-background" value={followup} onChange={e => setFollowup(e.target.value)} /></label>
-      <div className="flex justify-end"><Button size="sm" onClick={save} disabled={saving}>{saving ? "Enregistrement…" : "Enregistrer"}</Button></div>
+      <div className="flex justify-end"><Button className="h-11 rounded-xl" onClick={save} disabled={saving}>{saving ? "Enregistrement…" : "Enregistrer"}</Button></div>
     </div>}
-  </div>;
+  </article>;
 }
 
 export function AiAssistantPanel({ crm, initialScript, initialContext, initialMode }: { crm: Crm; initialScript?: Tables<"scripts"> | undefined; initialContext?: string | undefined; initialMode?: string | undefined }) {
