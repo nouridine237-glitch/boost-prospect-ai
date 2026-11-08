@@ -8,6 +8,7 @@ import { AiAssistantPanel, PendingPaymentBanner, ProspectsPanel, Stat, UsageLine
 import { CaptureLeadsNotice } from "@/components/capture-settings";
 import { CoachCard } from "@/components/coach-card";
 import { CoachWeekCard } from "@/components/coach-week";
+import { CommandCenter } from "@/components/command-center";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({ meta: [
@@ -38,6 +39,7 @@ function Dashboard() {
         </div>
         <UsageLine crm={crm} />
         <PendingPaymentBanner crm={crm} />
+        <CommandCenter crm={crm} userId={user.id} />
         <CoachCard crm={crm} userId={user.id} />
         <CoachWeekCard crm={crm} userId={user.id} />
         <WeeklyGoalsCard crm={crm} userId={user.id} />

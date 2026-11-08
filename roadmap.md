@@ -7,9 +7,10 @@
 - [x] Coach V3 — séries, bilan de semaine, objectifs proposés
 - [x] Templates par entreprise (Longrich) — accès dès le plan Pro
 - [ ] Planificateur de statuts
+- [x] Centre de commande — brief du jour + « Que voulez-vous faire ? » (routeur local, sans IA)
 - [x] Conversion étape 1 — calculs purs + tests (sans interface)
 - [x] Conversion étape 2 — carte Statistiques
 - [x] Académie & Duplication phase 1 — progression en base, invitations d'équipe, vue leader agrégée
-- [ ] Phase 2 — parcours 7 jours + kits statiques payants, progression persistante et vérifications
+- [x] Phase 2 — parcours 7 jours + kits statiques payants, progression persistante et vérifications
 - [x] Académie vidéo phase B — coach IA contextuel par leçon (quota partagé)
 - [x] Académie vidéo — suivi de progression des leçons (reprise, % par cours et global)

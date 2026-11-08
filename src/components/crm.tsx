@@ -198,9 +198,9 @@ export function ProspectCard({ prospect: p, onChangeStatus, onUpdate, onOpen }: 
   </div>;
 }
 
-export function AiAssistantPanel({ crm, initialScript, initialContext }: { crm: Crm; initialScript?: Tables<"scripts"> | undefined; initialContext?: string | undefined }) {
+export function AiAssistantPanel({ crm, initialScript, initialContext, initialMode }: { crm: Crm; initialScript?: Tables<"scripts"> | undefined; initialContext?: string | undefined; initialMode?: string | undefined }) {
   const generate = useServerFn(generateProspectingContent);
-  const [mode, setMode] = useState<(typeof modes)[number]>(modes[0]);
+  const [mode, setMode] = useState<(typeof modes)[number]>(() => (baseModes as readonly string[]).includes(initialMode ?? "") ? initialMode as (typeof modes)[number] : modes[0]);
   const [context, setContext] = useState(initialScript?.content ?? initialContext ?? "");
   const [result, setResult] = useState("");
   const [generating, setGenerating] = useState(false);

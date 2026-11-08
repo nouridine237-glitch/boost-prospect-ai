@@ -15,6 +15,10 @@ export const Route = createFileRoute("/_authenticated/objections")({
     { property: "og:description", content: "Empathie, recadrage, question : répondez sereinement à chaque objection." },
     { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" },
   ] }),
+  validateSearch: (search: Record<string, unknown>): { o?: string | undefined } => {
+    const o = typeof search["o"] === "string" ? search["o"] : undefined;
+    return { o: o && objections.some(x => x.id === o) ? o : undefined };
+  },
   component: ObjectionsPage,
 });
 
@@ -23,7 +27,8 @@ const norm = (v: string) => v.normalize("NFD").replace(/[\u0300-\u036f]/g, "").t
 function ObjectionsPage() {
   const { user } = Route.useRouteContext();
   const [category, setCategory] = useState("Toutes");
-  const [query, setQuery] = useState("");
+  const { o } = Route.useSearch();
+  const [query, setQuery] = useState(() => objections.find(x => x.id === o)?.objection ?? "");
   const shown = objections.filter(o => (category === "Toutes" || o.category === category) && norm(`${o.objection} ${o.meaning} ${o.short}`).includes(norm(query.trim())));
   return <AppShell user={user} title="Objections">
     <div className="mx-auto max-w-6xl p-5 lg:p-8">
