@@ -3,9 +3,10 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Clock, Inbox, Layers, Share2 } from "lucide-react";
+import { Clock, Inbox, Layers, Play, Share2, ShieldCheck } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { AcademyTabs, EmptyState, ErrorLine } from "@/components/videotheque/academy-tabs";
+import { StatusBadge } from "@/components/videotheque/ui-bits";
 import { ShareSheet } from "@/components/videotheque/share-sheet";
 import { Button } from "@/components/ui/button";
 import { listReceived, respondGrant } from "@/lib/videotheque.functions";
@@ -47,7 +48,7 @@ function ReceivedPage() {
           : q.isError ? <ErrorLine text="Formations indisponibles." onRetry={() => q.refetch()} /> : (
           <>
             {pending.map((g) => (
-              <div key={g.grantId} className="mt-5 rounded-2xl border border-primary/40 bg-primary/8 p-4">
+              <div key={g.grantId} role="region" aria-label="Invitation" className="fade-in mt-5 rounded-2xl border border-primary/40 bg-primary/8 p-4">
                 <p className="text-sm"><span className="font-semibold">{g.via ?? g.author}</span> te partage <span className="font-semibold">« {g.title} »</span>{g.via ? <span className="text-muted-foreground"> (formation de {g.author})</span> : null}</p>
                 <p className="mt-1 text-xs text-muted-foreground">{g.lessons} leçon{g.lessons > 1 ? "s" : ""} · {g.minutes} min</p>
                 <div className="mt-3 flex gap-2">
@@ -61,14 +62,18 @@ function ReceivedPage() {
             ) : (
               <ul className="mt-5 grid gap-4 sm:grid-cols-2">
                 {active.map((g) => (
-                  <li key={g.grantId} className="surface flex flex-col rounded-2xl p-4">
+                  <li key={g.grantId} className="surface flex flex-col rounded-2xl p-4 transition-colors duration-200 hover:border-primary/40">
                     <Link to="/academie/lecture/$courseId" params={{ courseId: g.courseId }} className="flex-1">
                       <span className="flex items-center gap-2 text-xs text-muted-foreground"><Layers className="size-3.5 text-primary" />De {g.author}{g.newerVersion && <span className="rounded-full border border-border/60 px-2 py-0.5">Version {g.version} · mise à jour disponible</span>}</span>
                       <h2 className="mt-2 font-bold">{g.title}</h2>
+                      <div className="mt-2"><StatusBadge tone="success" icon={ShieldCheck}>Accès durable</StatusBadge></div>
                       <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground"><Clock className="size-3.5" />{g.lessons} leçon{g.lessons > 1 ? "s" : ""} · {g.minutes} min</p>
                       <div className="mt-3 flex justify-between text-xs text-muted-foreground"><span>{g.progress.done}/{g.progress.total} terminées</span><span className="font-semibold text-foreground">{g.progress.percent} %</span></div>
                       <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full bg-primary" style={{ width: `${g.progress.percent}%` }} /></div>
                     </Link>
+                    <Button asChild variant={g.progress.percent > 0 && g.progress.percent < 100 ? "default" : "outline"} className="mt-4 min-h-11 w-full">
+                      <Link to="/academie/lecture/$courseId" params={{ courseId: g.courseId }}><Play className="size-4" />{g.progress.percent === 0 ? "Commencer" : g.progress.percent >= 100 ? "Revoir" : "Reprendre"}</Link>
+                    </Button>
                     {g.canReshare && <button type="button" onClick={() => setShare(g.courseId)} className="mt-3 flex min-h-11 items-center gap-2 text-sm font-semibold text-primary"><Share2 className="size-4" />Repartager</button>}
                   </li>
                 ))}

@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Archive, Film, MoreHorizontal, Pencil, Play, Plus, RotateCcw, Search } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { AcademyTabs, CardSkeletons, EmptyState, ErrorLine } from "@/components/videotheque/academy-tabs";
+import { StorageMeter, VideoStatusBadge } from "@/components/videotheque/ui-bits";
 import { UploadSheet } from "@/components/videotheque/upload-sheet";
 import { FilePlayer } from "@/components/videotheque/file-player";
 import { UpgradeCard } from "@/components/plan-gate";
@@ -59,11 +60,10 @@ function VideosPage() {
     .filter((v) => !search.trim() || v.title.toLowerCase().includes(search.trim().toLowerCase())), [q.data, cat, search, showArchived]);
 
   const d = q.data;
-  const pct = d && d.quota.totalBytes ? Math.min(100, Math.round((d.usedBytes / d.quota.totalBytes) * 100)) : 0;
-
+  
   return (
     <AppShell user={user} title="Académie">
-      <div className="mx-auto max-w-[1100px] p-5 lg:p-8">
+      <div className="mx-auto max-w-[1100px] p-5 pb-28 sm:pb-5 lg:p-8">
         <span className="eyebrow">Académie</span>
         <h1 className="mt-2 text-3xl font-extrabold">Ma vidéothèque</h1>
         <p className="mt-2 text-sm text-muted-foreground">Tes vidéos restent privées. Tu choisis ensuite lesquelles utiliser dans tes formations.</p>
@@ -74,11 +74,8 @@ function VideosPage() {
         ) : d ? (
           <>
             <div className="surface mt-6 flex flex-col gap-3 rounded-2xl p-4 sm:flex-row sm:items-center">
-              <div className="flex-1">
-                <div className="flex justify-between text-xs text-muted-foreground"><span>Espace utilisé</span><span className="font-semibold text-foreground">{formatBytes(d.usedBytes)} / {formatBytes(d.quota.totalBytes)}</span></div>
-                <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-muted"><div className={`h-full rounded-full ${pct > 90 ? "bg-destructive" : "bg-primary"}`} style={{ width: `${pct}%` }} /></div>
-              </div>
-              {d.canImport ? <Button className="min-h-11" onClick={() => setOpen(true)}><Plus className="size-4" />Ajouter une vidéo</Button>
+              <StorageMeter used={d.usedBytes} total={d.quota.totalBytes} />
+              {d.canImport ? <Button className="hidden min-h-11 sm:inline-flex" onClick={() => setOpen(true)}><Plus className="size-4" />Ajouter une vidéo</Button>
                 : <p className="text-xs text-muted-foreground">Import disponible à partir du plan Pro. Tes vidéos existantes restent consultables.</p>}
             </div>
 
@@ -105,11 +102,11 @@ function VideosPage() {
             ) : (
               <ul className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {list.map((v) => (
-                  <li key={v.id} className="surface group overflow-hidden rounded-2xl transition-colors duration-200 hover:border-primary/40">
+                  <li key={v.id} className="surface group overflow-hidden rounded-2xl transition-colors duration-200 hover:border-primary/40 focus-within:border-primary/50">
                     <button type="button" disabled={v.status !== "pret"} onClick={() => setPreview(v)} className="relative block aspect-video w-full bg-muted" aria-label={`Aperçu : ${v.title}`}>
                       {v.thumbUrl ? <img src={v.thumbUrl} alt="" loading="lazy" className="size-full object-cover" /> : <Film className="absolute left-1/2 top-1/2 size-8 -translate-x-1/2 -translate-y-1/2 text-muted-foreground" />}
-                      <span className={`absolute left-2 top-2 rounded-full px-2 py-0.5 text-[11px] font-semibold ${v.archived ? "bg-muted text-muted-foreground" : STATUS[v.status]?.cls}`}>{v.archived ? "Archivée" : STATUS[v.status]?.label}</span>
-                      <span className="absolute bottom-2 right-2 rounded bg-background/80 px-1.5 py-0.5 text-[11px] font-semibold">{formatDuration(v.duration)}</span>
+                      <VideoStatusBadge status={v.status} archived={v.archived} className="absolute left-2 top-2" />
+                      <span className="absolute bottom-2 right-2 rounded bg-background/85 px-1.5 py-0.5 text-[11px] font-semibold tabular-nums backdrop-blur-sm">{formatDuration(v.duration)}</span>
                       {v.status === "pret" && <span className="absolute inset-0 grid place-items-center opacity-0 transition-opacity duration-200 group-hover:opacity-100"><span className="grid size-12 place-items-center rounded-full bg-primary text-primary-foreground"><Play className="ml-0.5 size-5" /></span></span>}
                     </button>
                     <div className="flex items-start gap-2 p-4">
@@ -162,6 +159,11 @@ function VideosPage() {
           </AlertDialogContent>
         </AlertDialog>
       </div>
+      {d?.canImport && d.videos.length > 0 && !open && (
+        <div className="fixed inset-x-4 bottom-[calc(5rem+env(safe-area-inset-bottom))] z-30 sm:hidden">
+          <Button className="min-h-12 w-full shadow-lg" onClick={() => setOpen(true)}><Plus className="size-4" />Ajouter une vidéo</Button>
+        </div>
+      )}
     </AppShell>
   );
 }

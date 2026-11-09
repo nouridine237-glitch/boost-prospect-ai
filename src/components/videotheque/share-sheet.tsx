@@ -2,11 +2,12 @@ import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { Info, Share2, Users } from "lucide-react";
+import { Share2, Users } from "lucide-react";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
+import { ShareSummary } from "./ui-bits";
 import { shareCourse, shareTargets } from "@/lib/videotheque.functions";
 import { GRANT_STATUS_LABEL, vtError } from "@/lib/videotheque";
 
@@ -64,7 +65,8 @@ export function ShareSheet({ courseId, open, onOpenChange }: { courseId: string;
                 <span><span className="font-semibold">Peut repartager</span><span className="block text-xs text-muted-foreground">Ces personnes pourront à leur tour la partager à leurs propres membres ou aux membres de ton équipe, sans pouvoir donner ce droit plus loin.</span></span>
               </label>
             )}
-            <p className="flex gap-2 text-xs text-muted-foreground"><Info className="size-4 shrink-0" />Une fois acceptée, la formation reste acquise, même si tu changes de forfait ou si la personne quitte l'équipe. Tu peux retirer un accès seulement pendant 7 jours.</p>
+            <ShareSummary count={recipients.length} reshare={isOwner && reshare} />
+            <div className="sticky bottom-0 -mx-6 bg-background/95 px-6 pb-[env(safe-area-inset-bottom)] pt-2 backdrop-blur">
             <Button className="min-h-11 w-full" disabled={!recipients.length || busy} onClick={async () => {
               setBusy(true);
               try {
@@ -73,6 +75,7 @@ export function ShareSheet({ courseId, open, onOpenChange }: { courseId: string;
                 qc.invalidateQueries({ queryKey: ["videotheque"] }); setPicked([]); onOpenChange(false);
               } catch (e) { toast.error(vtError(e, "Partage impossible.")); } finally { setBusy(false); }
             }}><Share2 className="size-4" />Partager à {recipients.length} personne{recipients.length > 1 ? "s" : ""}</Button>
+            </div>
           </div>
         )}
       </SheetContent>
