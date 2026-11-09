@@ -17,3 +17,4 @@
 - [x] Phase 2 — parcours 7 jours + kits statiques payants, progression persistante et vérifications
 - [x] Académie vidéo phase B — coach IA contextuel par leçon (quota partagé)
 - [x] Académie vidéo — suivi de progression des leçons (reprise, % par cours et global)
+- [x] Vidéothèque MLM V1 — import reprenable (Pro+), formations/modules/leçons, partage durable en équipe, lecture privée, modération

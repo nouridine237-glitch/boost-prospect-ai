@@ -204,6 +204,13 @@
       "when": 1794204280432,
       "tag": "0028_videotheque",
       "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1794238194798,
+      "tag": "0029_user_videos_guard_client_check",
+      "breakpoints": true
     }
   ]
 }

@@ -38,9 +38,9 @@ export async function startResumableUpload(file: File, objectName: string, conte
   const token = data.session?.access_token;
   if (!token) throw new Error("Session expirée. Reconnecte-toi.");
   const upload = new Upload(file, {
-    endpoint: `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/upload/resumable`,
+    endpoint: `${import.meta.env["VITE_SUPABASE_URL"]}/storage/v1/upload/resumable`,
     retryDelays: [0, 3000, 5000, 10000, 20000],
-    headers: { authorization: `Bearer ${token}`, apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY, "x-upsert": "false" },
+    headers: { authorization: `Bearer ${token}`, apikey: import.meta.env["VITE_SUPABASE_PUBLISHABLE_KEY"], "x-upsert": "false" },
     uploadDataDuringCreation: true,
     removeFingerprintOnSuccess: true,
     metadata: { bucketName: VIDEO_BUCKET, objectName, contentType, cacheControl: "3600" },
@@ -50,7 +50,7 @@ export async function startResumableUpload(file: File, objectName: string, conte
     onError: (e) => cb.onError(e instanceof Error ? e : new Error(String(e))),
   });
   const previous = await upload.findPreviousUploads();
-  if (previous.length) upload.resumeFromPreviousUpload(previous[0]);
+  if (previous[0]) upload.resumeFromPreviousUpload(previous[0]);
   upload.start();
   return {
     pause: () => { void upload.abort(); },

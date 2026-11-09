@@ -53,7 +53,7 @@ function EditorPage() {
 
   const groups = groupByModule(d.lessons);
   const order = d.lessons.map((l) => l.id);
-  const swap = (i: number, j: number) => { const o = [...order]; [o[i], o[j]] = [o[j], o[i]]; void run(() => move({ data: { courseId: id, order: o } })); };
+  const swap = (i: number, j: number) => { const o = [...order]; const t = o[i]!; o[i] = o[j]!; o[j] = t; void run(() => move({ data: { courseId: id, order: o } })); };
   const modules = [...new Set(d.lessons.map((l) => l.module).filter(Boolean))];
 
   return (
@@ -70,7 +70,7 @@ function EditorPage() {
         {d.course.archived && <p className="surface mt-4 rounded-2xl p-4 text-sm">Formation archivée : elle n'est plus modifiable ni partageable. Les personnes qui l'ont reçue la gardent. <button type="button" className="font-semibold text-primary" onClick={() => run(() => archive({ data: { id, archived: false } }), "Formation restaurée")}>Restaurer</button></p>}
 
         <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_340px]">
-          <section aria-label="Structure">
+          <section aria-label="Structure" className="min-w-0">
             {!d.lessons.length ? (
               <div className="surface flex flex-col items-center gap-3 rounded-2xl p-8 text-center text-sm">
                 <Film className="size-6 text-primary" />
@@ -85,15 +85,15 @@ function EditorPage() {
                     const i = order.indexOf(l.id);
                     return (
                       <li key={l.id} className="surface flex items-center gap-3 rounded-2xl p-2 pr-1">
-                        <span className="relative aspect-video w-20 shrink-0 overflow-hidden rounded-lg bg-muted">
+                        <span className="relative aspect-video w-16 shrink-0 overflow-hidden rounded-lg bg-muted">
                           {l.thumbUrl ? <img src={l.thumbUrl} alt="" loading="lazy" className="size-full object-cover" /> : <Film className="absolute left-1/2 top-1/2 size-4 -translate-x-1/2 -translate-y-1/2 text-muted-foreground" />}
                         </span>
                         <span className="min-w-0 flex-1"><span className="block truncate text-sm font-semibold">{l.title}</span><span className="text-xs text-muted-foreground">{formatDuration(l.duration)}</span></span>
                         {!d.course.archived && <span className="flex">
-                          <button type="button" disabled={i === 0} onClick={() => swap(i, i - 1)} className="grid size-11 place-items-center text-muted-foreground disabled:opacity-30" aria-label="Monter"><ArrowUp className="size-4" /></button>
-                          <button type="button" disabled={i === order.length - 1} onClick={() => swap(i, i + 1)} className="grid size-11 place-items-center text-muted-foreground disabled:opacity-30" aria-label="Descendre"><ArrowDown className="size-4" /></button>
-                          <button type="button" onClick={() => setDraft({ id: l.id, title: l.title, summary: l.summary, module: l.module, videoId: l.videoId })} className="grid size-11 place-items-center text-muted-foreground" aria-label="Modifier"><Pencil className="size-4" /></button>
-                          <button type="button" onClick={() => run(() => archiveLesson({ data: { id: l.id, courseId: id } }), "Leçon retirée")} className="grid size-11 place-items-center text-muted-foreground" aria-label="Retirer la leçon"><Trash2 className="size-4" /></button>
+                          <button type="button" disabled={i === 0} onClick={() => swap(i, i - 1)} className="grid size-10 place-items-center text-muted-foreground disabled:opacity-30" aria-label="Monter"><ArrowUp className="size-4" /></button>
+                          <button type="button" disabled={i === order.length - 1} onClick={() => swap(i, i + 1)} className="grid size-10 place-items-center text-muted-foreground disabled:opacity-30" aria-label="Descendre"><ArrowDown className="size-4" /></button>
+                          <button type="button" onClick={() => setDraft({ id: l.id, title: l.title, summary: l.summary, module: l.module, videoId: l.videoId })} className="grid size-10 place-items-center text-muted-foreground" aria-label="Modifier"><Pencil className="size-4" /></button>
+                          <button type="button" onClick={() => run(() => archiveLesson({ data: { id: l.id, courseId: id } }), "Leçon retirée")} className="grid size-10 place-items-center text-muted-foreground" aria-label="Retirer la leçon"><Trash2 className="size-4" /></button>
                         </span>}
                       </li>
                     );
@@ -107,7 +107,7 @@ function EditorPage() {
             <p className="mt-3 text-xs text-muted-foreground">Retirer une leçon ne change rien pour ceux qui ont déjà reçu la formation : ils gardent la version reçue.</p>
           </section>
 
-          <aside className="space-y-4">
+          <aside className="min-w-0 space-y-4">
             <div className="surface rounded-2xl p-4">
               <h2 className="flex items-center gap-2 font-semibold"><Users className="size-4 text-primary" />Partage</h2>
               {!d.version ? <p className="mt-2 text-sm text-muted-foreground">Publie la formation pour pouvoir la partager.</p>

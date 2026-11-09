@@ -342,23 +342,23 @@ export const shareTargets = createServerFn({ method: "GET" })
   .handler(async ({ data, context }) => {
     const a = await admin();
     const { data: c } = await a.from("academy_courses").select("owner_id").eq("id", data.courseId).maybeSingle();
-    if (!c?.owner_id) return { mode: "none" as const, members: [] };
+    if (!c?.owner_id) return { mode: "none" as const, members: [] as { id: string; name: string; group: string; status: string | null }[] };
     const isOwner = c.owner_id === context.userId;
     let leaders = [context.userId];
     if (!isOwner) {
       const { data: g } = await a.from("course_grants").select("can_reshare").eq("course_id", data.courseId).eq("recipient_id", context.userId).eq("status", "actif").maybeSingle();
       const { data: link } = await a.from("team_links").select("id").eq("leader_id", c.owner_id).eq("member_id", context.userId).eq("status", "actif").maybeSingle();
-      if (!g?.can_reshare || !link) return { mode: "none" as const, members: [] };
+      if (!g?.can_reshare || !link) return { mode: "none" as const, members: [] as { id: string; name: string; group: string; status: string | null }[] };
       leaders = [context.userId, c.owner_id];
     }
     const { data: links } = await a.from("team_links").select("member_id, leader_id").in("leader_id", leaders).eq("status", "actif");
-    const ids = [...new Set((links ?? []).map((l: any) => l.member_id as string))].filter((id) => id !== context.userId && id !== c.owner_id);
+    const ids: string[] = [...new Set<string>((links ?? []).map((l: any) => String(l.member_id)))].filter((id) => id !== context.userId && id !== c.owner_id);
     const { data: existing } = ids.length ? await a.from("course_grants").select("recipient_id, status").eq("course_id", data.courseId).in("recipient_id", ids) : { data: [] };
     const n = await names(a, ids);
     return {
       mode: isOwner ? ("owner" as const) : ("reshare" as const),
       members: ids.map((id) => ({
-        id, name: n[id] ?? "Partenaire",
+        id, name: String(n[id] ?? "Partenaire"),
         group: (links ?? []).some((l: any) => l.member_id === id && l.leader_id === context.userId) ? "Mon équipe" : "Équipe de mon leader",
         status: ((existing ?? []).find((e: any) => e.recipient_id === id)?.status ?? null) as string | null,
       })),
