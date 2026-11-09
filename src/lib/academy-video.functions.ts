@@ -36,7 +36,7 @@ export const listVideoCourses = createServerFn({ method: "GET" })
     const plan = await myPlan(context);
     const { data: courses, error } = await context.supabase
       .from("academy_courses").select("id, slug, title, description, min_plan, source_type, source_author")
-      .eq("status", "publie").order("sort_order").order("created_at");
+      .eq("status", "publie").is("owner_id", null).order("sort_order").order("created_at");
     if (error) throw new Error("Cours indisponibles.");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const ids = (courses ?? []).map((c: any) => c.id);
@@ -66,7 +66,7 @@ export const getVideoCourse = createServerFn({ method: "GET" })
   .handler(async ({ data, context }) => {
     const { data: c } = await context.supabase.from("academy_courses")
       .select("id, slug, title, description, min_plan, source_type, source_author, source_url")
-      .eq("slug", data.slug).eq("status", "publie").maybeSingle();
+      .eq("slug", data.slug).eq("status", "publie").is("owner_id", null).maybeSingle();
     if (!c) return null;
     const unlocked = canAccessCourse(await myPlan(context), c.min_plan);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -96,8 +96,8 @@ export const adminListAcademy = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     await assertAdmin(context);
     const [{ data: courses }, { data: lessons }] = await Promise.all([
-      context.supabase.from("academy_courses").select("*").order("sort_order").order("created_at"),
-      context.supabase.from("academy_lessons").select("*").order("sort_order").order("created_at"),
+      context.supabase.from("academy_courses").select("*").is("owner_id", null).order("sort_order").order("created_at"),
+      context.supabase.from("academy_lessons").select("*").eq("video_provider", "youtube").order("sort_order").order("created_at"),
     ]);
     return { courses: courses ?? [], lessons: lessons ?? [] };
   });

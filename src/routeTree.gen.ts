@@ -39,8 +39,13 @@ import { Route as PPseudoRouteImport } from './routes/p.$pseudo'
 import { Route as RejoindreCodeRouteImport } from './routes/rejoindre.$code'
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
 import { Route as AuthenticatedAcademieNiveauRouteImport } from './routes/_authenticated/academie_.$niveau'
+import { Route as AuthenticatedAcademieMesFormationsRouteImport } from './routes/_authenticated/academie_.mes-formations'
+import { Route as AuthenticatedAcademieRecuesRouteImport } from './routes/_authenticated/academie_.recues'
+import { Route as AuthenticatedAcademieVideosRouteImport } from './routes/_authenticated/academie_.videos'
 import { Route as ApiPublicSaspayWebhookRouteImport } from './routes/api/public/saspay-webhook'
 import { Route as AuthenticatedAcademieCoursSlugRouteImport } from './routes/_authenticated/academie_.cours.$slug'
+import { Route as AuthenticatedAcademieLectureCourseIdRouteImport } from './routes/_authenticated/academie_.lecture.$courseId'
+import { Route as AuthenticatedAcademieMesFormationsIdRouteImport } from './routes/_authenticated/academie_.mes-formations_.$id'
 import { Route as LovableEmailAuthPreviewRouteImport } from './routes/lovable/email/auth/preview'
 import { Route as LovableEmailAuthWebhookRouteImport } from './routes/lovable/email/auth/webhook'
 import { Route as LovableEmailTransactionalPreviewRouteImport } from './routes/lovable/email/transactional/preview'
@@ -201,6 +206,24 @@ const AuthenticatedAcademieNiveauRoute =
     path: '/academie/$niveau',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedAcademieMesFormationsRoute =
+  AuthenticatedAcademieMesFormationsRouteImport.update({
+    id: '/academie_/mes-formations',
+    path: '/academie/mes-formations',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedAcademieRecuesRoute =
+  AuthenticatedAcademieRecuesRouteImport.update({
+    id: '/academie_/recues',
+    path: '/academie/recues',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedAcademieVideosRoute =
+  AuthenticatedAcademieVideosRouteImport.update({
+    id: '/academie_/videos',
+    path: '/academie/videos',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const ApiPublicSaspayWebhookRoute = ApiPublicSaspayWebhookRouteImport.update({
   id: '/api/public/saspay-webhook',
   path: '/api/public/saspay-webhook',
@@ -210,6 +233,18 @@ const AuthenticatedAcademieCoursSlugRoute =
   AuthenticatedAcademieCoursSlugRouteImport.update({
     id: '/academie_/cours/$slug',
     path: '/academie/cours/$slug',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedAcademieLectureCourseIdRoute =
+  AuthenticatedAcademieLectureCourseIdRouteImport.update({
+    id: '/academie_/lecture/$courseId',
+    path: '/academie/lecture/$courseId',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedAcademieMesFormationsIdRoute =
+  AuthenticatedAcademieMesFormationsIdRouteImport.update({
+    id: '/academie_/mes-formations_/$id',
+    path: '/academie/mes-formations/$id',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const LovableEmailAuthPreviewRoute = LovableEmailAuthPreviewRouteImport.update({
@@ -259,8 +294,13 @@ export interface FileRoutesByFullPath {
   '/rejoindre/$code': typeof RejoindreCodeRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/academie/$niveau': typeof AuthenticatedAcademieNiveauRoute
+  '/academie/mes-formations': typeof AuthenticatedAcademieMesFormationsRoute
+  '/academie/recues': typeof AuthenticatedAcademieRecuesRoute
+  '/academie/videos': typeof AuthenticatedAcademieVideosRoute
   '/api/public/saspay-webhook': typeof ApiPublicSaspayWebhookRoute
   '/academie/cours/$slug': typeof AuthenticatedAcademieCoursSlugRoute
+  '/academie/lecture/$courseId': typeof AuthenticatedAcademieLectureCourseIdRoute
+  '/academie/mes-formations/$id': typeof AuthenticatedAcademieMesFormationsIdRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
@@ -295,8 +335,13 @@ export interface FileRoutesByTo {
   '/rejoindre/$code': typeof RejoindreCodeRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/academie/$niveau': typeof AuthenticatedAcademieNiveauRoute
+  '/academie/mes-formations': typeof AuthenticatedAcademieMesFormationsRoute
+  '/academie/recues': typeof AuthenticatedAcademieRecuesRoute
+  '/academie/videos': typeof AuthenticatedAcademieVideosRoute
   '/api/public/saspay-webhook': typeof ApiPublicSaspayWebhookRoute
   '/academie/cours/$slug': typeof AuthenticatedAcademieCoursSlugRoute
+  '/academie/lecture/$courseId': typeof AuthenticatedAcademieLectureCourseIdRoute
+  '/academie/mes-formations/$id': typeof AuthenticatedAcademieMesFormationsIdRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
@@ -333,8 +378,13 @@ export interface FileRoutesById {
   '/rejoindre/$code': typeof RejoindreCodeRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/_authenticated/academie_/$niveau': typeof AuthenticatedAcademieNiveauRoute
+  '/_authenticated/academie_/mes-formations': typeof AuthenticatedAcademieMesFormationsRoute
+  '/_authenticated/academie_/recues': typeof AuthenticatedAcademieRecuesRoute
+  '/_authenticated/academie_/videos': typeof AuthenticatedAcademieVideosRoute
   '/api/public/saspay-webhook': typeof ApiPublicSaspayWebhookRoute
   '/_authenticated/academie_/cours/$slug': typeof AuthenticatedAcademieCoursSlugRoute
+  '/_authenticated/academie_/lecture/$courseId': typeof AuthenticatedAcademieLectureCourseIdRoute
+  '/_authenticated/academie_/mes-formations_/$id': typeof AuthenticatedAcademieMesFormationsIdRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
@@ -371,8 +421,13 @@ export interface FileRouteTypes {
     | '/rejoindre/$code'
     | '/.lovable/oauth/consent'
     | '/academie/$niveau'
+    | '/academie/mes-formations'
+    | '/academie/recues'
+    | '/academie/videos'
     | '/api/public/saspay-webhook'
     | '/academie/cours/$slug'
+    | '/academie/lecture/$courseId'
+    | '/academie/mes-formations/$id'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
     | '/lovable/email/transactional/preview'
@@ -407,8 +462,13 @@ export interface FileRouteTypes {
     | '/rejoindre/$code'
     | '/.lovable/oauth/consent'
     | '/academie/$niveau'
+    | '/academie/mes-formations'
+    | '/academie/recues'
+    | '/academie/videos'
     | '/api/public/saspay-webhook'
     | '/academie/cours/$slug'
+    | '/academie/lecture/$courseId'
+    | '/academie/mes-formations/$id'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
     | '/lovable/email/transactional/preview'
@@ -444,8 +504,13 @@ export interface FileRouteTypes {
     | '/rejoindre/$code'
     | '/.lovable/oauth/consent'
     | '/_authenticated/academie_/$niveau'
+    | '/_authenticated/academie_/mes-formations'
+    | '/_authenticated/academie_/recues'
+    | '/_authenticated/academie_/videos'
     | '/api/public/saspay-webhook'
     | '/_authenticated/academie_/cours/$slug'
+    | '/_authenticated/academie_/lecture/$courseId'
+    | '/_authenticated/academie_/mes-formations_/$id'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
     | '/lovable/email/transactional/preview'
@@ -680,6 +745,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAcademieNiveauRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/academie_/mes-formations': {
+      id: '/_authenticated/academie_/mes-formations'
+      path: '/academie/mes-formations'
+      fullPath: '/academie/mes-formations'
+      preLoaderRoute: typeof AuthenticatedAcademieMesFormationsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/academie_/recues': {
+      id: '/_authenticated/academie_/recues'
+      path: '/academie/recues'
+      fullPath: '/academie/recues'
+      preLoaderRoute: typeof AuthenticatedAcademieRecuesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/academie_/videos': {
+      id: '/_authenticated/academie_/videos'
+      path: '/academie/videos'
+      fullPath: '/academie/videos'
+      preLoaderRoute: typeof AuthenticatedAcademieVideosRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/api/public/saspay-webhook': {
       id: '/api/public/saspay-webhook'
       path: '/api/public/saspay-webhook'
@@ -692,6 +778,20 @@ declare module '@tanstack/react-router' {
       path: '/academie/cours/$slug'
       fullPath: '/academie/cours/$slug'
       preLoaderRoute: typeof AuthenticatedAcademieCoursSlugRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/academie_/lecture/$courseId': {
+      id: '/_authenticated/academie_/lecture/$courseId'
+      path: '/academie/lecture/$courseId'
+      fullPath: '/academie/lecture/$courseId'
+      preLoaderRoute: typeof AuthenticatedAcademieLectureCourseIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/academie_/mes-formations_/$id': {
+      id: '/_authenticated/academie_/mes-formations_/$id'
+      path: '/academie/mes-formations/$id'
+      fullPath: '/academie/mes-formations/$id'
+      preLoaderRoute: typeof AuthenticatedAcademieMesFormationsIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/lovable/email/auth/preview': {
@@ -739,7 +839,12 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedStatistiquesRoute: typeof AuthenticatedStatistiquesRoute
   AuthenticatedTramesVocalesRoute: typeof AuthenticatedTramesVocalesRoute
   AuthenticatedAcademieNiveauRoute: typeof AuthenticatedAcademieNiveauRoute
+  AuthenticatedAcademieMesFormationsRoute: typeof AuthenticatedAcademieMesFormationsRoute
+  AuthenticatedAcademieRecuesRoute: typeof AuthenticatedAcademieRecuesRoute
+  AuthenticatedAcademieVideosRoute: typeof AuthenticatedAcademieVideosRoute
   AuthenticatedAcademieCoursSlugRoute: typeof AuthenticatedAcademieCoursSlugRoute
+  AuthenticatedAcademieLectureCourseIdRoute: typeof AuthenticatedAcademieLectureCourseIdRoute
+  AuthenticatedAcademieMesFormationsIdRoute: typeof AuthenticatedAcademieMesFormationsIdRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -763,7 +868,15 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedStatistiquesRoute: AuthenticatedStatistiquesRoute,
   AuthenticatedTramesVocalesRoute: AuthenticatedTramesVocalesRoute,
   AuthenticatedAcademieNiveauRoute: AuthenticatedAcademieNiveauRoute,
+  AuthenticatedAcademieMesFormationsRoute:
+    AuthenticatedAcademieMesFormationsRoute,
+  AuthenticatedAcademieRecuesRoute: AuthenticatedAcademieRecuesRoute,
+  AuthenticatedAcademieVideosRoute: AuthenticatedAcademieVideosRoute,
   AuthenticatedAcademieCoursSlugRoute: AuthenticatedAcademieCoursSlugRoute,
+  AuthenticatedAcademieLectureCourseIdRoute:
+    AuthenticatedAcademieLectureCourseIdRoute,
+  AuthenticatedAcademieMesFormationsIdRoute:
+    AuthenticatedAcademieMesFormationsIdRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =

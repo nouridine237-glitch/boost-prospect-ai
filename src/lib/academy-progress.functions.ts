@@ -16,13 +16,19 @@ export const saveLessonProgress = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: lesson } = await supabaseAdmin.from("academy_lessons")
-      .select("id, status, academy_courses!inner(min_plan, status)")
+      .select("id, status, course_id, academy_courses!inner(min_plan, status, owner_id)")
       .eq("id", data.lessonId).maybeSingle();
     const course = (lesson as any)?.academy_courses;
-    if (!lesson || lesson.status !== "publie" || course?.status !== "publie") return { status: "indisponible" as const };
-    const { data: plan, error: planErr } = await context.supabase.rpc("effective_plan", { _user_id: context.userId });
-    if (planErr) throw new Error("Plan introuvable.");
-    if (!canAccessCourse(String(plan ?? "gratuit"), course.min_plan)) return { status: "verrouille" as const };
+    if (course?.owner_id) {
+      // Formation utilisateur : propriétaire ou octroi actif ; progression toujours au nom de la personne qui regarde.
+      const { lessonAccess } = await import("@/lib/videotheque-access.server");
+      if (!(await lessonAccess(supabaseAdmin, context.userId, (lesson as any).course_id, data.lessonId))) return { status: "indisponible" as const };
+    } else {
+      if (!lesson || lesson.status !== "publie" || course?.status !== "publie") return { status: "indisponible" as const };
+      const { data: plan, error: planErr } = await context.supabase.rpc("effective_plan", { _user_id: context.userId });
+      if (planErr) throw new Error("Plan introuvable.");
+      if (!canAccessCourse(String(plan ?? "gratuit"), course.min_plan)) return { status: "verrouille" as const };
+    }
     const { data: status, error } = await supabaseAdmin.rpc("record_lesson_progress", {
       _user_id: context.userId, _lesson_id: data.lessonId, _position: Math.floor(data.position),
       _playing: data.playing, _player_duration: data.duration ? Math.floor(data.duration) : 0, _manual: data.manual,

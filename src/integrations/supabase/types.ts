@@ -16,12 +16,14 @@ export type Database = {
     Tables: {
       academy_courses: {
         Row: {
+          archived_at: string | null
           authorization_note: string
           authorized_at: string | null
           created_at: string
           description: string
           id: string
           min_plan: Database["public"]["Enums"]["plan_type"]
+          owner_id: string | null
           slug: string
           sort_order: number
           source_author: string
@@ -32,12 +34,14 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          archived_at?: string | null
           authorization_note?: string
           authorized_at?: string | null
           created_at?: string
           description?: string
           id?: string
           min_plan?: Database["public"]["Enums"]["plan_type"]
+          owner_id?: string | null
           slug: string
           sort_order?: number
           source_author?: string
@@ -48,12 +52,14 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          archived_at?: string | null
           authorization_note?: string
           authorized_at?: string | null
           created_at?: string
           description?: string
           id?: string
           min_plan?: Database["public"]["Enums"]["plan_type"]
+          owner_id?: string | null
           slug?: string
           sort_order?: number
           source_author?: string
@@ -127,10 +133,12 @@ export type Database = {
       }
       academy_lessons: {
         Row: {
+          archived_at: string | null
           course_id: string
           created_at: string
           duration_minutes: number
           id: string
+          module_title: string
           notes: string
           slug: string
           sort_order: number
@@ -139,14 +147,17 @@ export type Database = {
           title: string
           transcript: string
           updated_at: string
+          user_video_id: string | null
           video_id: string
           video_provider: string
         }
         Insert: {
+          archived_at?: string | null
           course_id: string
           created_at?: string
           duration_minutes?: number
           id?: string
+          module_title?: string
           notes?: string
           slug: string
           sort_order?: number
@@ -155,14 +166,17 @@ export type Database = {
           title: string
           transcript?: string
           updated_at?: string
+          user_video_id?: string | null
           video_id: string
           video_provider?: string
         }
         Update: {
+          archived_at?: string | null
           course_id?: string
           created_at?: string
           duration_minutes?: number
           id?: string
+          module_title?: string
           notes?: string
           slug?: string
           sort_order?: number
@@ -171,6 +185,7 @@ export type Database = {
           title?: string
           transcript?: string
           updated_at?: string
+          user_video_id?: string | null
           video_id?: string
           video_provider?: string
         }
@@ -180,6 +195,13 @@ export type Database = {
             columns: ["course_id"]
             isOneToOne: false
             referencedRelation: "academy_courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "academy_lessons_user_video_id_fkey"
+            columns: ["user_video_id"]
+            isOneToOne: false
+            referencedRelation: "user_videos"
             referencedColumns: ["id"]
           },
         ]
@@ -548,6 +570,104 @@ export type Database = {
             columns: ["campaign_id"]
             isOneToOne: false
             referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      course_grants: {
+        Row: {
+          accepted_at: string | null
+          can_reshare: boolean
+          course_id: string
+          created_at: string
+          ended_at: string | null
+          grantor_id: string
+          id: string
+          origin: string
+          owner_id: string
+          recipient_id: string
+          status: string
+          version_id: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          can_reshare?: boolean
+          course_id: string
+          created_at?: string
+          ended_at?: string | null
+          grantor_id: string
+          id?: string
+          origin: string
+          owner_id: string
+          recipient_id: string
+          status?: string
+          version_id: string
+        }
+        Update: {
+          accepted_at?: string | null
+          can_reshare?: boolean
+          course_id?: string
+          created_at?: string
+          ended_at?: string | null
+          grantor_id?: string
+          id?: string
+          origin?: string
+          owner_id?: string
+          recipient_id?: string
+          status?: string
+          version_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_grants_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "academy_courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_grants_version_id_fkey"
+            columns: ["version_id"]
+            isOneToOne: false
+            referencedRelation: "course_versions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      course_versions: {
+        Row: {
+          course_id: string
+          created_at: string
+          description: string
+          id: string
+          lessons: Json
+          title: string
+          version: number
+        }
+        Insert: {
+          course_id: string
+          created_at?: string
+          description?: string
+          id?: string
+          lessons: Json
+          title: string
+          version: number
+        }
+        Update: {
+          course_id?: string
+          created_at?: string
+          description?: string
+          id?: string
+          lessons?: Json
+          title?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_versions_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "academy_courses"
             referencedColumns: ["id"]
           },
         ]
@@ -1024,6 +1144,133 @@ export type Database = {
         }
         Relationships: []
       }
+      user_videos: {
+        Row: {
+          archived_at: string | null
+          category: string
+          created_at: string
+          deleted_at: string | null
+          description: string
+          duration_seconds: number
+          id: string
+          mime_type: string
+          moderated_at: string | null
+          moderation_reason: string
+          owner_id: string
+          rights_confirmed: boolean
+          size_bytes: number
+          status: string
+          storage_path: string
+          thumb_path: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          archived_at?: string | null
+          category?: string
+          created_at?: string
+          deleted_at?: string | null
+          description?: string
+          duration_seconds: number
+          id?: string
+          mime_type: string
+          moderated_at?: string | null
+          moderation_reason?: string
+          owner_id: string
+          rights_confirmed: boolean
+          size_bytes: number
+          status?: string
+          storage_path: string
+          thumb_path?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          archived_at?: string | null
+          category?: string
+          created_at?: string
+          deleted_at?: string | null
+          description?: string
+          duration_seconds?: number
+          id?: string
+          mime_type?: string
+          moderated_at?: string | null
+          moderation_reason?: string
+          owner_id?: string
+          rights_confirmed?: boolean
+          size_bytes?: number
+          status?: string
+          storage_path?: string
+          thumb_path?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      video_reports: {
+        Row: {
+          created_at: string
+          id: string
+          reason: string
+          reporter_id: string
+          status: string
+          video_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          reason: string
+          reporter_id: string
+          status?: string
+          video_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          reason?: string
+          reporter_id?: string
+          status?: string
+          video_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "video_reports_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "user_videos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      video_views: {
+        Row: {
+          created_at: string
+          id: string
+          video_id: string
+          viewer_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          video_id: string
+          viewer_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          video_id?: string
+          viewer_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "video_views_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "user_videos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -1054,6 +1301,7 @@ export type Database = {
           title: string
         }[]
       }
+      course_publish_version: { Args: { _course_id: string }; Returns: number }
       effective_plan: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["plan_type"]
@@ -1062,12 +1310,35 @@ export type Database = {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["plan_type"]
       }
+      grant_respond: {
+        Args: { _accept: boolean; _grant_id: string }
+        Returns: string
+      }
+      grant_revoke: { Args: { _grant_id: string }; Returns: string }
+      grant_set_reshare: {
+        Args: { _grant_id: string; _value: boolean }
+        Returns: string
+      }
+      grant_share: {
+        Args: {
+          _can_reshare: boolean
+          _course_id: string
+          _origin: string
+          _recipients: string[]
+        }
+        Returns: number
+      }
+      grant_update_version: { Args: { _grant_id: string }; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
         Returns: boolean
+      }
+      moderate_video: {
+        Args: { _reason: string; _video_id: string }
+        Returns: string
       }
       my_ai_bonus: { Args: never; Returns: number }
       my_team_leader: {
@@ -1146,6 +1417,14 @@ export type Database = {
       team_respond_invite: {
         Args: { _accept: boolean; _code: string }
         Returns: string
+      }
+      video_quota: {
+        Args: { _plan: Database["public"]["Enums"]["plan_type"] }
+        Returns: {
+          max_bytes: number
+          per_day: number
+          total_bytes: number
+        }[]
       }
     }
     Enums: {
