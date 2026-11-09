@@ -1,99 +1,171 @@
-# Vidéos personnelles et formation d'équipe — V1 (audit et plan)
+# Vidéothèque MLM et duplication vidéo V1 — plan technique révisé
 
-## A. État réel actuel (vérifié dans le code et la base)
+Décisions intégrées :
+- **D1** : l'import de vidéos est ouvert à partir du plan Pro.
+- **D2** : le leader et les membres qu'il autorise peuvent partager.
+- **D3** : un accès reçu est durable.
 
-- **Académie vidéo** : tables `academy_courses` et `academy_lessons`. Seul un admin peut écrire (RLS `has_role admin`), et les connectés lisent les contenus publiés. Une leçon accepte seulement YouTube : `video_provider IN ('youtube')` et `video_id` sur 11 caractères. Le contenu ne s'organise qu'en cours puis leçons, sans module. L'accès par plan passe par `min_plan` et `canAccessCourse`.
-- **Côté serveur** : `academy-video.functions.ts` contient `listVideoCourses`, `getVideoCourse`, `adminSaveCourse` et `adminSaveLesson`. L'écran d'administration est `admin-academy.tsx`.
-- **Lecteur** : `video-player.tsx` gère YouTube sans cookies, envoie un battement toutes les 15 s, et propose une validation manuelle si l'API YouTube est bloquée.
-- **Progression** : `academy_lesson_progress` (propriétaire en lecture seule) est écrite uniquement par `record_lesson_progress`, qui crédite le temps de visionnage selon l'horloge du serveur. Elle est déjà liée à `user_id`, donc à la personne qui regarde.
-- **Équipe** : `team_links` relie un leader à ses membres (invitation, puis membre actif, puis départ ou révocation). Chaque membre n'a qu'un seul leader actif. Tout passe par les fonctions `team_*`, et l'invitation se fait via `/rejoindre/$code`. Pour l'instant, le leader ne voit que des agrégats de quiz (`team_member_progress`). Les pages et écrans concernés sont `former-equipe.tsx` et `team-partners.tsx`.
-- **Équipe et plans** : il faut être Business ou admin pour diriger une équipe (`_can_lead`, `FEATURE_MIN_PLAN.teamTraining = business`). Être membre ne demande aucun plan.
-- **Stockage** : un seul bucket existe, `payment-proofs`, privé, avec un dossier par utilisateur. L'ancien bucket des photos de capture a été retiré. Aucun bucket vidéo n'existe.
+## A. Constats vérifiés dans le code et la base
 
-## B. Disponible et absent
+- **`team_links`**
+  - Colonnes : `leader_id`, `member_id`, `invite_code` (unique), `status` parmi `invite|actif|refuse|quitte|revoque`, `expires_at` (invitation valable 14 jours), `accepted_at`, `ended_at`.
+  - Un index unique impose **un seul leader actif par membre**.
+  - Aucune contrainte n'empêche un membre d'être lui-même leader : une chaîne A → B → C est donc déjà possible. Le partage ne doit pas la suivre automatiquement.
+  - Les deux parties peuvent lire le lien. Toute écriture passe par les fonctions SECURITY DEFINER `team_*`.
+- **Diriger une équipe** : `_can_lead` exige le plan Business (`feature_plan`, essai Pro de parrainage inclus) ou un compte admin. Inviter suppose ce plan, ce qui limite à 50 invitations ouvertes.
+- **Rôles** : la table `user_roles` ne connaît que `user` et `admin`. Il n'existe aucun rôle d'équipe délégué.
+- **Plans** : l'ordre est `gratuit < pro < expert < business`. La vérification se fait par `effective_plan` (3 jours de grâce) et `hasFeature`/`FEATURE_MIN_PLAN`.
+- **Académie** :
+  - les cours et leçons sont gérés par l'admin seul ;
+  - une leçon n'accepte que YouTube (`video_provider IN ('youtube')`) ;
+  - la progression est écrite dans `academy_lesson_progress` par `record_lesson_progress`, sous le `user_id` de la personne qui regarde.
+- **Stockage** : un seul bucket privé, `payment-proofs`, limité à 10 Mo par fichier, sans filtre de type. Je n'ai pas pu lire la limite globale du projet par fichier : **à vérifier**.
 
-| Disponible | Absent |
+## B. Modèle de partage durable
+
+Unité partagée : **une formation (cours)**, jamais un fichier isolé. L'accès est **individuel** : une ligne par destinataire.
+
+Le « partage au groupe » ne crée pas de droit collectif. Il crée en une fois une autorisation par membre actif à cet instant. Un membre qui rejoint l'équipe plus tard ne reçoit rien automatiquement : il faut partager de nouveau, en un clic. C'est ce qui permet un accès durable même si l'équipe change.
+
+Table `course_grants` :
+- `id` et `course_id`, avec une clé étrangère vers `academy_courses` sans suppression en cascade (le cours est archivé, jamais supprimé physiquement) ;
+- `owner_id` : la personne qui a créé la formation, recopiée au moment du partage ;
+- `grantor_id` : la personne qui a partagé ;
+- `recipient_id` ;
+- `origin` : `direct` (à une personne) ou `equipe` (à tout le groupe) ;
+- `status` :
+  - `en_attente` : le destinataire doit accepter ;
+  - `actif` ;
+  - `refuse` ;
+  - `revoque_proprietaire` ;
+  - `retire_moderation` ;
+- `can_reshare` (faux par défaut) ;
+- `updates_mode` : `suivre` (le destinataire voit la version actuelle) ou `figee` (il garde la version reçue) ;
+- `version_id` : la version reçue, utilisée en mode `figee` ;
+- `created_at`, `accepted_at`, `ended_at` ;
+- une seule autorisation par couple (cours, destinataire).
+
+Les trois notions sont séparées :
+- **accès durable** : `status = actif`. Il ne dépend ni du plan du propriétaire, ni de `team_links`.
+- **droit de repartager** : `can_reshare`. Seul le propriétaire peut l'accorder.
+- **mises à jour** : `updates_mode`. Proposé : `suivre` par défaut, et passage automatique en `figee` si le propriétaire perd ses droits ou supprime son compte (voir D).
+
+Versions : table `course_versions` (`course_id`, numéro, date, liste des leçons et des vidéos). Une version est créée à chaque publication. Les fichiers ne sont pas dupliqués : la version ne fait que les référencer.
+
+Changement d'équipe d'un membre : ses autorisations restent actives. Seul son droit de repartager (`can_reshare`) est conservé ou non, selon la décision 3 plus bas.
+
+## C. Partage par un membre : borné à un seul niveau
+
+- Le propriétaire (leader Business ou admin) partage à ses membres actifs. Partager **à quelqu'un** suppose que cette personne soit son membre direct actif au moment du partage.
+- Le propriétaire peut cocher « autoriser à repartager » pour un membre précis. Ce membre peut alors partager **cette formation uniquement**, et seulement à **ses propres membres directs actifs**. Il doit donc lui-même diriger une équipe, donc être en plan Business. À valider en décision 2.
+- Les autorisations créées par un membre qui repartage ont toujours `can_reshare = false` : la propagation s'arrête au niveau 2. Un trigger refuse tout repartage dont l'auteur n'est pas le propriétaire ou n'a pas `can_reshare`.
+- Limites : 200 destinataires actifs par formation et par auteur du partage, et 50 partages par jour.
+- Le propriétaire voit la liste complète des destinataires, niveau 2 compris, et peut retirer le droit de repartager. Ce retrait ne révoque pas les accès déjà donnés.
+- Toutes les écritures passent par des fonctions SECURITY DEFINER `grant_*` (partager, accepter, refuser, révoquer). Aucune écriture directe n'est faite par le navigateur.
+
+## D. Propriété, conservation et retrait
+
+- Le fichier appartient au propriétaire, et le stockage est compté dans son quota.
+- **Retirer une vidéo** : elle est archivée (`archived_at`), pas supprimée. Elle disparaît de sa médiathèque et ne peut plus servir dans une nouvelle leçon. Les destinataires d'une version qui la contient la gardent. Le fichier n'est supprimé physiquement que si aucune autorisation active n'y fait référence. Tant qu'il reste référencé, il continue de compter dans le quota du propriétaire (« conservé pour X personnes »).
+- **Modifier une formation** : une publication crée une nouvelle version. Les destinataires en mode `suivre` voient la nouvelle, ceux en mode `figee` gardent l'ancienne.
+- **Révocation volontaire par le propriétaire** : statut `revoque_proprietaire`. Avec la décision D3, elle n'est permise que dans certains cas, à trancher en décision 4.
+- **Compte supprimé** : les cours et les vidéos encore référencés sont transférés à un statut « conservé par la plateforme » (`owner_deleted_at`). Les destinataires gardent leur accès en version figée. Il faut **mentionner dans les conditions d'utilisation** que la plateforme conserve ces copies pour les personnes qui les ont reçues. Proposé : suppression définitive après 12 mois, à valider.
+- **Retrait pour modération (illégal ou violation de droits)** : l'admin passe la vidéo en `retire_moderation`. Toutes les autorisations liées sont coupées, le fichier est supprimé physiquement, et une trace est conservée (date, motif, admin). C'est la seule exception à l'accès permanent. Un bouton « Signaler » est disponible pour les destinataires, et une case « je détiens les droits » est obligatoire à l'import.
+
+## E. Quotas et coûts
+
+Les quotas sont vérifiés par un trigger en base, comme `LIMITE_PROSPECTS` :
+
+| | Pro | Expert | Business |
+|---|---|---|---|
+| Stockage total | 2 Go | 5 Go | 15 Go |
+| Taille par vidéo | 200 Mo | 300 Mo | 500 Mo |
+| Imports par jour | 10 | 20 | 40 |
+
+Ce sont des propositions. Les tarifs ne changent pas.
+
+- **Après une baisse de plan** : on ne peut plus rien importer, ce qui existe est conservé, et les accès reçus par d'autres restent valables (D3).
+- **Bande passante** : chaque visionnage télécharge le fichier, et le coût est payé par le projet, pas par l'utilisateur. Mesures prévues :
+  - URL signées valables 1 h, générées à la demande ;
+  - rien n'est chargé avant le clic sur Lecture ;
+  - limite de 60 URL de lecture par heure et par personne ;
+  - journal léger `video_views` (qui, quelle vidéo, quand) pour repérer les abus.
+- **Tarifs** du stockage et du trafic Lovable Cloud : **à vérifier** dans la facturation Cloud. Je ne les invente pas.
+
+## F. Possibilités techniques de Lovable Cloud
+
+| Élément | État |
 |---|---|
-| Cours, leçons et publication par l'admin | Contenu créé par un utilisateur |
-| Lecteur YouTube avec suivi | Lecteur de fichier vidéo hébergé |
-| Progression par personne qui regarde | Module entre cours et leçon |
-| Lien leader–membre et invitations | Partage de contenu avec l'équipe |
-| Contrôle par plan | Envoi de fichier, quotas de stockage |
+| Bucket privé et URL signées | Disponible, déjà utilisé pour `payment-proofs` |
+| Envoi reprenable (TUS) | Prévu par le stockage Cloud (morceaux de 6 Mo) ; à tester dans ce projet avant de s'y engager |
+| Limite par fichier d'un bucket | Réglable par bucket ; plafonnée par la limite globale du projet (réglable jusqu'à 5 Go). La valeur actuelle est **à vérifier** |
+| Filtre par type de fichier | Disponible au niveau du bucket |
+| Transcodage ou streaming adaptatif | Non disponible ; rien d'externe en V1 |
+| Durée | Lue par le navigateur ; une limite de 60 min est proposée, contrôlée sur la valeur déclarée et plafonnée par la taille |
 
-## C. Architecture V1 recommandée
+Formats acceptés : MP4 (H.264/AAC) recommandé, MOV et WebM. Un avertissement s'affiche pour HEVC, qui ne se lit pas sur certains Android.
 
-- **Médiathèque** : nouvelle table `user_videos` (propriétaire, titre, description, catégorie, chemin de stockage, taille, durée, type, statut `envoi|pret|echec`, date). Une vidéo n'est stockée qu'une fois et peut être réutilisée dans plusieurs leçons.
-- **Stockage** : bucket privé `user-videos`, avec le chemin `{owner_id}/{video_id}.{ext}`. L'envoi se fait par morceaux et reprend en cas de coupure (protocole TUS de Lovable Cloud), avec une barre de progression. Aucune URL publique : la lecture passe par une URL signée de 1 h, fournie par une fonction serveur après contrôle d'accès.
-- **Formations personnelles** : on réutilise `academy_courses` et `academy_lessons` sans créer de tables en double. On ajoute :
-  - `owner_id` (null pour le catalogue officiel) et `audience` (`catalogue|prive|equipe`) sur les cours ;
-  - `module_title` (texte, optionnel) et `sort_order` sur les leçons, pour regrouper les leçons par module sans nouvelle table ;
-  - `video_provider` étendu à `'fichier'`, et `user_video_id` sur la leçon.
-  Les politiques admin restent en place ; on ajoute des politiques propriétaire.
-- **Partage** : un cours en `audience = 'equipe'` est visible des membres liés au propriétaire dans `team_links` avec `status = 'actif'`. La vérification passe par une fonction SECURITY DEFINER `can_view_course(course_id)`. Il n'y a pas de partage vidéo par vidéo : on partage une formation, ce qui garde un modèle simple.
-- **Lecture** : le lecteur HTML5 natif (`<video>`) et le lecteur YouTube existant partagent la même interface `onReport`. On réutilise donc `record_lesson_progress`, en adaptant les contrôles d'accès à `can_view_course`.
-- **Côté navigateur** : vérification du format et de la taille, et lecture de la durée depuis les métadonnées avant l'envoi. Il n'y a pas de transcodage.
+## G. Parcours mobile
 
-## D. Permissions et sécurité
+1. **Académie → Ma vidéothèque** : liste des vidéos, quota utilisé et bouton « Ajouter ». Ce bouton ouvre la galerie (`accept="video/*"`), puis :
+   - aperçu ;
+   - titre, description et catégorie ;
+   - barre de progression avec Pause et Reprendre ;
+   - en cas d'échec, « Réessayer » ;
+   - à tout moment : modifier les infos ou archiver.
+2. **Mes formations** : créer une formation, ajouter des modules (titre de regroupement), puis des leçons, chacune liée à une vidéo de la vidéothèque. On publie, ce qui crée une version.
+3. **Partager** :
+   - « Avec mon équipe » envoie une invitation à chaque membre actif ;
+   - « À un membre » se fait par choix dans la liste ;
+   - une case « peut repartager » est proposée par personne ;
+   - on peut voir les destinataires et leur statut.
+4. **Le destinataire** voit une notification dans l'Académie : « Formation reçue de X ». Il choisit Accepter ou Refuser.
+5. **Formations reçues** : liste durable avec le nom de l'auteur et un badge « version figée » si besoin. La lecture se fait dans le lecteur intégré, avec la progression propre à chaque personne qui regarde.
+6. **Le leader** voit, dans « Former mon équipe », les leçons terminées par chaque destinataire (agrégat seulement).
 
-- `user_videos` : seul le propriétaire peut lire et écrire. Les membres ne lisent jamais la table directement.
-- `storage.objects` (`user-videos`) : le propriétaire peut ajouter, lire et supprimer dans son propre dossier. Aucune lecture n'est ouverte aux membres : l'URL signée est générée côté serveur avec la clé de service, après `can_view_course`.
-- Cours et leçons : seul le propriétaire peut les modifier. Les membres les lisent s'ils sont publiés et partagés avec l'équipe. Un membre ne modifie et ne supprime jamais rien.
-- La progression reste `user_id = auth.uid()`. Le leader ne voit qu'un agrégat (leçons terminées par membre), via une nouvelle fonction du même type que `team_member_progress`.
-- Si un membre quitte l'équipe ou est révoqué, il perd l'accès aux vidéos immédiatement, et l'URL déjà signée expire dans l'heure.
-- Suppression d'une vidéo : refusée si une leçon publiée l'utilise. Sinon, le fichier puis la ligne sont supprimés par une fonction serveur.
-- Quotas (taille, nombre, total par plan) vérifiés par un trigger en base, comme pour les limites existantes.
+## H. Tests d'acceptation
 
-## E. Coûts, limites et risques
+- Un compte Gratuit ne peut pas importer (`PLAN_PAYANT_REQUIS`) ; un compte Pro peut.
+- Le quota ou la taille dépassés donnent `LIMITE_STOCKAGE`.
+- Un autre utilisateur ne peut ni lister, ni signer, ni télécharger une vidéo, même avec le chemin exact.
+- Une invitation non acceptée ne donne aucune URL de lecture.
+- **D3, changement de plan** : le leader repasse en Gratuit et le membre lit toujours la formation.
+- **D3, départ** : le leader dissout son équipe, ou le membre quitte l'équipe ou est révoqué. Le membre garde quand même l'accès à ses formations reçues.
+- **D3, nouvelle équipe** : le membre rejoint une autre équipe et garde ses anciennes formations. Son nouveau leader ne les voit pas.
+- **D2** :
+  - un membre sans `can_reshare` ne peut pas partager ;
+  - un membre avec ce droit peut partager à ses membres directs ;
+  - le destinataire de niveau 2 ne peut pas repartager ;
+  - un partage à un non-membre est refusé.
+- Les limites de 200 destinataires et 50 partages par jour sont appliquées.
+- **Archivage** : une vidéo archivée reste lisible pour ceux qui ont une version la contenant, et le fichier n'est pas supprimé.
+- **Mode figé** : le propriétaire publie une v2 ; le destinataire en `figee` voit la v1, celui en `suivre` voit la v2.
+- **Modération** : après un retrait, l'accès est coupé pour tous et le fichier est supprimé.
+- **Compte supprimé** : l'accès est conservé en version figée.
+- La progression est enregistrée sous le `user_id` de la personne qui regarde ; le propriétaire ne voit que l'agrégat.
+- Un membre ne peut ni modifier ni supprimer un cours, une leçon ou une vidéo reçus.
+- Le catalogue admin YouTube fonctionne comme avant.
+- **Mobile 360 px** : import depuis la galerie, coupure réseau puis reprise, lecture, pas de défilement horizontal.
 
-- **Formats** : MP4 (H.264/AAC) recommandé, MOV et WebM acceptés. Les vidéos HEVC des iPhone peuvent ne pas se lire sur certains Android ; on affichera une alerte, sans conversion.
-- **Taille proposée** : 200 Mo par vidéo (environ 10 à 15 min en 720p). Il faudra peut-être relever la limite globale de stockage.
-- **Quotas proposés** : Pro 2 Go, Expert 5 Go, Business 10 Go. Les quotas de stockage sont nouveaux, les tarifs ne changent pas.
-- **Coût** : le stockage et la bande passante sont facturés par Lovable Cloud selon l'usage. La bande passante est le risque principal, car chaque visionnage télécharge le fichier : 20 membres pour une vidéo de 100 Mo, c'est 2 Go. Je n'ai pas vérifié de tarif précis : à confirmer dans la facturation Cloud.
-- **Pas de streaming adaptatif** en V1. La lecture progressive d'un MP4 fonctionne, mais charge beaucoup sur une connexion mobile faible. Un service de streaming (Mux, Cloudflare Stream) n'est ajouté qu'après chiffrage et votre accord.
-- **Autres risques** : contenu illicite ou protégé (case « je détiens les droits » et signalement par l'admin) ; envoi interrompu (statut `envoi` nettoyé après 24 h).
+## I. Étapes et estimation (indicative, en crédits Lovable)
 
-## F. Parcours mobile
+1. Vérifier la limite globale de stockage et faire un test d'envoi TUS : 2 à 3.
+2. Migrations : `user_videos`, ajouts aux cours et leçons, `course_versions`, `course_grants`, `video_views`, triggers de quotas et de partage, fonctions `grant_*`, bucket et politiques, puis tests SQL des refus : 10 à 14.
+3. Fonctions serveur : URL d'envoi, URL de lecture signée après contrôle de l'autorisation, archivage, modération, adaptation de `record_lesson_progress` : 6 à 8.
+4. Vidéothèque et envoi reprenable : 6 à 9.
+5. Éditeur de formations, modules, leçons et versions : 6 à 9.
+6. Partage, invitations, formations reçues et lecteur de fichier : 7 à 10.
+7. Agrégat leader, modération admin, tests unitaires et vérification mobile : 5 à 7.
 
-1. Académie, puis « Mes vidéos », puis « Ajouter une vidéo » : le sélecteur de fichier ouvre la galerie Android (`accept="video/*"`).
-2. Aperçu local, durée et taille affichées, et refus immédiat si le format ou la taille ne conviennent pas.
-3. Saisie du titre, de la description et de la catégorie, puis « Envoyer » : barre de progression, pause et reprise, et en cas d'échec un bouton « Réessayer ».
-4. « Mes formations », puis « Nouvelle formation » : on ajoute des modules et des leçons et on choisit une vidéo de la médiathèque.
-5. On règle la visibilité : Privée ou Mon équipe (Business), puis on publie.
-6. Le membre ouvre Académie, puis « Formations de mon leader », regarde la vidéo, et sa progression est enregistrée.
-7. Le leader voit dans « Former mon équipe » les leçons terminées par membre.
+Total : environ **42 à 60 crédits**. La fourchette dépend des allers-retours, et je n'ai pas de grille officielle.
 
-## G. Tests d'acceptation et cas limites
+## Points qui nécessitent encore votre accord
 
-- Un fichier de plus de 200 Mo, ou dans un mauvais format, est refusé dans le navigateur et en base.
-- Un quota de plan dépassé renvoie `LIMITE_STOCKAGE`.
-- Un utilisateur B ne peut ni lister, ni signer, ni télécharger une vidéo de A, même avec le chemin exact.
-- Un membre actif lit une formation partagée avec l'équipe, mais pas une formation privée.
-- Un membre ayant quitté l'équipe ou été révoqué se voit refuser une nouvelle URL.
-- Un membre ne peut pas modifier ni supprimer un cours, une leçon ou une vidéo.
-- La progression d'un membre est enregistrée sous son `user_id`, et le leader ne voit que l'agrégat.
-- La suppression d'une vidéo utilisée dans une leçon publiée est refusée.
-- Une coupure réseau en cours d'envoi permet de reprendre ; si l'envoi est abandonné, il passe en `echec` et est nettoyé.
-- Le catalogue admin YouTube fonctionne toujours, sans régression.
-- Un leader Business repassé en Gratuit : ses membres perdent l'accès (si décision 2 = oui), et ses fichiers sont conservés en lecture pour lui.
-- Vérification mobile à 360 px : envoi depuis la galerie, lecture, pas de défilement horizontal.
-
-## H. Étapes et estimation
-
-1. Migration : `user_videos`, colonnes sur les cours et les leçons, `can_view_course`, quotas, bucket et politiques. Ensuite, tests SQL des refus.
-2. Fonctions serveur : envoi (URL d'envoi signée), URL de lecture signée, suppression, adaptation de `record_lesson_progress`.
-3. Médiathèque et envoi avec reprise.
-4. Éditeur de formations, modules et leçons.
-5. Lecteur de fichier et vue membre.
-6. Agrégat leader, tests et vérification mobile.
-
-Estimation indicative : 25 à 45 crédits Lovable, selon les ajustements. Je n'ai pas de grille exacte ; la fourchette dépend du nombre d'allers-retours.
-
-## Décisions à valider
-
-1. **Qui peut partager avec son équipe ?** Proposé : seulement un leader Business (règle d'équipe actuelle), et seulement avec ses membres directs. Pas de transmission en cascade, pas de partage à un utilisateur hors équipe.
-2. **L'accès des membres dépend-il du plan du leader ?** Proposé : oui. Si le leader n'est plus Business, ses membres perdent l'accès ; le membre n'a besoin d'aucun plan.
-3. **Qui peut envoyer des vidéos ?** Proposé : à partir du plan Pro, pour un usage personnel ; le plan Gratuit en est exclu.
-4. **Taille et quotas** : 200 Mo par vidéo ; 2, 5 et 10 Go selon le plan.
-5. **Droits de modification délégués aux membres** : non en V1, lecture seule.
-6. **Modules** : un simple titre de regroupement sur la leçon, sans écran de gestion dédié. Est-ce suffisant ?
-7. **Streaming payant** : pas de service externe en V1.
+1. **Quotas** : les valeurs du tableau E.
+2. **Repartage** : faut-il qu'un membre ayant `can_reshare` dirige lui-même une équipe Business, ou peut-il partager à n'importe quel membre de l'équipe de son leader ?
+3. **Changement d'équipe** : le droit de repartager est-il conservé ou retiré quand le membre change d'équipe ? Proposé : retiré, l'accès en lecture étant conservé.
+4. **Révocation volontaire par le propriétaire** : interdite après acceptation (accès permanent strict), ou permise seulement dans les 7 jours suivant le partage ?
+5. **Mises à jour** : le mode par défaut est-il `suivre` ? Et faut-il passer en `figee` automatiquement quand le propriétaire perd le plan Business ?
+6. **Suppression de compte** : conserver les copies 12 mois pour les destinataires, avec mise à jour des conditions d'utilisation.
+7. **Coût du stockage conservé** : imputer au propriétaire les vidéos archivées mais encore référencées ?
+8. **Acceptation** : une invitation explicite (proposée), ou un accès immédiat ?
