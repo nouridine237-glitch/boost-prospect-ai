@@ -123,6 +123,88 @@ Formats acceptés : MP4 (H.264/AAC) recommandé, MOV et WebM. Un avertissement s
 5. **Formations reçues** : liste durable avec le nom de l'auteur et un badge « version figée » si besoin. La lecture se fait dans le lecteur intégré, avec la progression propre à chaque personne qui regarde.
 6. **Le leader** voit, dans « Former mon équipe », les leçons terminées par chaque destinataire (agrégat seulement).
 
+## G bis. Direction visuelle (UI/UX)
+
+**Ton visuel.** On reste dans l'identité de MLM Boost AI : fond sombre, Inter et les couleurs déjà définies dans le thème, sans nouvelle palette.
+- **Couleurs :**
+  - le bleu électrique est réservé à une seule action principale par écran et à la progression ;
+  - le reste est en neutres (`card`, `muted`, `border` semi-transparent) ;
+  - il n'y a pas de dégradé, sauf le léger halo déjà utilisé sur la carte du tableau de bord.
+- **Formes :** cartes arrondies à 16 px, ombres douces, bordures fines.
+- **Icônes :** uniquement lucide (Film, Upload, Layers, Share2, Inbox, Archive, ShieldAlert).
+- **Mouvement :** transitions de 150 à 250 ms.
+- **Mobile :** zones tactiles de 44 px minimum.
+- **Style :** pas de grille de chiffres façon tableau de bord ; on met le contenu vidéo au premier plan.
+
+**Arborescence des écrans** (sous Académie, avec 3 onglets en haut défilants sur mobile) :
+```text
+Académie
+├── Catalogue (existant, inchangé)
+├── Ma vidéothèque          /academie/videos
+│   ├── Ajouter une vidéo   (feuille plein écran mobile, dialogue desktop)
+│   └── Détail vidéo        (aperçu, infos, utilisée dans N leçons, archiver)
+├── Mes formations          /academie/mes-formations
+│   └── Éditeur             /academie/mes-formations/$id
+│       └── Partager        (feuille : équipe / membre, droits, destinataires)
+└── Formations reçues       /academie/recues
+    ├── Invitations en attente (bandeau en tête)
+    └── Lecture             /academie/recues/$courseId/$lessonId
+```
+
+**Composants réutilisables** (dossier `src/components/videotheque/`) :
+- **`VideoCard`** :
+  - miniature 16:9 générée dans le navigateur à partir d'une image de la vidéo, sans fichier lourd ;
+  - durée en bas à droite et badge d'état (Envoi, Prête, Échec, Archivée) ;
+  - titre sur 2 lignes et catégorie en petite puce ;
+  - menu « … » avec Modifier et Archiver.
+- **`VideoGrid`** : 1 colonne à 360 px, 2 en tablette, 3 ou 4 sur ordinateur. Filtres par catégorie en puces défilantes et recherche par titre.
+- **`UploadSheet`** :
+  1. choix dans la galerie ;
+  2. aperçu lisible et contrôle immédiat du format et de la taille (message clair) ;
+  3. champs titre, description et catégorie ;
+  4. case « je détiens les droits ».
+- **`UploadProgress`** :
+  - barre fine bleue avec pourcentage, Mo envoyés et temps restant ;
+  - boutons Pause, Reprendre et Annuler ;
+  - en cas d'échec : carte rouge discrète avec « Réessayer » ;
+  - une pastille reste visible dans la barre si l'utilisateur change de page.
+- **`CourseEditor`** :
+  - liste de modules repliables, avec dans chaque module des lignes de leçon (miniature, titre, durée) ;
+  - réordonnancement par glisser sur ordinateur et par flèches haut/bas sur mobile ;
+  - « + Leçon » ouvre un sélecteur de vidéos de la vidéothèque ;
+  - barre fixe en bas : « Brouillon · v3 » et le bouton principal « Publier ».
+- **`ShareSheet`** :
+  - deux choix nets, « Toute mon équipe (N membres) » ou « Choisir des membres » (liste avec cases) ;
+  - par personne, un interrupteur « Peut repartager » avec une phrase d'explication ;
+  - un rappel en clair : « L'accès reste acquis même si vous changez de forfait » ;
+  - la liste des destinataires et leur statut (En attente, Actif, Refusé).
+- **`ReceivedCourseCard`** : auteur, nombre de leçons, progression personnelle (anneau ou barre) et badge « Version figée » si besoin.
+- **`InviteBanner`** : « X vous partage “Titre” » avec deux boutons, Accepter (principal) et Refuser.
+- **`FilePlayer`** :
+  - lecteur `<video>` natif avec gros bouton lecture centré, plein écran, vitesse ×1 / ×1,25 / ×1,5 et reprise à la dernière position ;
+  - sous la vidéo : la leçon suivante et « Signaler ».
+  Il partage l'interface `onReport` avec le lecteur YouTube existant.
+- **`ConfirmDialog`** (AlertDialog existant) :
+  - archiver : « Ceux qui l'ont reçue la gardent » ;
+  - retrait de modération côté admin : action rouge et motif obligatoire.
+- **États** :
+  - squelettes de cartes 16:9 pendant le chargement ;
+  - états vides avec une icône, une phrase et un seul bouton (« Ajoutez votre première vidéo » / « Aucune formation reçue pour l'instant ») ;
+  - erreurs en ligne avec « Réessayer », jamais d'écran blanc.
+
+**Ordinateur** : vidéothèque en grille, éditeur en deux colonnes (structure à gauche, aperçu de la leçon à droite), feuilles mobiles transformées en dialogues.
+
+**Critères de revue visuelle** (captures à 360 px et 1280 px) :
+- pas de défilement horizontal, et texte lisible à 360 px (14 px minimum) ;
+- une seule action bleue principale par écran, et des contrastes AA ;
+- uniquement les couleurs du thème, aucune couleur codée en dur ;
+- miniatures légères et chargées seulement à l'affichage, aucune vidéo chargée avant le clic ;
+- états vide, chargement et erreur présents sur chaque liste ;
+- progression d'envoi visible, avec pause et reprise testées ;
+- permissions de partage lisibles en une phrase, sans jargon ;
+- confirmations d'archivage et de retrait explicites ;
+- la mention « Aucun revenu garanti » est conservée là où elle existe déjà.
+
 ## H. Tests d'acceptation
 
 - Un compte Gratuit ne peut pas importer (`PLAN_PAYANT_REQUIS`) ; un compte Pro peut.
