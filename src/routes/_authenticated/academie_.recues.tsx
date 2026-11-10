@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { Clock, Inbox, Layers, Play, Share2, ShieldCheck } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { AcademyTabs, EmptyState, ErrorLine } from "@/components/videotheque/academy-tabs";
-import { StatusBadge } from "@/components/videotheque/ui-bits";
+import { PageHeader, StatusBadge } from "@/components/videotheque/ui-bits";
 import { ShareSheet } from "@/components/videotheque/share-sheet";
 import { Button } from "@/components/ui/button";
 import { listReceived, respondGrant } from "@/lib/videotheque.functions";
@@ -40,9 +40,7 @@ function ReceivedPage() {
   return (
     <AppShell user={user} title="Académie">
       <div className="mx-auto max-w-[1000px] p-5 lg:p-8">
-        <span className="eyebrow">Académie</span>
-        <h1 className="mt-2 text-3xl font-extrabold">Formations reçues</h1>
-        <p className="mt-2 text-sm text-muted-foreground">Ce qu'on a partagé avec toi. Une fois acceptée, une formation reste à toi, même si tu changes d'équipe.</p>
+        <PageHeader title="Formations reçues" text="Ce qu'on a partagé avec toi. Une fois acceptée, une formation reste à toi, même si tu changes d'équipe." />
         <AcademyTabs />
         {q.isLoading ? <div className="mt-6 space-y-3">{[0, 1].map((i) => <div key={i} className="surface h-24 animate-pulse rounded-2xl" />)}</div>
           : q.isError ? <ErrorLine text="Formations indisponibles." onRetry={() => q.refetch()} /> : (
@@ -60,7 +58,7 @@ function ReceivedPage() {
             {!active.length && !pending.length ? (
               <EmptyState icon={Inbox} title="Aucune formation reçue pour l'instant" text="Quand ton leader partagera une formation avec toi, elle apparaîtra ici." />
             ) : (
-              <ul className="mt-5 grid gap-4 sm:grid-cols-2">
+              <ul className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                 {active.map((g) => (
                   <li key={g.grantId} className="surface flex flex-col rounded-2xl p-4 transition-colors duration-200 hover:border-primary/40">
                     <Link to="/academie/lecture/$courseId" params={{ courseId: g.courseId }} className="flex-1">

@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { canRevoke, checkVideoFile, groupByModule, MB, normalizeType, quotaOf, vtError } from "./videotheque";
+import { canRevoke, checkVideoFile, formatEta, formatTotal, groupByModule, MB, normalizeType, quotaOf, uploadRate, vtError } from "./videotheque";
 import { hasFeature } from "./plans";
 
 const f = (size: number, duration = 60, type = "video/mp4") => ({ size, duration, type, name: "a.mp4" });
@@ -52,4 +52,22 @@ test("regroupement par module en gardant l'ordre", () => {
 
 test("erreurs base traduites", () => {
   expect(vtError(new Error("LIMITE_STOCKAGE:2147483648"))).toContain("espace vidéo est plein");
+});
+
+describe("affichage de l'envoi", () => {
+  test("débit sur la fenêtre d'échantillons", () => {
+    expect(uploadRate([{ t: 0, sent: 0 }, { t: 2000, sent: 4 * MB }])).toBe(2 * MB);
+    expect(uploadRate([{ t: 0, sent: 0 }, { t: 500, sent: MB }])).toBe(0); // moins d'1 s : inconnu
+    expect(uploadRate([{ t: 0, sent: 0 }])).toBe(0);
+  });
+  test("temps restant", () => {
+    expect(formatEta(30 * MB, MB)).toBe("30 s");
+    expect(formatEta(90 * MB, MB)).toBe("2 min");
+    expect(formatEta(MB, 0)).toBeNull();
+  });
+  test("durée totale d'une formation", () => {
+    expect(formatTotal(45 * 60)).toBe("45 min");
+    expect(formatTotal(65 * 60)).toBe("1 h 05");
+    expect(formatTotal(24)).toBe("< 1 min");
+  });
 });

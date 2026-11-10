@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { Archive, Film, MoreHorizontal, Pencil, Play, Plus, RotateCcw, Search } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { AcademyTabs, CardSkeletons, EmptyState, ErrorLine } from "@/components/videotheque/academy-tabs";
-import { StorageMeter, VideoStatusBadge } from "@/components/videotheque/ui-bits";
+import { PageHeader, StorageMeter, VideoStatusBadge } from "@/components/videotheque/ui-bits";
 import { UploadSheet } from "@/components/videotheque/upload-sheet";
 import { FilePlayer } from "@/components/videotheque/file-player";
 import { UpgradeCard } from "@/components/plan-gate";
@@ -64,9 +64,8 @@ function VideosPage() {
   return (
     <AppShell user={user} title="Académie">
       <div className="mx-auto max-w-[1100px] p-5 pb-28 sm:pb-5 lg:p-8">
-        <span className="eyebrow">Académie</span>
-        <h1 className="mt-2 text-3xl font-extrabold">Ma vidéothèque</h1>
-        <p className="mt-2 text-sm text-muted-foreground">Tes vidéos restent privées. Tu choisis ensuite lesquelles utiliser dans tes formations.</p>
+        <PageHeader title="Ma vidéothèque" text="Tes vidéos restent privées. Tu choisis ensuite lesquelles utiliser dans tes formations."
+          action={d?.canImport && d.videos.length > 0 ? <Button className="min-h-11" onClick={() => setOpen(true)}><Plus className="size-4" />Ajouter une vidéo</Button> : null} />
         <AcademyTabs />
 
         {q.isLoading ? <CardSkeletons /> : q.isError ? <ErrorLine text="Vidéos indisponibles pour le moment." onRetry={() => q.refetch()} /> : d && !d.canImport && !d.videos.length ? (
@@ -75,8 +74,7 @@ function VideosPage() {
           <>
             <div className="surface mt-6 flex flex-col gap-3 rounded-2xl p-4 sm:flex-row sm:items-center">
               <StorageMeter used={d.usedBytes} total={d.quota.totalBytes} />
-              {d.canImport ? <Button className="hidden min-h-11 sm:inline-flex" onClick={() => setOpen(true)}><Plus className="size-4" />Ajouter une vidéo</Button>
-                : <p className="text-xs text-muted-foreground">Import disponible à partir du plan Pro. Tes vidéos existantes restent consultables.</p>}
+              <p className="text-xs text-muted-foreground sm:max-w-[45%] sm:text-right">{d.canImport ? `${d.videos.filter((v) => !v.archived).length} vidéo${d.videos.filter((v) => !v.archived).length > 1 ? "s" : ""} · ${formatBytes(d.quota.maxBytes)} max par vidéo` : "Import disponible à partir du plan Pro. Tes vidéos existantes restent consultables."}</p>
             </div>
 
             {d.videos.length > 0 && (

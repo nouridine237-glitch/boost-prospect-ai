@@ -5,6 +5,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { ChevronRight, Layers, Plus, Users } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
+import { CourseStatusBadge, PageHeader } from "@/components/videotheque/ui-bits";
 import { AcademyTabs, EmptyState, ErrorLine } from "@/components/videotheque/academy-tabs";
 import { UpgradeCard } from "@/components/plan-gate";
 import { Button } from "@/components/ui/button";
@@ -39,9 +40,8 @@ function CoursesPage() {
   return (
     <AppShell user={user} title="Académie">
       <div className="mx-auto max-w-[1000px] p-5 lg:p-8">
-        <span className="eyebrow">Académie</span>
-        <h1 className="mt-2 text-3xl font-extrabold">Mes formations</h1>
-        <p className="mt-2 text-sm text-muted-foreground">Assemble tes vidéos en modules et leçons, puis partage-les avec ton équipe.</p>
+        <PageHeader title="Mes formations" text="Assemble tes vidéos en modules et leçons, puis partage-les avec ton équipe."
+          action={q.data?.canCreate ? <Button className="min-h-11" onClick={() => setOpen(true)}><Plus className="size-4" />Nouvelle formation</Button> : null} />
         <AcademyTabs />
         {q.isLoading ? (
           <div className="mt-6 space-y-3">{[0, 1, 2].map((i) => <div key={i} className="surface h-20 animate-pulse rounded-2xl" />)}</div>
@@ -49,18 +49,18 @@ function CoursesPage() {
           <div className="mt-6"><UpgradeCard minPlan="pro">Crée tes propres formations vidéo à partir du plan Pro.</UpgradeCard></div>
         ) : (
           <>
-            {q.data?.canCreate && <Button className="mt-6 min-h-11" onClick={() => setOpen(true)}><Plus className="size-4" />Nouvelle formation</Button>}
+            {q.data?.canCreate && <Button className="mt-6 min-h-11 w-full sm:hidden" onClick={() => setOpen(true)}><Plus className="size-4" />Nouvelle formation</Button>}
             {!active.length ? (
               <EmptyState icon={Layers} title="Aucune formation pour l'instant" text="Commence par ajouter des vidéos dans ta vidéothèque, puis crée une formation." />
             ) : (
-              <ul className="mt-5 space-y-3">
+              <ul className="mt-5 grid gap-3 md:grid-cols-2">
                 {active.map((c) => (
                   <li key={c.id}>
                     <Link to="/academie/mes-formations/$id" params={{ id: c.id }} className="surface flex min-h-20 items-center gap-4 rounded-2xl p-4 transition-colors duration-200 hover:border-primary/40">
                       <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-primary/12 text-primary"><Layers className="size-5" /></span>
                       <span className="min-w-0 flex-1">
                         <span className="block truncate font-semibold">{c.title}</span>
-                        <span className="mt-0.5 block text-xs text-muted-foreground">{c.lessons} leçon{c.lessons > 1 ? "s" : ""} · {c.version ? `Publiée v${c.version}` : "Brouillon"}{c.recipients ? <> · <Users className="inline size-3" /> {c.recipients}</> : null}</span>
+                        <span className="mt-1.5 flex flex-wrap items-center gap-2 text-xs text-muted-foreground"><CourseStatusBadge version={c.version} />{c.lessons} leçon{c.lessons > 1 ? "s" : ""}{c.recipients ? <span className="inline-flex items-center gap-1"><Users className="size-3" />{c.recipients}</span> : null}</span>
                       </span>
                       <ChevronRight className="size-5 text-muted-foreground" />
                     </Link>

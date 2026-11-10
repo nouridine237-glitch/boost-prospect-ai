@@ -66,6 +66,31 @@ export function formatDuration(s: number) {
   return `${m}:${String(r).padStart(2, "0")}`;
 }
 
+/** Durée totale lisible : « 45 min », « 1 h 05 ». */
+export function formatTotal(s: number) {
+  const m = Math.max(0, Math.round(s / 60));
+  if (s > 0 && m === 0) return "< 1 min";
+  if (m < 60) return `${m} min`;
+  return `${Math.floor(m / 60)} h ${String(m % 60).padStart(2, "0")}`;
+}
+
+/** Débit d'envoi en octets/s sur une fenêtre glissante d'échantillons { t (ms), sent (octets) }. */
+export function uploadRate(samples: { t: number; sent: number }[]) {
+  if (samples.length < 2) return 0;
+  const a = samples[0]!, b = samples[samples.length - 1]!;
+  const dt = (b.t - a.t) / 1000;
+  return dt >= 1 && b.sent > a.sent ? (b.sent - a.sent) / dt : 0;
+}
+
+/** Temps restant lisible, ou null si le débit est inconnu. */
+export function formatEta(remainingBytes: number, rate: number) {
+  if (rate <= 0 || remainingBytes <= 0) return null;
+  const s = Math.ceil(remainingBytes / rate);
+  if (s < 60) return `${s} s`;
+  if (s < 3600) return `${Math.ceil(s / 60)} min`;
+  return `${Math.floor(s / 3600)} h ${String(Math.ceil((s % 3600) / 60)).padStart(2, "0")}`;
+}
+
 /** Retrait volontaire : en attente toujours, actif seulement dans les 7 jours suivant le partage. */
 export function canRevoke(g: { status: string; created_at: string }, now = new Date()) {
   if (g.status === "en_attente") return true;

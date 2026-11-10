@@ -1,9 +1,10 @@
-import { AlertTriangle, Archive, CheckCircle2, Eye, Loader2, Repeat, ShieldCheck, type LucideIcon } from "lucide-react";
+import { AlertTriangle, Archive, CheckCircle2, Eye, Loader2, PenLine, Repeat, ShieldCheck, type LucideIcon } from "lucide-react";
 import { formatBytes } from "@/lib/videotheque";
 
-type Tone = "primary" | "success" | "destructive" | "muted";
+type Tone = "primary" | "success" | "destructive" | "muted" | "warning";
 const TONE: Record<Tone, string> = {
   primary: "border-primary/30 bg-primary/12 text-primary",
+  warning: "border-warning/30 bg-warning/12 text-warning",
   success: "border-success/30 bg-success/12 text-success",
   destructive: "border-destructive/30 bg-destructive/12 text-destructive",
   muted: "border-border/60 bg-muted/80 text-muted-foreground",
@@ -23,6 +24,28 @@ export function VideoStatusBadge({ status, archived, className }: { status: stri
   if (status === "pret") return <StatusBadge tone="success" icon={CheckCircle2} className={className}>Prête</StatusBadge>;
   if (status === "echec") return <StatusBadge tone="destructive" icon={AlertTriangle} className={className}>Échec</StatusBadge>;
   return <StatusBadge tone="primary" icon={Loader2} className={className}>Envoi</StatusBadge>;
+}
+
+/** Statut d'une formation : Brouillon, Publiée vN, ou Modifiée (changements non publiés). */
+export function CourseStatusBadge({ version, changed, archived }: { version: number | null | undefined; changed?: boolean; archived?: boolean }) {
+  if (archived) return <StatusBadge tone="muted" icon={Archive}>Archivée</StatusBadge>;
+  if (!version) return <StatusBadge tone="muted" icon={PenLine}>Brouillon</StatusBadge>;
+  if (changed) return <StatusBadge tone="warning" icon={PenLine}>Modifiée · v{version}</StatusBadge>;
+  return <StatusBadge tone="success" icon={CheckCircle2}>Publiée v{version}</StatusBadge>;
+}
+
+/** En-tête de page : sur-titre, titre, phrase d'aide et action principale (à droite dès la tablette). */
+export function PageHeader({ eyebrow = "Académie", title, text, action }: { eyebrow?: string; title: string; text: string; action?: React.ReactNode }) {
+  return (
+    <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+      <div className="min-w-0">
+        <span className="eyebrow">{eyebrow}</span>
+        <h1 className="mt-2 text-3xl font-extrabold tracking-tight">{title}</h1>
+        <p className="mt-2 max-w-xl text-sm text-muted-foreground">{text}</p>
+      </div>
+      {action && <div className="hidden shrink-0 sm:block">{action}</div>}
+    </div>
+  );
 }
 
 /** Jauge d'espace : orange dès 80 %, rouge dès 95 %. */

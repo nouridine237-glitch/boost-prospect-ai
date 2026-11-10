@@ -18,3 +18,5 @@
 - [x] Académie vidéo phase B — coach IA contextuel par leçon (quota partagé)
 - [x] Académie vidéo — suivi de progression des leçons (reprise, % par cours et global)
 - [x] Vidéothèque MLM V1 — import reprenable (Pro+), formations/modules/leçons, partage durable en équipe, lecture privée, modération
+- [x] Vidéothèque — refonte visuelle : pastilles, jauge, partage, accès durable ; éditeur en parcours (modules repliables, barre Publier) ; envoi détaillé (Galerie/Fichiers, glisser-déposer, vitesse, temps restant) ; sommaire du lecteur ; mise en page ordinateur
+- [ ] Vidéothèque — nombre d'invitations sur l'onglet « Formations reçues » (non demandé dans cette passe)
