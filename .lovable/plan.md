@@ -2,7 +2,7 @@
 
 Ce plan découle de l'audit en lecture seule du 11 nov. 2026. Rien n'est encore modifié.
 
-**Règles qui ne changent pas :** import à partir de Pro, quotas de stockage, un seul niveau de repartage, accès permanent après acceptation, version reçue conservée, seule la modération peut couper un accès.
+**Règles qui ne changent pas :** import à partir de Pro, quotas de stockage, un seul niveau de repartage, accès permanent après acceptation, version reçue conservée, seule la modération rend une leçon indisponible, et seul un admin peut retirer une formation entière.
 
 ## Décisions validées
 1. **Repartage :** tout membre autorisé par le propriétaire peut repartager, quel que soit son plan. Conditions :
@@ -19,7 +19,7 @@ Ce plan découle de l'audit en lecture seule du 11 nov. 2026. Rien n'est encore 
 1. P1-B : délai de retrait basé sur l'acceptation (petit, environ 1 crédit, une migration)
 2. P1-A : partage impossible si une vidéo est indisponible (moyen, 2 crédits, une migration)
 3. P1-C : alignement des règles de repartage, avec tests (petit, environ 1 crédit, sans migration)
-4. P2 : réduction des droits, états d'écran, tests en base (moyen, 2 à 3 crédits, une migration)
+4. P2 : réduction des droits, états d'écran, modération par leçon, tests en base (moyen, 4 à 5 crédits, deux migrations)
 
 Chaque étape : tests, build propre, vérification à 360 px et 1280 px. Rien n'est publié.
 
@@ -135,10 +135,50 @@ Chaque étape : tests, build propre, vérification à 360 px et 1280 px. Rien n'
   - fermeture possible avec « Masquer », mémorisé dans l'appareil seulement ; aucune donnée nouvelle.
 - Propriétaire sous Business : voir P1-C (mode « upgrade » dans la fenêtre de partage).
 
-**P2-4 Portée de la modération (décision à prendre)**
-- Option A, actuelle : la formation entière est coupée. Simple et prudente.
-- Option B, recommandée : seule la leçon de la vidéo modérée devient indisponible. L'accès au reste est conservé, et la vidéo n'est jamais plus servie (`lessonAccess` refuse déjà une vidéo modérée). Cela respecte mieux « accès permanent ». La formation entière n'est retirée que sur une décision admin explicite (nouveau paramètre `_whole_course`).
-- Option B touche `moderate_video` (signature à conserver, nouvelle fonction `moderate_course` à part) et le message d'écran.
+**P2-4 Modération limitée à la leçon (option B, décision finale)**
+
+Règle : une vidéo supprimée, modérée ou indisponible rend seulement **sa leçon** indisponible. Les autres leçons et la formation restent accessibles. Retirer toute une formation est une action admin explicite et distincte.
+
+- **Base de données** (migration `0033_moderation_lesson_scope.sql`)
+  - `moderate_video(_video_id, _reason)` : même signature. Elle marque la vidéo (`moderated_at`, `deleted_at`, motif) et clôt les signalements. Elle **ne touche plus** `course_grants`.
+  - Nouvelle fonction `moderate_course(_course_id uuid, _reason text)` :
+    - réservée aux admins, motif obligatoire (5 caractères minimum) ;
+    - passe en `retire_moderation` tous les accès en attente ou actifs de cette formation ;
+    - archive la formation ;
+    - exécution réservée à `authenticated`, avec un contrôle `has_role` admin à l'intérieur.
+  - Aucune modification des versions publiées : elles restent immuables et gardent la référence à la vidéo. Celle-ci n'est simplement plus servie.
+- **Contrôles d'accès**
+  - `lessonAccess` refuse déjà une vidéo modérée ou supprimée : aucun lien temporaire n'est émis pour cette leçon. À garder et à tester.
+  - `getCourseReader` marque déjà `available: false` seulement sur ces leçons. À garder et à tester.
+  - Ajout : `getLessonPlayUrl` revérifie que le fichier existe avant d'émettre le lien. Fichier absent = leçon indisponible, sans erreur générale.
+- **Versions et partage**
+  - La règle P1-A s'applique toujours : un **nouveau** partage d'une version contenant une vidéo indisponible est refusé (`VERSION_INCOMPLETE`).
+  - Les accès déjà acceptés restent actifs. Seule la leçon concernée est grisée.
+  - Le propriétaire est invité à republier sans cette vidéo. Les destinataires peuvent alors mettre à jour leur version, s'ils le veulent.
+- **Progression** : la leçon indisponible est exclue du total affiché (`courseProgress` calculé sur les leçons disponibles). Aucune progression enregistrée n'est effacée.
+- **Écran membre (lecteur et « Reçues »)**
+  - Leçon grisée : « Cette vidéo n'est plus disponible », sans détail privé.
+  - Le reste du sommaire est inchangé.
+  - Formation retirée par un admin : carte « Retirée par la modération », sans lecture (voir P2-3).
+- **Écran propriétaire** : badge « 1 leçon indisponible » sur la formation, et bouton « Republier sans cette vidéo » vers l'éditeur.
+- **Écran admin (`admin-video-reports`)**
+  - Deux actions distinctes, avec confirmation :
+    - « Retirer la vidéo » : leçon seulement, action par défaut ;
+    - « Retirer toute la formation » : motif obligatoire et avertissement « coupe l'accès de N personnes ».
+  - L'action « formation » n'est proposée que si la vidéo appartient à une formation partagée.
+- **Tests**
+  - En base, dans un bloc annulé :
+    - après `moderate_video`, les accès restent `actif` et `lessonAccess` refuse la seule leçon concernée ;
+    - après `moderate_course`, tous les accès passent en `retire_moderation` ;
+    - un non-admin reçoit `ADMIN_REQUIS` ;
+    - un nouveau partage de la version concernée est refusé.
+  - Automatique : progression calculée sans la leçon indisponible.
+  - **[MANUEL]**
+    1. Partager à B une formation de 3 leçons.
+    2. Un admin modère la vidéo 2 : B lit les leçons 1 et 3, la 2 est grisée.
+    3. Le propriétaire republie, puis B met à jour sa version : la leçon 2 disparaît.
+    4. Un admin retire la formation entière : B la voit « Retirée ».
+- **Coût** : moyen, environ 2 crédits, dans le lot P2.
 
 **P2-5 Tests en base enregistrés dans le projet**
 - Nouveau fichier `src/lib/videotheque.sql-scenarios.md`, ou script `scripts/test-sharing.sql`, exécuté dans un bloc DO entièrement annulé. Scénarios :
@@ -154,7 +194,7 @@ Avec 3 comptes (A Business, B membre Gratuit de A, C membre de A ou de B) :
 1. Partage par A, puis repartage par B, sans option de repartage chez C.
 2. Retrait selon l'acceptation : B accepte 2 jours après le partage, A peut retirer jusqu'à acceptation + 7 jours.
 3. A passe en Pro, B quitte l'équipe, A archive la formation : la lecture continue pour B et C.
-4. Vidéo modérée : effet selon l'option choisie en P2-4.
+4. Vidéo modérée : seule sa leçon est grisée. Le retrait de la formation entière passe seulement par l'action admin dédiée.
 5. Lecture et reprise sur Android (360 px) et sur ordinateur (1280 px).
 
 ## Risques de régression
@@ -164,5 +204,5 @@ Avec 3 comptes (A Business, B membre Gratuit de A, C membre de A ou de B) :
 
 ## À valider avant de commencer
 1. L'ordre P1-B, puis P1-A, puis P1-C, puis P2.
-2. La portée de la modération : option A (actuelle) ou option B (recommandée).
+2. Modération : option B retenue (leçon seule ; retrait d'une formation entière = action admin distincte).
 3. La suite des tâches sera reportée dans `roadmap.md` une fois le plan validé : en mode plan, seul ce document peut être modifié.
