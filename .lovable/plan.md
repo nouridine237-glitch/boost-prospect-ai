@@ -1,86 +1,168 @@
-# Audit en lecture seule : partage vidéo MLM V1
+# Plan de correction : partage vidéo MLM V1
 
-Rien n'a été modifié : aucun fichier, aucune donnée, aucun réglage, rien publié.
+Ce plan découle de l'audit en lecture seule du 11 nov. 2026. Rien n'est encore modifié.
 
-**Sources.** Code actuel : `src/lib/videotheque.functions.ts`, `src/lib/videotheque-access.server.ts`, `src/lib/videotheque.ts`, `src/components/videotheque/share-sheet.tsx`, `drizzle/migrations/0028_videotheque.sql`. Base réelle : définitions des fonctions, droits d'exécution (`proacl`), droits sur les tables, `pg_policies`.
+**Règles qui ne changent pas :** import à partir de Pro, quotas de stockage, un seul niveau de repartage, accès permanent après acceptation, version reçue conservée, seule la modération peut couper un accès.
 
-**Légende.** [CODE] = lu dans le code. [DB] = vu en base. [TEST] = vérifié par un test présent dans le projet. [MANUEL] = à tester à la main. [RISQUE] = point de risque.
+## Décisions validées
+1. **Repartage :** tout membre autorisé par le propriétaire peut repartager, quel que soit son plan. Conditions :
+   - il a un accès actif avec le droit de repartager ;
+   - il est toujours membre actif de l'équipe du propriétaire ;
+   - il partage seulement à son équipe directe ou à l'équipe directe du propriétaire.
 
-## Tableau des exigences
+   Les destinataires du 2e niveau ne repartagent jamais. Seul le partage initial par le propriétaire exige Business ou admin.
+2. **Délai de retrait :** les 7 jours partent de l'**acceptation**. Une invitation en attente reste retirable à tout moment. Au-delà de 7 jours après l'acceptation, l'accès est définitif, sauf modération.
 
-| # | Exigence | Statut | Preuves |
-|---|---|---|---|
-| 1 | Import à partir de Pro | Conforme | [DB] `user_videos_guard` : refus `PLAN_PAYANT_REQUIS` si `effective_plan = gratuit`, plus `video_quota` (200/300/500 Mo et 2/5/15 Go). [TEST] `videotheque.test.ts`, bloc « import à partir du plan Pro » (règles côté app seulement, pas le blocage en base). |
-| 2a | Partage par le propriétaire réservé à Business ou admin | Conforme | [DB] `grant_share` : `IF NOT _can_lead(u) THEN PLAN_BUSINESS_REQUIS`. `_can_lead` = `feature_plan = business` ou rôle admin. Un essai Pro offert par parrainage ne suffit pas. |
-| 2b | Membre autorisé à repartager | Conforme à la règle produit, mais Partiel face au plan technique | [DB] Conditions : le membre a un accès actif avec `can_reshare`, et un lien d'équipe actif avec le propriétaire. **Son plan à lui (`_can_lead(member)`) n'est pas vérifié.** Ça correspond à « les membres autorisés peuvent partager ». Décision à confirmer : un membre Gratuit autorisé peut repartager. |
-| 2c | Destinataires d'un repartage | Conforme | [DB] Destinataires possibles : membres directs du membre (`team_links.leader_id = u`) ou membres directs du propriétaire. Le membre et le propriétaire sont exclus. [CODE] `shareTargets` applique la même règle (groupes « Mon équipe » et « Équipe de mon leader »). |
-| 3 | Un seul niveau de repartage | Conforme | [DB] Accès créé par un repartage : `can_reshare = _can_reshare AND is_owner`, donc toujours faux. `grant_set_reshare` agit seulement si `grantor_id = owner_id`. Un accès reçu au niveau 2 ne peut donc jamais obtenir le droit de repartager. [CODE] La fenêtre de partage envoie `canReshare: isOwner && reshare`. [TEST] Aucun test automatisé dans le projet. |
-| 4 | Accès permanent malgré plan, équipe ou rôle | Conforme | [CODE] `lessonAccess`, `getCourseReader`, `listReceived` et `getLessonPlayUrl` vérifient seulement l'accès actif, la version reçue, et que la vidéo n'est ni modérée ni supprimée. Aucun contrôle du plan, de l'équipe ou du rôle. [DB] Aucune fonction ne modifie les accès quand un plan, un lien d'équipe ou un rôle change. Le lien d'équipe ne compte que pour le droit de repartager à l'avenir. |
-| 4b | Accès conservé si la formation ou la vidéo est archivée | Conforme | [CODE] Les vérifications d'accès ignorent `academy_courses.archived_at`. `archiveVideo` garde le fichier tant qu'un accès en attente ou actif renvoie à la vidéo (`videoReferences`). |
-| 5 | Retrait limité à 7 jours, invitation en attente retirable | Conforme | [DB] `grant_revoke` : refus `acces_definitif` si l'accès est actif et `created_at < now() - 7 days`. Une invitation en attente reste toujours retirable. Seuls le propriétaire et la personne qui a partagé peuvent retirer. [TEST] `canRevoke` (3 cas, côté app seulement). |
-| 5b | Cas limites du retrait | Partiel | [DB] Le délai part de la date du partage (`created_at`), pas de l'acceptation : accepter au 6e jour laisse environ 1 jour pour retirer. Un partage refait après un refus ou un retrait remet `created_at` à zéro, donc le délai repart, ce qui est logique. Au bout de exactement 7 jours, l'app et la base disent toutes deux « définitif » (comparaison stricte des deux côtés). Retirer l'accès d'un membre ne retire pas les repartages qu'il a déjà faits, ce qui va dans le sens de la permanence. Le propriétaire peut aussi retirer un repartage de moins de 7 jours. |
-| 6 | Version reçue conservée | Conforme | [DB] `course_grants.version_id` reste fixe ; seul le destinataire le change, via `grant_update_version`. Les versions ne peuvent pas être modifiées ni supprimées (lecture seule pour le propriétaire). |
-| 6b | Seule la modération coupe l'accès | Conforme, mais large | [DB] `moderate_video` passe en `retire_moderation` **tous** les accès dont la version contient la vidéo : la formation entière est coupée, pas seulement la leçon. Un accès coupé par la modération ne peut pas être réactivé par un nouveau partage. Seul un admin peut modérer. |
+**Constat en base :** aucun accès partagé n'existe aujourd'hui (table `course_grants` vide). Il n'y a donc aucun ancien accès sans date d'acceptation à reprendre.
 
-## Sécurité : base, fichiers et liens temporaires
+## Ordre de livraison
+1. P1-B : délai de retrait basé sur l'acceptation (petit, environ 1 crédit, une migration)
+2. P1-A : partage impossible si une vidéo est indisponible (moyen, 2 crédits, une migration)
+3. P1-C : alignement des règles de repartage, avec tests (petit, environ 1 crédit, sans migration)
+4. P2 : réduction des droits, états d'écran, tests en base (moyen, 2 à 3 crédits, une migration)
 
-- [DB] `grant_share`, `grant_respond`, `grant_revoke`, `grant_set_reshare`, `grant_update_version`, `course_publish_version`, `moderate_video` et `effective_plan` : exécutables seulement par `authenticated` et `service_role`.
-- [DB] Règles d'accès sur `course_grants` : lecture seule, pour le destinataire, la personne qui a partagé et le propriétaire. Aucune écriture directe possible.
-- [DB] Règles d'accès sur `course_versions` : lecture par le propriétaire seulement. Les destinataires lisent leur version uniquement via le serveur.
-- [DB] `video_views` n'a aucune règle d'accès : la table est fermée, le serveur seul l'utilise.
-- [DB] Fichiers (dossier `user-videos`) :
-  - lecture seulement dans son propre dossier ;
-  - ajout seulement si une vidéo `envoi` correspondante existe ;
-  - aucune règle de modification ou de suppression ;
-  - les destinataires n'ont aucun accès direct aux fichiers.
-- [CODE] Les liens temporaires (1 h) sont créés côté serveur par `getLessonPlayUrl`, seulement si `lessonAccess` accepte, et au plus 60 par heure.
-- [CODE] `getOwnVideoUrl` (aperçu par le propriétaire) passe par les règles d'accès de `user_videos`. Une vidéo supprimée ou modérée y est donc invisible.
+Chaque étape : tests, build propre, vérification à 360 px et 1280 px. Rien n'est publié.
 
-## Cohérence entre l'écran et le serveur
+---
 
-- `shareTargets` et `grant_share` suivent la même règle pour les destinataires. Écart : `shareTargets` ne vérifie pas `_can_lead` pour le propriétaire. Un propriétaire redescendu sous Business voit encore ses membres, puis reçoit le refus « Business requis » seulement au moment de partager (gêne d'affichage, sans risque).
-- `listReceived` affiche seulement les accès en attente et actifs. Un accès coupé par la modération disparaît sans explication.
-- `getCourseReader` et `lessonAccess` acceptent la même vidéo (non modérée, non supprimée).
+## P1-B : délai de 7 jours à partir de l'acceptation
 
-## Risques
+**Fichiers concernés**
+- Nouvelle migration `0030_grant_revoke_accepted_at.sql`, qui remplace `grant_revoke` par `CREATE OR REPLACE` en gardant la même signature et les mêmes droits.
+- `canRevoke` dans `src/lib/videotheque.ts`.
+- Les deux appels à `canRevoke` dans l'écran de partage et la liste des accès.
+- `listSharedGrants` (ou la lecture des accès côté propriétaire) : ajouter `accepted_at` aux champs lus.
 
-**P0 :** aucun trouvé.
+**Comportement actuel :** délai calculé depuis le partage (`created_at`).
 
-**P1**
-1. **Version publiée renvoyant à une vidéo supprimée.**
-   - Scénario : le propriétaire publie une version, archive la leçon sans republier, puis archive la vidéo. Si aucun accès en attente ou actif ne renvoie à cette version, le fichier est supprimé.
-   - Ensuite, `grant_share` partage toujours la dernière version sans revérifier ses vidéos. Le destinataire reçoit une leçon « indisponible ».
-   - Fichiers : `grant_share` et `videoReferences` (ce dernier ne compte que les accès, pas les versions partageables plus tard).
-   - Recommandation : refuser de partager une version dont une vidéo est supprimée ou modérée, ou bien compter « dernière version publiée » comme une référence dans `videoReferences`.
-2. **Décision à confirmer sur le repartage.** Un membre autorisé n'a pas besoin d'être Business (2b). Si le plan technique exigeait Business ou admin, il faut ajouter `_can_lead(u)` dans la partie repartage de `grant_share` et dans `shareTargets`.
+**Comportement cible (base, seule source de vérité)**
+- **Invitation en attente :** retirable à tout moment.
+- **Accès actif :** retirable si `now() < COALESCE(accepted_at, created_at) + interval '7 days'`.
+  - Comparaison stricte : à exactement 7 jours, l'accès est définitif.
+  - Les dates sont en `timestamptz`, calculées par l'horloge du serveur. Le fuseau du téléphone ne compte pas.
+- **Ancien accès actif sans date d'acceptation :** on se rabat sur la date du partage. Aucun cas n'existe aujourd'hui, mais c'est sûr pour l'avenir.
+- `grant_respond` remplit déjà `accepted_at = now()` à l'acceptation : aucun changement.
+- **Retrait d'un repartage :** même règle, selon la date d'acceptation par le destinataire de 2e niveau.
 
-**P2**
-3. `feature_plan` reste exécutable par `PUBLIC` et `anon`. Comme `auth.uid()` est vide pour un visiteur non connecté, la protection ne joue pas : n'importe qui peut lire le plan d'un utilisateur dont il connaît l'identifiant. Recommandation : retirer le droit d'exécution à `PUBLIC` et `anon`.
-4. `_can_lead` et `has_role` sont exécutables par tout utilisateur connecté : on peut savoir si un identifiant donné est admin. Fuite faible, mais à restreindre.
-5. Les tables `course_grants`, `course_versions`, `user_videos`, `video_views`, `academy_courses` et `academy_lessons` ont tous les droits pour `anon` et `authenticated` (`arwdDxtm`). Seules les règles d'accès protègent ces tables. Recommandation : réduire ces droits au strict nécessaire, par sécurité supplémentaire.
-6. La modération coupe la formation entière (6b). À garder ou à affiner, selon votre choix.
-7. Le délai de 7 jours part du partage, pas de l'acceptation (5b) : à confirmer comme voulu.
-8. Après une modération, l'accès disparaît de « Reçues » sans message, et l'écran de partage n'indique pas qu'un propriétaire n'est plus Business.
-9. `course_publish_version` ne vérifie pas `user_videos.archived_at`. Pas de gros risque : une vidéo archivée garde son fichier et reste lisible.
+**Côté écran :** `canRevoke({ status, accepted_at, created_at })` reprend la même formule, uniquement pour afficher ou masquer le bouton. La base reste juge.
 
-## Tests
+**Compatibilité :** même nom de fonction, mêmes paramètres, mêmes valeurs de retour (`revoque`, `acces_definitif`…).
 
-**Présents [TEST] :** règles côté app uniquement (`videotheque.test.ts`) : plans d'import, quotas, `canRevoke`, regroupement par module. **Aucun test présent dans le projet** ne vérifie `grant_*`, les règles d'accès ou les liens temporaires. Les vérifications faites en base pendant la construction ont été annulées après coup et ne sont pas enregistrées.
+**Tests**
+- Automatiques (`videotheque.test.ts`) :
+  - invitation en attente, même ancienne : retirable ;
+  - accepté il y a 6 j 23 h : retirable ;
+  - accepté il y a exactement 7 jours : non retirable ;
+  - partagé il y a 10 jours mais accepté il y a 2 jours : retirable ;
+  - accès actif sans date d'acceptation : on utilise la date du partage.
+- En base, dans un bloc annulé après coup : les mêmes cas, en réglant `created_at` et `accepted_at` à la main.
+- **[MANUEL]** Partager, accepter le lendemain, vérifier que le bouton « Retirer » reste présent jusqu'à acceptation + 7 jours.
 
-**À faire à la main [MANUEL] avec 3 comptes (A Business leader, B membre de A, C membre de B ou de A) :**
-1. A partage à B avec repartage. B accepte et repartage à C. C accepte, et l'option « Partager » est absente chez C.
-2. B tente de partager à quelqu'un hors des deux équipes : refus.
-3. A passe en Pro : B et C lisent toujours. A ne peut plus partager. B peut encore repartager tant qu'il est dans l'équipe de A.
-4. B quitte l'équipe : B et C lisent toujours, B ne peut plus repartager.
-5. A archive la formation : B et C lisent toujours. « Mettre à jour la version » ne propose rien.
-6. Retrait par A à moins de 7 jours : OK. Après plus de 7 jours : « accès définitif ». Une invitation en attente reste toujours retirable.
-7. A publie la version 2 : C garde la version 1 tant qu'il ne met pas à jour.
-8. Un admin modère une vidéo : l'accès à la formation de B et C est coupé.
-9. Lecture et reprise de lecture par C sur Android et sur ordinateur.
+**Acceptation :** la base et l'écran donnent le même résultat dans tous les cas ci-dessus.
 
-## Recommandations (rien n'est appliqué)
-1. P1-1 : bloquer le partage d'une version incomplète, ou protéger les vidéos de la dernière version publiée.
-2. P1-2 : confirmer si un membre autorisé doit être Business pour repartager.
-3. P2-3 à 5 : réduire les droits (`feature_plan`, `_can_lead`, `has_role`, tables). Migration additive : uniquement des retraits de droits.
-4. P2-6 à 8 : choix produit et petits ajustements d'écran.
-5. Ajouter des tests en base enregistrés dans le projet pour `grant_share`, `grant_revoke` et `grant_set_reshare`.
+## P1-A : aucun partage d'une version avec une vidéo indisponible
+
+**Fichiers concernés**
+- Migration `0031_share_requires_available_videos.sql` : `grant_share` et `course_publish_version`.
+- `videoReferences` et `archiveVideo` dans `videotheque-access.server.ts` et `videotheque.functions.ts`.
+- Message d'erreur dans `vtError`.
+
+**Comportement actuel :** `grant_share` partage la dernière version sans revérifier ses vidéos. Une vidéo absente de toute leçon et de tout accès peut être supprimée, alors que la dernière version la contient encore.
+
+**Comportement cible**
+1. **Contrôle au partage (`grant_share`) :** avant toute création d'accès, vérifier que chaque vidéo de la version à partager existe, est « Prête », n'est ni supprimée ni modérée. Sinon, refus `VERSION_INCOMPLETE`.
+   - Ça vaut pour le propriétaire (dernière version) comme pour le repartage (version reçue).
+   - Une vidéo **archivée** reste acceptée : son fichier est conservé.
+2. **Protection des vidéos de la dernière version :** `videoReferences` compte aussi les vidéos de la **dernière version publiée** de chaque formation non archivée.
+   - Effet : `archiveVideo` archive seulement et ne supprime plus le fichier.
+   - La suppression réelle reste possible quand la formation est archivée, ou republiée sans cette vidéo, et qu'aucun accès n'y renvoie.
+3. **Publication (`course_publish_version`) :** elle exige déjà « Prête », non modérée et non supprimée. On ajoute la vérification que le fichier existe dans le stockage (`storage.objects`, même chemin). Sinon, la leçon est exclue de la version, comme aujourd'hui pour une vidéo non prête.
+4. **Fichier réellement présent au partage :** la base ne voit pas l'état réel du stockage. Le serveur (`shareCourse`) vérifie donc, avant d'appeler `grant_share`, que chaque fichier de la version existe (`list` sur le dossier du propriétaire). Sinon : refus et message clair.
+
+**Écran :** message « Une vidéo de cette formation n'est plus disponible. Republie la formation avant de la partager. »
+
+**Compatibilité :** les accès existants ne sont pas touchés ; le contrôle ne s'applique qu'aux nouveaux partages.
+
+**Tests**
+- En base, dans un bloc annulé : partage refusé si une vidéo de la version est supprimée ou modérée, accepté si elle est seulement archivée. Le repartage d'une version incomplète est refusé.
+- Automatique : `videoReferences` compte la dernière version publiée (fonction pure extraite si nécessaire).
+- **[MANUEL]** Publier, retirer la leçon sans republier, archiver la vidéo : elle est archivée, pas supprimée. Le partage fonctionne encore. Archiver ensuite la formation et vérifier que la vidéo devient supprimable.
+
+**Risque :** le contrôle du stockage ajoute environ 1 appel par partage. C'est négligeable.
+
+## P1-C : repartage sans condition de plan (alignement)
+
+**Constat :** `grant_share` et `shareTargets` suivent déjà la règle décidée : aucune condition de plan pour le membre, Business ou admin seulement pour le propriétaire.
+
+**Travail**
+- **Aucun changement de règle.**
+- Commentaire explicite dans `grant_share` (dans la migration P1-A) et dans `shareTargets` : « le membre autorisé n'a pas de condition de plan ».
+- Ajout à `AGENTS.md`.
+- `shareTargets` pour le propriétaire : renvoyer `mode: "upgrade"` si `_can_lead` est faux. L'écran affiche alors « Le partage initial demande le plan Business », au lieu de lister les membres puis de refuser. Cela recoupe le P2-UI.
+- La fenêtre de partage n'affiche jamais l'option « Autoriser à repartager » en mode repartage. C'est déjà le cas : à garder et à tester.
+
+**Tests en base**
+- Membre Gratuit autorisé et dans l'équipe du propriétaire : peut repartager à son équipe et à celle du propriétaire.
+- Le même membre sans droit de repartage : refus.
+- Le même membre sorti de l'équipe : refus.
+- Destinataire hors des deux équipes : refus.
+- Accès de 2e niveau : toujours sans droit de repartager, `grant_set_reshare` sur cet accès renvoie « introuvable », et une tentative de repartage par ce destinataire est refusée.
+
+**[MANUEL]** Avec 3 comptes (A Business, B Gratuit membre de A, C membre de A) : A autorise B, B repartage à C, C ne voit pas l'option « Partager ».
+
+## P2 : sécurité, écrans, modération, tests
+
+**P2-1 Droits d'exécution** (migration `0032_tighten_grants.sql`)
+- `feature_plan` : `REVOKE EXECUTE ... FROM PUBLIC, anon`, puis donner l'exécution à `authenticated` et `service_role`.
+  - Avant, vérifier qu'aucune page publique (accueil, page de capture) ne l'appelle sans connexion : recherche dans le code.
+  - Les fonctions qui l'utilisent sont en `SECURITY DEFINER` et continuent de marcher, car elles s'exécutent avec les droits de leur propriétaire.
+- `_can_lead` : retirer l'exécution à `authenticated`. Elle n'est appelée qu'à l'intérieur d'autres fonctions `SECURITY DEFINER`. Aucun appel direct ne doit exister dans le code : à vérifier par recherche avant.
+- `has_role` : à garder pour `authenticated`, car les règles d'accès s'en servent et en ont besoin.
+  - Option : ajouter `is_admin()` sans paramètre, qui ne parle que de l'utilisateur connecté, pour les appels depuis l'app.
+  - Ne pas retirer `has_role` tout de suite : sinon les règles d'accès cassent.
+
+**P2-2 Droits sur les tables** (même migration)
+- Retirer à `anon` tous les droits sur : `course_grants`, `course_versions`, `user_videos`, `video_views`, `academy_courses`, `academy_lessons`.
+- `authenticated` : garder seulement `SELECT` sur `course_grants`, `course_versions` et `video_views` (pour cette dernière, aucune règle d'accès : elle reste fermée). Garder `SELECT`, `INSERT`, `UPDATE` sur `user_videos`, `academy_courses` et `academy_lessons`. Retirer partout `DELETE`, `TRUNCATE`, `REFERENCES` et `TRIGGER`.
+- `service_role` : `ALL`, inchangé.
+- Avant la migration : rechercher dans le code tout `.delete()` ou écriture directe sur ces tables.
+- Les catalogues publics d'Académie utilisés par la page d'accueil : à vérifier, et garder `SELECT` pour `anon` si une page publique les lit.
+
+**P2-3 Écrans**
+- « Reçues » :
+  - `listReceived` lit aussi `retire_moderation` ;
+  - carte grisée « Retirée par la modération » sans bouton de lecture ;
+  - fermeture possible avec « Masquer », mémorisé dans l'appareil seulement ; aucune donnée nouvelle.
+- Propriétaire sous Business : voir P1-C (mode « upgrade » dans la fenêtre de partage).
+
+**P2-4 Portée de la modération (décision à prendre)**
+- Option A, actuelle : la formation entière est coupée. Simple et prudente.
+- Option B, recommandée : seule la leçon de la vidéo modérée devient indisponible. L'accès au reste est conservé, et la vidéo n'est jamais plus servie (`lessonAccess` refuse déjà une vidéo modérée). Cela respecte mieux « accès permanent ». La formation entière n'est retirée que sur une décision admin explicite (nouveau paramètre `_whole_course`).
+- Option B touche `moderate_video` (signature à conserver, nouvelle fonction `moderate_course` à part) et le message d'écran.
+
+**P2-5 Tests en base enregistrés dans le projet**
+- Nouveau fichier `src/lib/videotheque.sql-scenarios.md`, ou script `scripts/test-sharing.sql`, exécuté dans un bloc DO entièrement annulé. Scénarios :
+  - `grant_share` : propriétaire non Business, destinataire hors équipe, limites 50 par jour et 200 au total, version incomplète ;
+  - `grant_revoke` : en attente, accepté depuis moins de 7 jours, à exactement 7 jours, plus de 7 jours ; par la personne qui a partagé ; par un tiers ;
+  - `grant_set_reshare` : propriétaire contre accès de 2e niveau ;
+  - version immuable : `UPDATE` ou `DELETE` sur `course_versions` refusés pour `authenticated` ;
+  - accès durable : propriétaire passé en Gratuit, lien d'équipe terminé, formation archivée, puis `lessonAccess` doit toujours accepter.
+- Les tests automatiques de l'app restent dans `bun:test`.
+
+## Tests manuels globaux (Android et ordinateur)
+Avec 3 comptes (A Business, B membre Gratuit de A, C membre de A ou de B) :
+1. Partage par A, puis repartage par B, sans option de repartage chez C.
+2. Retrait selon l'acceptation : B accepte 2 jours après le partage, A peut retirer jusqu'à acceptation + 7 jours.
+3. A passe en Pro, B quitte l'équipe, A archive la formation : la lecture continue pour B et C.
+4. Vidéo modérée : effet selon l'option choisie en P2-4.
+5. Lecture et reprise sur Android (360 px) et sur ordinateur (1280 px).
+
+## Risques de régression
+- P2-1 et P2-2 : appels directs oubliés. Ils seront recherchés dans le code avant la migration, et la migration ne fera que retirer des droits.
+- P1-A : un partage pourrait être refusé alors qu'il fonctionnait avant. C'est voulu, et le message est clair.
+- P1-B : aucun accès existant concerné.
+
+## À valider avant de commencer
+1. L'ordre P1-B, puis P1-A, puis P1-C, puis P2.
+2. La portée de la modération : option A (actuelle) ou option B (recommandée).
+3. La suite des tâches sera reportée dans `roadmap.md` une fois le plan validé : en mode plan, seul ce document peut être modifié.
