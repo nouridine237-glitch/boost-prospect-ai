@@ -20,3 +20,6 @@
 - [x] Vidéothèque MLM V1 — import reprenable (Pro+), formations/modules/leçons, partage durable en équipe, lecture privée, modération
 - [x] Vidéothèque — refonte visuelle : pastilles, jauge, partage, accès durable ; éditeur en parcours (modules repliables, barre Publier) ; envoi détaillé (Galerie/Fichiers, glisser-déposer, vitesse, temps restant) ; sommaire du lecteur ; mise en page ordinateur
 - [ ] Vidéothèque — nombre d'invitations sur l'onglet « Formations reçues » (non demandé dans cette passe)
+- [x] Vidéothèque P0 : taille exacte à la finalisation, reprise TUS liée à la vidéo, jeton rafraîchi avant chaque envoi
+- [ ] Vidéothèque P1-4 historique des échecs — reporté (décision utilisateur)
+- [ ] Vidéothèque P2-5 trafic — reporté ; décision : alerte uniquement, aucun ralentissement ni blocage

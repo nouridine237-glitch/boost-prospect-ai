@@ -12,7 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { CATEGORIES, checkVideoFile, formatBytes, formatDuration, formatEta, normalizeType, quotaOf, uploadRate, vtError } from "@/lib/videotheque";
 import { createVideoUpload, finalizeVideoUpload, markUploadFailed } from "@/lib/videotheque.functions";
-import { readLocalVideo, startResumableUpload, uploadThumb, type LocalMeta, type UploadHandle } from "./upload";
+import { isSessionExpired, readLocalVideo, startResumableUpload, uploadThumb, type LocalMeta, type UploadHandle } from "./upload";
 
 type Phase = "choose" | "details" | "sending" | "paused" | "failed" | "checking";
 
@@ -88,7 +88,10 @@ export function UploadSheet({ open, onOpenChange, plan, usedBytes }: { open: boo
           samples.current = [...samples.current.filter((x) => now - x.t < 8000), { t: now, sent: s }];
           setRate(uploadRate(samples.current));
         },
-        onError: () => setPhase("failed"),
+        onError: (e) => {
+          if (isSessionExpired(e)) { setProblem("Session expirée. Reconnecte-toi dans un autre onglet, puis appuie sur Reprendre."); setPhase("paused"); return; }
+          setPhase("failed");
+        },
         onSuccess: async () => {
           setPhase("checking");
           const res = await finalize({ data: { id: r.id } }).catch(() => ({ status: "echec" }));
@@ -113,7 +116,7 @@ export function UploadSheet({ open, onOpenChange, plan, usedBytes }: { open: boo
   const pct = Math.min(100, Math.round((sent / total) * 100));
   const eta = phase === "sending" ? formatEta(total - sent, rate) : null;
   const pause = () => { handle.current?.pause(); samples.current = []; setRate(0); setPhase("paused"); };
-  const resume = () => { handle.current?.resume(); setPhase("sending"); };
+  const resume = () => { setProblem(""); handle.current?.resume(); setPhase("sending"); };
   const retry = () => { samples.current = []; setRate(0); if (handle.current && videoId) { handle.current.resume(); setProblem(""); setPhase("sending"); } else void send(); };
   const step = phase === "choose" ? 1 : phase === "details" ? 2 : 3;
   const invalid = file && meta ? !!checkVideoFile({ size: file.size, type: normalizeType(file.type, file.name) ?? "", name: file.name, duration: meta.duration }, plan, usedBytes) : true;

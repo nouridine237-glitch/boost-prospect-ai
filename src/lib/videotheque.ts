@@ -134,3 +134,27 @@ export function vtError(e: unknown, fallback = "Action impossible pour le moment
 export const GRANT_STATUS_LABEL: Record<string, string> = {
   en_attente: "En attente", actif: "Actif", refuse: "Refusé", revoque_proprietaire: "Retiré", retire_moderation: "Retiré (modération)",
 };
+
+/** Une vidéo n'est « Prête » que si le fichier stocké a exactement la taille déclarée et un type cohérent. */
+export function isUploadComplete(stored: { size: number; mime: string } | null, declared: { size: number; mime: string }) {
+  if (!stored || !Number.isFinite(stored.size) || stored.size <= 0) return false;
+  if (stored.size !== declared.size) return false;
+  return stored.mime === declared.mime || stored.mime === "application/octet-stream" || stored.mime === "";
+}
+
+/** Empreinte de reprise TUS : liée au chemin (qui contient l'id de la vidéo), jamais au seul fichier. */
+export const tusFingerprint = (objectName: string) => `vt-upload:${objectName}`;
+
+/** Une reprise n'est acceptée que si l'envoi précédent visait exactement le même chemin. */
+export function isSameUploadTarget(prev: { metadata?: Record<string, string> } | null | undefined, objectName: string) {
+  return !!prev && prev.metadata?.["objectName"] === objectName && prev.metadata?.["bucketName"] === VIDEO_BUCKET;
+}
+
+export const SESSION_EXPIRED = "SESSION_EXPIREE";
+/** Réessayer sur erreur réseau / serveur et une fois sur 401/403 (jeton rafraîchi avant la requête suivante). */
+export function shouldRetryTus(status: number | null | undefined, attempt: number) {
+  if (!status) return true;
+  if (status === 401 || status === 403) return attempt < 1;
+  if (status === 409 || status === 423 || status === 429) return true;
+  return status >= 500;
+}

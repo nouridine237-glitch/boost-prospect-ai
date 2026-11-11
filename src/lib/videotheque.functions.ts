@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { ACCEPTED_TYPES, CATEGORIES, PLAY_URL_TTL_S, PLAY_URLS_PER_HOUR, VIDEO_BUCKET, quotaOf, vtError, type SnapshotLesson } from "@/lib/videotheque";
+import { ACCEPTED_TYPES, CATEGORIES, PLAY_URL_TTL_S, PLAY_URLS_PER_HOUR, VIDEO_BUCKET, quotaOf, vtError, isUploadComplete, type SnapshotLesson } from "@/lib/videotheque";
 import { hasFeature } from "@/lib/plans";
 import { courseProgress, lessonProgress, type ProgressRow } from "@/lib/academy-progress";
 
@@ -101,12 +101,19 @@ export const finalizeVideoUpload = createServerFn({ method: "POST" })
     const { data: v } = await context.supabase.from("user_videos").select("*").eq("id", data.id).maybeSingle();
     if (!v || v.status !== "envoi") return { status: v?.status ?? "introuvable" };
     const a = await admin();
-    const { data: files } = await a.storage.from(VIDEO_BUCKET).list(context.userId, { search: data.id });
-    const file = (files ?? []).find((f: any) => `${context.userId}/${f.name}` === v.storage_path);
-    const thumb = (files ?? []).find((f: any) => `${context.userId}/${f.name}` === v.thumb_path);
-    const size = Number(file?.metadata?.size ?? 0);
-    const mime = String(file?.metadata?.mimetype ?? "");
-    const ok = file && size > 0 && size <= Number(v.size_bytes) && (mime === v.mime_type || mime === "application/octet-stream" || mime === "");
+    const look = async () => {
+      const { data: files } = await a.storage.from(VIDEO_BUCKET).list(context.userId, { search: data.id });
+      return files ?? [];
+    };
+    let files = await look();
+    let file = files.find((f: any) => `${context.userId}/${f.name}` === v.storage_path);
+    // Le stockage peut publier le fichier avec un léger décalage : une seule nouvelle vérification.
+    if (!file) { await new Promise((r) => setTimeout(r, 2000)); files = await look(); file = files.find((f: any) => `${context.userId}/${f.name}` === v.storage_path); }
+    const thumb = files.find((f: any) => `${context.userId}/${f.name}` === v.thumb_path);
+    const ok = isUploadComplete(
+      file ? { size: Number(file.metadata?.size ?? 0), mime: String(file.metadata?.mimetype ?? "") } : null,
+      { size: Number(v.size_bytes), mime: v.mime_type },
+    );
     if (!ok) {
       await removeFiles(a, v);
       await a.from("user_videos").update({ status: "echec" }).eq("id", v.id);

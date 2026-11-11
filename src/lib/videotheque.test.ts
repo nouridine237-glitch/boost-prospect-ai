@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { canRevoke, checkVideoFile, formatEta, formatTotal, groupByModule, MB, normalizeType, quotaOf, uploadRate, vtError } from "./videotheque";
+import { canRevoke, checkVideoFile, formatEta, formatTotal, groupByModule, isSameUploadTarget, isUploadComplete, MB, normalizeType, quotaOf, shouldRetryTus, tusFingerprint, uploadRate, VIDEO_BUCKET, vtError } from "./videotheque";
 import { hasFeature } from "./plans";
 
 const f = (size: number, duration = 60, type = "video/mp4") => ({ size, duration, type, name: "a.mp4" });
@@ -70,4 +70,33 @@ describe("affichage de l'envoi", () => {
     expect(formatTotal(65 * 60)).toBe("1 h 05");
     expect(formatTotal(24)).toBe("< 1 min");
   });
+});
+
+describe("P0-1 taille exacte à la finalisation", () => {
+  const d = { size: 1000, mime: "video/mp4" };
+  test("taille identique acceptée", () => expect(isUploadComplete({ size: 1000, mime: "video/mp4" }, d)).toBe(true));
+  test("fichier tronqué refusé", () => expect(isUploadComplete({ size: 999, mime: "video/mp4" }, d)).toBe(false));
+  test("fichier plus grand refusé", () => expect(isUploadComplete({ size: 1001, mime: "video/mp4" }, d)).toBe(false));
+  test("fichier vide ou absent refusé", () => { expect(isUploadComplete({ size: 0, mime: "video/mp4" }, d)).toBe(false); expect(isUploadComplete(null, d)).toBe(false); });
+  test("type différent refusé", () => expect(isUploadComplete({ size: 1000, mime: "video/webm" }, d)).toBe(false));
+  test("type générique toléré", () => expect(isUploadComplete({ size: 1000, mime: "application/octet-stream" }, d)).toBe(true));
+});
+
+describe("P0-2 identité de reprise TUS", () => {
+  const a = "u1/vid-a.mp4", b = "u1/vid-b.mp4";
+  test("même fichier, deux vidéos : empreintes différentes", () => expect(tusFingerprint(a)).not.toBe(tusFingerprint(b)));
+  test("reprise acceptée seulement vers le même chemin", () => {
+    expect(isSameUploadTarget({ metadata: { objectName: a, bucketName: VIDEO_BUCKET } }, a)).toBe(true);
+    expect(isSameUploadTarget({ metadata: { objectName: a, bucketName: VIDEO_BUCKET } }, b)).toBe(false);
+    expect(isSameUploadTarget({ metadata: { objectName: a, bucketName: "autre" } }, a)).toBe(false);
+    expect(isSameUploadTarget({}, a)).toBe(false);
+  });
+});
+
+describe("P0-3 réessais et session", () => {
+  test("401/403 : un seul réessai après rafraîchissement", () => {
+    expect(shouldRetryTus(401, 0)).toBe(true); expect(shouldRetryTus(401, 1)).toBe(false); expect(shouldRetryTus(403, 0)).toBe(true);
+  });
+  test("réseau et serveur : réessai", () => { expect(shouldRetryTus(null, 3)).toBe(true); expect(shouldRetryTus(503, 2)).toBe(true); });
+  test("fichier refusé (413/400) : pas de réessai", () => { expect(shouldRetryTus(413, 0)).toBe(false); expect(shouldRetryTus(400, 0)).toBe(false); });
 });
