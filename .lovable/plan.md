@@ -1,114 +1,86 @@
-# Plan de correction — Vidéothèque MLM V1
+# Audit en lecture seule : partage vidéo MLM V1
 
-Ces règles ne changent pas : import à partir de Pro, quotas 2/5/15 Go et 200/300/500 Mo, repartage sur un seul niveau, accès permanent après acceptation, version reçue conservée, retrait volontaire seulement pendant 7 jours.
+Rien n'a été modifié : aucun fichier, aucune donnée, aucun réglage, rien publié.
 
-## Étapes d'exécution
-1. P0-1 Taille exacte (petit, environ 1 crédit)
-2. P0-2 Reprise TUS identifiée par la vidéo (moyen, 2 à 3 crédits)
-3. P0-3 Rafraîchissement du jeton de session (petit, 1 crédit)
-4. P1-4 Motif d'échec et reprise sûre (moyen, 2 à 3 crédits)
-5. P2-5 Limite de lecture mensuelle (moyen, 3 crédits ; seuils à valider par vous)
+**Sources.** Code actuel : `src/lib/videotheque.functions.ts`, `src/lib/videotheque-access.server.ts`, `src/lib/videotheque.ts`, `src/components/videotheque/share-sheet.tsx`, `drizzle/migrations/0028_videotheque.sql`. Base réelle : définitions des fonctions, droits d'exécution (`proacl`), droits sur les tables, `pg_policies`.
 
-Chaque étape : tests, build propre, vérification à 360 px et 1280 px. Vous validez avant de passer à la suivante si vous le souhaitez.
+**Légende.** [CODE] = lu dans le code. [DB] = vu en base. [TEST] = vérifié par un test présent dans le projet. [MANUEL] = à tester à la main. [RISQUE] = point de risque.
 
----
+## Tableau des exigences
 
-## P0-1 Taille stockée = taille déclarée
-- **Fichiers :** `finalizeVideoUpload` dans `src/lib/videotheque.functions.ts`, nouvelle fonction pure `isUploadComplete` dans `src/lib/videotheque.ts`.
-- **Actuel :** une vidéo est acceptée si la taille réelle est entre 1 octet et la taille déclarée. Un fichier tronqué peut donc passer en « Prête ».
-- **Cible :**
-  - taille réelle exactement égale à la taille déclarée, et type cohérent ;
-  - sinon : fichier supprimé, statut « Échec », motif `taille_incomplete` (voir P1-4) ;
-  - si le fichier est absent juste après la fin de l'envoi, une seule nouvelle vérification 2 s plus tard, puis motif `fichier_absent`.
-- **Risque :** certains navigateurs annoncent une taille différente pour le même fichier. L'envoi et la déclaration utilisent la même valeur (`file.size`), donc le risque est faible.
-- **Migration :** aucune.
-- **Tests :**
-  - unitaires : taille égale (acceptée), plus petite, plus grande, zéro (refusées) ;
-  - manuel : un envoi normal sur Android et sur ordinateur doit finir « Prête ».
-- **Acceptation :** aucune vidéo « Prête » dont la taille diffère de la taille déclarée.
+| # | Exigence | Statut | Preuves |
+|---|---|---|---|
+| 1 | Import à partir de Pro | Conforme | [DB] `user_videos_guard` : refus `PLAN_PAYANT_REQUIS` si `effective_plan = gratuit`, plus `video_quota` (200/300/500 Mo et 2/5/15 Go). [TEST] `videotheque.test.ts`, bloc « import à partir du plan Pro » (règles côté app seulement, pas le blocage en base). |
+| 2a | Partage par le propriétaire réservé à Business ou admin | Conforme | [DB] `grant_share` : `IF NOT _can_lead(u) THEN PLAN_BUSINESS_REQUIS`. `_can_lead` = `feature_plan = business` ou rôle admin. Un essai Pro offert par parrainage ne suffit pas. |
+| 2b | Membre autorisé à repartager | Conforme à la règle produit, mais Partiel face au plan technique | [DB] Conditions : le membre a un accès actif avec `can_reshare`, et un lien d'équipe actif avec le propriétaire. **Son plan à lui (`_can_lead(member)`) n'est pas vérifié.** Ça correspond à « les membres autorisés peuvent partager ». Décision à confirmer : un membre Gratuit autorisé peut repartager. |
+| 2c | Destinataires d'un repartage | Conforme | [DB] Destinataires possibles : membres directs du membre (`team_links.leader_id = u`) ou membres directs du propriétaire. Le membre et le propriétaire sont exclus. [CODE] `shareTargets` applique la même règle (groupes « Mon équipe » et « Équipe de mon leader »). |
+| 3 | Un seul niveau de repartage | Conforme | [DB] Accès créé par un repartage : `can_reshare = _can_reshare AND is_owner`, donc toujours faux. `grant_set_reshare` agit seulement si `grantor_id = owner_id`. Un accès reçu au niveau 2 ne peut donc jamais obtenir le droit de repartager. [CODE] La fenêtre de partage envoie `canReshare: isOwner && reshare`. [TEST] Aucun test automatisé dans le projet. |
+| 4 | Accès permanent malgré plan, équipe ou rôle | Conforme | [CODE] `lessonAccess`, `getCourseReader`, `listReceived` et `getLessonPlayUrl` vérifient seulement l'accès actif, la version reçue, et que la vidéo n'est ni modérée ni supprimée. Aucun contrôle du plan, de l'équipe ou du rôle. [DB] Aucune fonction ne modifie les accès quand un plan, un lien d'équipe ou un rôle change. Le lien d'équipe ne compte que pour le droit de repartager à l'avenir. |
+| 4b | Accès conservé si la formation ou la vidéo est archivée | Conforme | [CODE] Les vérifications d'accès ignorent `academy_courses.archived_at`. `archiveVideo` garde le fichier tant qu'un accès en attente ou actif renvoie à la vidéo (`videoReferences`). |
+| 5 | Retrait limité à 7 jours, invitation en attente retirable | Conforme | [DB] `grant_revoke` : refus `acces_definitif` si l'accès est actif et `created_at < now() - 7 days`. Une invitation en attente reste toujours retirable. Seuls le propriétaire et la personne qui a partagé peuvent retirer. [TEST] `canRevoke` (3 cas, côté app seulement). |
+| 5b | Cas limites du retrait | Partiel | [DB] Le délai part de la date du partage (`created_at`), pas de l'acceptation : accepter au 6e jour laisse environ 1 jour pour retirer. Un partage refait après un refus ou un retrait remet `created_at` à zéro, donc le délai repart, ce qui est logique. Au bout de exactement 7 jours, l'app et la base disent toutes deux « définitif » (comparaison stricte des deux côtés). Retirer l'accès d'un membre ne retire pas les repartages qu'il a déjà faits, ce qui va dans le sens de la permanence. Le propriétaire peut aussi retirer un repartage de moins de 7 jours. |
+| 6 | Version reçue conservée | Conforme | [DB] `course_grants.version_id` reste fixe ; seul le destinataire le change, via `grant_update_version`. Les versions ne peuvent pas être modifiées ni supprimées (lecture seule pour le propriétaire). |
+| 6b | Seule la modération coupe l'accès | Conforme, mais large | [DB] `moderate_video` passe en `retire_moderation` **tous** les accès dont la version contient la vidéo : la formation entière est coupée, pas seulement la leçon. Un accès coupé par la modération ne peut pas être réactivé par un nouveau partage. Seul un admin peut modérer. |
 
-## P0-2 Reprise TUS liée à une seule vidéo
-- **Fichiers :** `startResumableUpload` dans `src/components/videotheque/upload.ts`, `upload-sheet.tsx`.
-- **Actuel :** l'empreinte de reprise ne dépend que du fichier. Après un rechargement, la reprise peut écrire dans l'ancien chemin, et la nouvelle vidéo échoue.
-- **Cible :**
-  - l'empreinte inclut l'identifiant de la vidéo et son chemin (option `fingerprint`) ;
-  - avant de reprendre un envoi précédent, on vérifie que le chemin enregistré est bien celui de la vidéo en cours. Sinon on ignore cet envoi et on efface son empreinte ;
-  - les empreintes des envois échoués ou annulés sont effacées ;
-  - « Réessayer » sur une vidéo échouée crée toujours une nouvelle vidéo avec un nouveau chemin. On n'écrit jamais dans l'ancien.
-- **Limite connue :** après un rechargement, il faut toujours choisir à nouveau le fichier, et l'envoi repart de zéro sur la nouvelle vidéo. On n'essaie pas de reprendre au milieu, pour rester sûr.
-- **Risque :** la reprise pendant que la page reste ouverte (coupure réseau, Pause) ne doit pas régresser. Elle garde la même empreinte, donc elle n'est pas touchée.
-- **Migration :** aucune.
-- **Tests :**
-  - unitaire : une empreinte différente pour deux vidéos avec le même fichier ;
-  - manuel Android : mode avion 20 s à 30 %, l'envoi reprend et finit « Prête » ;
-  - manuel ordinateur : recharger la page à 30 %, choisir à nouveau le fichier, la nouvelle vidéo finit « Prête » et l'ancienne passe en « Échec » avec un motif ;
-  - en base : aucun fichier dans un chemin qui n'est pas celui de sa vidéo.
-- **Acceptation :** une reprise ne peut jamais écrire dans le chemin d'une autre vidéo.
+## Sécurité : base, fichiers et liens temporaires
 
-## P0-3 Jeton de session à jour
-- **Fichiers :** `upload.ts`.
-- **Actuel :** le jeton est lu une seule fois au départ. Un envoi qui dure plus d'une heure échoue.
-- **Cible :**
-  - via `onBeforeRequest` : avant chaque morceau, on lit la session à jour, que le client rafraîchit tout seul ;
-  - si la session a disparu : pause, message « Session expirée, reconnecte-toi puis Reprendre », sans marquer la vidéo en échec ;
-  - une erreur 401 ou 403 déclenche un rafraîchissement, puis un seul nouvel essai.
-- **Risque :** un léger délai par morceau, négligeable avec des morceaux de 6 Mo.
-- **Migration :** aucune.
-- **Tests :**
-  - manuel : pendant un envoi, se déconnecter dans un autre onglet. Le message s'affiche, et après reconnexion « Reprendre » termine l'envoi ;
-  - automatisé : choix de l'action selon le code d'erreur (401 → rafraîchir, 413 → refuser, réseau → réessayer).
-- **Acceptation :** un envoi long ne casse pas à cause de l'expiration de la session.
+- [DB] `grant_share`, `grant_respond`, `grant_revoke`, `grant_set_reshare`, `grant_update_version`, `course_publish_version`, `moderate_video` et `effective_plan` : exécutables seulement par `authenticated` et `service_role`.
+- [DB] Règles d'accès sur `course_grants` : lecture seule, pour le destinataire, la personne qui a partagé et le propriétaire. Aucune écriture directe possible.
+- [DB] Règles d'accès sur `course_versions` : lecture par le propriétaire seulement. Les destinataires lisent leur version uniquement via le serveur.
+- [DB] `video_views` n'a aucune règle d'accès : la table est fermée, le serveur seul l'utilise.
+- [DB] Fichiers (dossier `user-videos`) :
+  - lecture seulement dans son propre dossier ;
+  - ajout seulement si une vidéo `envoi` correspondante existe ;
+  - aucune règle de modification ou de suppression ;
+  - les destinataires n'ont aucun accès direct aux fichiers.
+- [CODE] Les liens temporaires (1 h) sont créés côté serveur par `getLessonPlayUrl`, seulement si `lessonAccess` accepte, et au plus 60 par heure.
+- [CODE] `getOwnVideoUrl` (aperçu par le propriétaire) passe par les règles d'accès de `user_videos`. Une vidéo supprimée ou modérée y est donc invisible.
 
-## P1-4 Motif d'échec et reprise sûre
-- **Migration additive :** colonne `failure_reason text NOT NULL DEFAULT ''` sur `user_videos`.
-  - Le guard l'ajoute aux champs protégés : seul le serveur peut l'écrire.
-  - Les lignes existantes restent avec un motif vide, affiché « Motif inconnu ».
-- **Fichiers :** `finalizeVideoUpload`, `markUploadFailed`, `listMyVideos`, nouvelle fonction `retryFailedVideo`, `videotheque.ts` (libellés des motifs), cartes vidéo et `ui-bits.tsx`.
-- **Actuel :**
-  - les échecs n'ont pas de motif ;
-  - `markUploadFailed` cache la vidéo, car il remplit `deleted_at` ;
-  - le nettoyage automatique au-delà de 24 h ne dit rien à l'utilisateur.
-- **Cible :**
-  - motifs : `taille_incomplete`, `fichier_absent`, `type_invalide`, `annule`, `abandon_24h`, `session_expiree`, `reseau` ;
-  - les vidéos en échec restent visibles dans un filtre « Échecs », avec le motif en clair et deux boutons :
-    - « Réessayer » : nouvelle vidéo, mêmes infos, choisir à nouveau le fichier ;
-    - « Retirer » : masque la vidéo ;
-  - `markUploadFailed` ne remplit plus `deleted_at` ;
-  - le nettoyage au-delà de 24 h garde la ligne avec le motif `abandon_24h` et supprime seulement le fichier partiel ;
-  - une bannière l'explique au prochain passage dans la vidéothèque.
-- **Ce qui ne change pas :** les échecs ne comptent pas dans l'espace utilisé.
-- **Risque :** la liste s'allonge, d'où le filtre et la limite d'affichage aux 30 derniers jours.
-- **Tests :**
-  - unitaires : libellés des motifs ;
-  - en base, avec tout annulé ensuite : le navigateur ne peut pas modifier `failure_reason` (`CHAMP_PROTEGE`) ;
-  - manuel : annuler un envoi, voir « Annulé », Réessayer, puis « Prête ».
-- **Acceptation :** aucun échec silencieux ; chaque échec a un motif visible et une action possible.
+## Cohérence entre l'écran et le serveur
 
-## P2-5 Maîtrise du trafic de lecture
-- **Constat facturation (documentation Lovable) :**
-  - le stockage et le trafic réseau sont facturés en crédits Cloud ;
-  - chaque espace de travail reçoit 20 crédits Cloud par mois, puis l'usage passe sur le solde général ;
-  - aucun prix par Go n'est publié ;
-  - **à confirmer par vous :** Paramètres de l'espace de travail → Forfaits et utilisation des crédits → Détails d'usage → Run credits, filtré sur ce projet, une fois quelques Go servis.
-- **Estimation de volume :** une formation de 10 vidéos de 50 Mo, vue entièrement par 200 membres, fait environ 100 Go par mois. C'est le scénario à risque.
-- **Proposition (seuils à valider) :**
-  - compteur mensuel des octets servis par propriétaire, estimé à partir de `video_views` et de la taille de la vidéo à chaque lien signé ;
-  - limites mensuelles : Pro 50 Go, Expert 150 Go, Business 500 Go ;
-  - alerte au propriétaire à 80 %, avec une jauge dans « Ma vidéothèque » ;
-  - au-delà, **les destinataires gardent leur accès**. Les nouvelles lectures sont seulement ralenties : au plus 10 liens par heure et par destinataire au lieu de 60, jusqu'au 1er du mois suivant. Aucun accès n'est jamais retiré ;
-  - les lectures du propriétaire sur ses propres vidéos restent illimitées en accès, mais comptent dans le total.
-- **Fichiers :**
-  - `getLessonPlayUrl` et `getOwnVideoUrl` ;
-  - migration additive : colonne `bytes_estimated bigint DEFAULT 0` sur `video_views` et index (owner, mois) ;
-  - fonction pure `trafficState` dans `videotheque.ts`.
-- **Risque :** l'estimation est haute, car on compte une vidéo entière même si elle n'est vue qu'à moitié. Ça reste prudent.
-- **Tests :**
-  - unitaires : `trafficState` à 79 %, 80 % et 101 % pour chaque plan ;
-  - en base : au-delà de la limite, le destinataire reçoit encore un lien jusqu'à 10 par heure ;
-  - manuel : la jauge s'affiche sur ordinateur et sur téléphone.
-- **Acceptation :** les coûts restent plafonnés en pratique sans jamais couper l'accès permanent.
+- `shareTargets` et `grant_share` suivent la même règle pour les destinataires. Écart : `shareTargets` ne vérifie pas `_can_lead` pour le propriétaire. Un propriétaire redescendu sous Business voit encore ses membres, puis reçoit le refus « Business requis » seulement au moment de partager (gêne d'affichage, sans risque).
+- `listReceived` affiche seulement les accès en attente et actifs. Un accès coupé par la modération disparaît sans explication.
+- `getCourseReader` et `lessonAccess` acceptent la même vidéo (non modérée, non supprimée).
 
-## Décisions à valider
-1. Démarrer P0-1 à P0-3 maintenant, en un seul lot ?
-2. P1-4 : garder les échecs visibles 30 jours ?
-3. P2-5 : seuils 50, 150 et 500 Go par mois, et ralentissement à 10 lectures par heure au-delà ? Ou seulement une alerte, sans ralentissement ?
+## Risques
+
+**P0 :** aucun trouvé.
+
+**P1**
+1. **Version publiée renvoyant à une vidéo supprimée.**
+   - Scénario : le propriétaire publie une version, archive la leçon sans republier, puis archive la vidéo. Si aucun accès en attente ou actif ne renvoie à cette version, le fichier est supprimé.
+   - Ensuite, `grant_share` partage toujours la dernière version sans revérifier ses vidéos. Le destinataire reçoit une leçon « indisponible ».
+   - Fichiers : `grant_share` et `videoReferences` (ce dernier ne compte que les accès, pas les versions partageables plus tard).
+   - Recommandation : refuser de partager une version dont une vidéo est supprimée ou modérée, ou bien compter « dernière version publiée » comme une référence dans `videoReferences`.
+2. **Décision à confirmer sur le repartage.** Un membre autorisé n'a pas besoin d'être Business (2b). Si le plan technique exigeait Business ou admin, il faut ajouter `_can_lead(u)` dans la partie repartage de `grant_share` et dans `shareTargets`.
+
+**P2**
+3. `feature_plan` reste exécutable par `PUBLIC` et `anon`. Comme `auth.uid()` est vide pour un visiteur non connecté, la protection ne joue pas : n'importe qui peut lire le plan d'un utilisateur dont il connaît l'identifiant. Recommandation : retirer le droit d'exécution à `PUBLIC` et `anon`.
+4. `_can_lead` et `has_role` sont exécutables par tout utilisateur connecté : on peut savoir si un identifiant donné est admin. Fuite faible, mais à restreindre.
+5. Les tables `course_grants`, `course_versions`, `user_videos`, `video_views`, `academy_courses` et `academy_lessons` ont tous les droits pour `anon` et `authenticated` (`arwdDxtm`). Seules les règles d'accès protègent ces tables. Recommandation : réduire ces droits au strict nécessaire, par sécurité supplémentaire.
+6. La modération coupe la formation entière (6b). À garder ou à affiner, selon votre choix.
+7. Le délai de 7 jours part du partage, pas de l'acceptation (5b) : à confirmer comme voulu.
+8. Après une modération, l'accès disparaît de « Reçues » sans message, et l'écran de partage n'indique pas qu'un propriétaire n'est plus Business.
+9. `course_publish_version` ne vérifie pas `user_videos.archived_at`. Pas de gros risque : une vidéo archivée garde son fichier et reste lisible.
+
+## Tests
+
+**Présents [TEST] :** règles côté app uniquement (`videotheque.test.ts`) : plans d'import, quotas, `canRevoke`, regroupement par module. **Aucun test présent dans le projet** ne vérifie `grant_*`, les règles d'accès ou les liens temporaires. Les vérifications faites en base pendant la construction ont été annulées après coup et ne sont pas enregistrées.
+
+**À faire à la main [MANUEL] avec 3 comptes (A Business leader, B membre de A, C membre de B ou de A) :**
+1. A partage à B avec repartage. B accepte et repartage à C. C accepte, et l'option « Partager » est absente chez C.
+2. B tente de partager à quelqu'un hors des deux équipes : refus.
+3. A passe en Pro : B et C lisent toujours. A ne peut plus partager. B peut encore repartager tant qu'il est dans l'équipe de A.
+4. B quitte l'équipe : B et C lisent toujours, B ne peut plus repartager.
+5. A archive la formation : B et C lisent toujours. « Mettre à jour la version » ne propose rien.
+6. Retrait par A à moins de 7 jours : OK. Après plus de 7 jours : « accès définitif ». Une invitation en attente reste toujours retirable.
+7. A publie la version 2 : C garde la version 1 tant qu'il ne met pas à jour.
+8. Un admin modère une vidéo : l'accès à la formation de B et C est coupé.
+9. Lecture et reprise de lecture par C sur Android et sur ordinateur.
+
+## Recommandations (rien n'est appliqué)
+1. P1-1 : bloquer le partage d'une version incomplète, ou protéger les vidéos de la dernière version publiée.
+2. P1-2 : confirmer si un membre autorisé doit être Business pour repartager.
+3. P2-3 à 5 : réduire les droits (`feature_plan`, `_can_lead`, `has_role`, tables). Migration additive : uniquement des retraits de droits.
+4. P2-6 à 8 : choix produit et petits ajustements d'écran.
+5. Ajouter des tests en base enregistrés dans le projet pour `grant_share`, `grant_revoke` et `grant_set_reshare`.
