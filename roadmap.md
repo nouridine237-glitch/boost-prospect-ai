@@ -23,3 +23,4 @@
 - [x] Vidéothèque P0 : taille exacte à la finalisation, reprise TUS liée à la vidéo, jeton rafraîchi avant chaque envoi
 - [ ] Vidéothèque P1-4 historique des échecs — reporté (décision utilisateur)
 - [ ] Vidéothèque P2-5 trafic — reporté ; décision : alerte uniquement, aucun ralentissement ni blocage
+- [ ] Partage vidéo : P1-B retrait 7 j depuis acceptation, P1-A version incomplète, P1-C repartage sans plan, P2 droits/écrans/modération par leçon/tests

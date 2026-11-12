@@ -211,6 +211,34 @@
       "when": 1794238194798,
       "tag": "0029_user_videos_guard_client_check",
       "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1794460058569,
+      "tag": "0030_grant_revoke_accepted_at",
+      "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1794460079411,
+      "tag": "0031_share_requires_available_videos",
+      "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1794460087022,
+      "tag": "0032_moderation_lesson_scope",
+      "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1794460090980,
+      "tag": "0033_tighten_grants",
+      "breakpoints": true
     }
   ]
 }

@@ -26,17 +26,25 @@ export async function lessonAccess(admin: any, userId: string, courseId: string,
   return vid ? { role, videoId, ownerId: c.owner_id } : null;
 }
 
-/** Une vidéo est-elle encore référencée par une version reçue (en attente ou active) ou une leçon vivante ? */
+/** Une vidéo est-elle encore référencée par une leçon vivante, un accès en cours, ou la dernière version publiée d'une formation active ? */
 export async function videoReferences(admin: any, videoId: string) {
   const [{ count: lessons }, { data: versions }] = await Promise.all([
     admin.from("academy_lessons").select("id", { count: "exact", head: true }).eq("user_video_id", videoId).is("archived_at", null),
-    admin.from("course_versions").select("id").contains("lessons", [{ video_id: videoId }]),
+    admin.from("course_versions").select("id, course_id, version").contains("lessons", [{ video_id: videoId }]),
   ]);
-  const ids = (versions ?? []).map((v: any) => v.id);
-  let grants = 0;
-  if (ids.length) {
-    const { count } = await admin.from("course_grants").select("id", { count: "exact", head: true }).in("version_id", ids).in("status", ["en_attente", "actif"]);
+  const vs = (versions ?? []) as { id: string; course_id: string; version: number }[];
+  let grants = 0, latestVersions = 0;
+  if (vs.length) {
+    const courseIds = [...new Set(vs.map((v) => v.course_id))];
+    const [{ count }, { data: all }, { data: courses }] = await Promise.all([
+      admin.from("course_grants").select("id", { count: "exact", head: true }).in("version_id", vs.map((v) => v.id)).in("status", ["en_attente", "actif"]),
+      admin.from("course_versions").select("course_id, version").in("course_id", courseIds),
+      admin.from("academy_courses").select("id").in("id", courseIds).is("archived_at", null),
+    ]);
     grants = count ?? 0;
+    const active = new Set((courses ?? []).map((c: any) => c.id));
+    latestVersions = vs.filter((v) => active.has(v.course_id)
+      && v.version === Math.max(...(all ?? []).filter((x: any) => x.course_id === v.course_id).map((x: any) => x.version))).length;
   }
-  return { lessons: lessons ?? 0, grants };
+  return { lessons: lessons ?? 0, grants, latestVersions };
 }

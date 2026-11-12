@@ -143,7 +143,7 @@ function EditorPage() {
                         {(g.status === "actif" || g.status === "en_attente") && (
                           <div className="mt-2 flex items-center gap-3 pl-10">
                             {g.direct && <label className="flex min-h-11 flex-1 items-center gap-2 text-xs text-muted-foreground"><Switch checked={g.canReshare} onCheckedChange={(v) => run(() => reshare({ data: { id: g.id, value: v } }))} />Peut repartager</label>}
-                            {canRevoke({ status: g.status, created_at: g.createdAt }) && <button type="button" className="min-h-11 text-xs font-semibold text-destructive" onClick={() => setConfirmRevoke({ id: g.id, name: g.recipient })}>Retirer</button>}
+                            {canRevoke({ status: g.status, created_at: g.createdAt, accepted_at: g.acceptedAt }) && <button type="button" className="min-h-11 text-xs font-semibold text-destructive" onClick={() => setConfirmRevoke({ id: g.id, name: g.recipient })}>Retirer</button>}
                           </div>
                         )}
                       </li>

@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { canRevoke, checkVideoFile, formatEta, formatTotal, groupByModule, isSameUploadTarget, isUploadComplete, MB, normalizeType, quotaOf, shouldRetryTus, tusFingerprint, uploadRate, VIDEO_BUCKET, vtError } from "./videotheque";
+import { availableLessonIds, canRevoke, mustKeepVideo, checkVideoFile, formatEta, formatTotal, groupByModule, isSameUploadTarget, isUploadComplete, MB, normalizeType, quotaOf, shouldRetryTus, tusFingerprint, uploadRate, VIDEO_BUCKET, vtError } from "./videotheque";
 import { hasFeature } from "./plans";
 
 const f = (size: number, duration = 60, type = "video/mp4") => ({ size, duration, type, name: "a.mp4" });
@@ -99,4 +99,21 @@ describe("P0-3 réessais et session", () => {
   });
   test("réseau et serveur : réessai", () => { expect(shouldRetryTus(null, 3)).toBe(true); expect(shouldRetryTus(503, 2)).toBe(true); });
   test("fichier refusé (413/400) : pas de réessai", () => { expect(shouldRetryTus(413, 0)).toBe(false); expect(shouldRetryTus(400, 0)).toBe(false); });
+});
+
+describe("Retrait : 7 jours depuis l'acceptation", () => {
+  const now = new Date("2026-11-20T12:00:00Z");
+  const ago = (h: number) => new Date(now.getTime() - h * 3600000).toISOString();
+  test("invitation en attente ancienne : retirable", () => expect(canRevoke({ status: "en_attente", created_at: ago(24 * 30) }, now)).toBe(true));
+  test("accepté il y a 6 j 23 h : retirable", () => expect(canRevoke({ status: "actif", created_at: ago(24 * 10), accepted_at: ago(24 * 7 - 1) }, now)).toBe(true));
+  test("accepté il y a exactement 7 jours : définitif", () => expect(canRevoke({ status: "actif", created_at: ago(24 * 10), accepted_at: ago(24 * 7) }, now)).toBe(false));
+  test("partagé il y a 10 j, accepté il y a 2 j : retirable", () => expect(canRevoke({ status: "actif", created_at: ago(240), accepted_at: ago(48) }, now)).toBe(true));
+  test("sans date d'acceptation : date du partage", () => expect(canRevoke({ status: "actif", created_at: ago(24 * 8), accepted_at: null }, now)).toBe(false));
+});
+
+describe("Vidéos protégées et leçons indisponibles", () => {
+  test("dernière version publiée protège la vidéo", () => expect(mustKeepVideo({ lessons: 0, grants: 0, latestVersions: 1 })).toBe(true));
+  test("aucune référence : suppression possible", () => expect(mustKeepVideo({ lessons: 0, grants: 0, latestVersions: 0 })).toBe(false));
+  test("progression sans la leçon indisponible", () =>
+    expect(availableLessonIds([{ lesson_id: "a", video_id: "v1" }, { lesson_id: "b", video_id: "v2" }], new Set(["v1"]))).toEqual(["a"]));
 });

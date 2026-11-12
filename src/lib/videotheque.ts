@@ -92,10 +92,16 @@ export function formatEta(remainingBytes: number, rate: number) {
 }
 
 /** Retrait volontaire : en attente toujours, actif seulement dans les 7 jours suivant le partage. */
-export function canRevoke(g: { status: string; created_at: string }, now = new Date()) {
+/** Retrait volontaire : invitation en attente toujours ; accès actif pendant 7 jours après l'acceptation (repli : date du partage). */
+export function canRevoke(g: { status: string; created_at: string; accepted_at?: string | null }, now = new Date()) {
   if (g.status === "en_attente") return true;
   if (g.status !== "actif") return false;
-  return now.getTime() - new Date(g.created_at).getTime() < REVOKE_WINDOW_DAYS * 86400000;
+  return now.getTime() < new Date(g.accepted_at ?? g.created_at).getTime() + REVOKE_WINDOW_DAYS * 86400000;
+}
+
+/** Une vidéo est protégée tant qu'une leçon vivante, un accès en cours ou la dernière version publiée d'une formation active y renvoie. */
+export function mustKeepVideo(refs: { lessons: number; grants: number; latestVersions: number }) {
+  return refs.lessons > 0 || refs.grants > 0 || refs.latestVersions > 0;
 }
 
 export type SnapshotLesson = { lesson_id: string; title: string; summary: string; module: string; video_id: string; duration: number };
@@ -158,3 +164,7 @@ export function shouldRetryTus(status: number | null | undefined, attempt: numbe
   if (status === 409 || status === 423 || status === 429) return true;
   return status >= 500;
 }
+
+/** Leçons dont la vidéo est encore disponible : seules elles comptent dans la progression affichée. */
+export const availableLessonIds = (lessons: { lesson_id: string; video_id: string }[], alive: Set<string>) =>
+  lessons.filter((l) => alive.has(l.video_id)).map((l) => l.lesson_id);

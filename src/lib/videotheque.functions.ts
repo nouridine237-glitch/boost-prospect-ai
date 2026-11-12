@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { ACCEPTED_TYPES, CATEGORIES, PLAY_URL_TTL_S, PLAY_URLS_PER_HOUR, VIDEO_BUCKET, quotaOf, vtError, isUploadComplete, type SnapshotLesson } from "@/lib/videotheque";
+import { ACCEPTED_TYPES, CATEGORIES, PLAY_URL_TTL_S, PLAY_URLS_PER_HOUR, VIDEO_BUCKET, quotaOf, vtError, isUploadComplete, mustKeepVideo, availableLessonIds, type SnapshotLesson } from "@/lib/videotheque";
 import { hasFeature } from "@/lib/plans";
 import { courseProgress, lessonProgress, type ProgressRow } from "@/lib/academy-progress";
 
@@ -157,14 +157,14 @@ export const archiveVideo = createServerFn({ method: "POST" })
     const { videoReferences } = await import("@/lib/videotheque-access.server");
     const refs = await videoReferences(a, v.id);
     if (refs.lessons > 0) throw new Error("Cette vidéo est utilisée dans une leçon. Retire-la d'abord de tes formations.");
-    if (refs.grants > 0 || v.status === "envoi") {
+    if (mustKeepVideo({ ...refs, lessons: 0 }) || v.status === "envoi") {
       const { error } = await context.supabase.from("user_videos").update({ archived_at: new Date().toISOString() }).eq("id", v.id);
       if (error) throw new Error("Archivage impossible.");
-      return { deleted: false, keptFor: refs.grants };
+      return { deleted: false, keptFor: refs.grants, latest: refs.latestVersions };
     }
     await removeFiles(a, v);
     await a.from("user_videos").update({ deleted_at: new Date().toISOString(), archived_at: new Date().toISOString() }).eq("id", v.id);
-    return { deleted: true, keptFor: 0 };
+    return { deleted: true, keptFor: 0, latest: 0 };
   });
 
 export const restoreVideo = createServerFn({ method: "POST" })
@@ -185,7 +185,7 @@ export const getOwnVideoUrl = createServerFn({ method: "POST" })
     if (!v || v.status !== "pret") throw new Error("Vidéo indisponible.");
     const a = await admin();
     const { data: s } = await a.storage.from(VIDEO_BUCKET).createSignedUrl(v.storage_path, PLAY_URL_TTL_S);
-    if (!s?.signedUrl) throw new Error("Lecture impossible.");
+    if (!s?.signedUrl) throw new Error("Vidéo indisponible.");
     return { url: s.signedUrl as string };
   });
 
@@ -251,6 +251,9 @@ export const getCourseEditor = createServerFn({ method: "GET" })
     const { data: prog } = lessonIds.length && recipients.length
       ? await a.from("academy_lesson_progress").select("user_id").eq("course_id", c.id).eq("status", "terminee").in("user_id", recipients)
       : { data: [] };
+    const lessonVids = [...new Set((lessons ?? []).map((l: any) => l.user_video_id as string))];
+    const { data: aliveVids } = lessonVids.length ? await a.from("user_videos").select("id").in("id", lessonVids).eq("status", "pret").is("moderated_at", null).is("deleted_at", null) : { data: [] };
+    const aliveSet = new Set((aliveVids ?? []).map((v: any) => v.id));
     const latest = (versions ?? [])[0];
     const changedSince = latest ? (lessons ?? []).some((l: any) => new Date(l.updated_at) > new Date(latest.created_at)) : true;
     return {
@@ -261,12 +264,12 @@ export const getCourseEditor = createServerFn({ method: "GET" })
       lessons: (lessons ?? []).map((l: any) => {
         const v = vids.find((x: any) => x.id === l.user_video_id);
         return { id: l.id as string, title: l.title as string, summary: l.summary as string, module: l.module_title as string, videoId: l.user_video_id as string, sort: l.sort_order as number,
-          duration: v?.duration_seconds ?? 0, thumbUrl: v?.thumb_path ? thumbs[v.thumb_path] ?? null : null };
+          duration: v?.duration_seconds ?? 0, thumbUrl: v?.thumb_path ? thumbs[v.thumb_path] ?? null : null, available: aliveSet.has(l.user_video_id) };
       }),
       videos: vids.map((v: any) => ({ id: v.id as string, title: v.title as string, duration: v.duration_seconds as number, thumbUrl: v.thumb_path ? thumbs[v.thumb_path] ?? null : null })),
       grants: (grants ?? []).map((g: any) => ({
         id: g.id as string, recipient: n[g.recipient_id] ?? "Partenaire", grantor: g.grantor_id === context.userId ? null : n[g.grantor_id] ?? "Partenaire",
-        status: g.status as string, canReshare: g.can_reshare as boolean, createdAt: g.created_at as string, direct: g.grantor_id === context.userId,
+        status: g.status as string, canReshare: g.can_reshare as boolean, createdAt: g.created_at as string, acceptedAt: (g.accepted_at ?? null) as string | null, direct: g.grantor_id === context.userId,
         done: (prog ?? []).filter((p: any) => p.user_id === g.recipient_id).length, total: lessonIds.length,
       })),
     };
@@ -352,7 +355,11 @@ export const shareTargets = createServerFn({ method: "GET" })
     if (!c?.owner_id) return { mode: "none" as const, members: [] as { id: string; name: string; group: string; status: string | null }[] };
     const isOwner = c.owner_id === context.userId;
     let leaders = [context.userId];
-    if (!isOwner) {
+    // Partage initial : propriétaire Business/admin. Repartage : aucune condition de plan pour le membre autorisé.
+    if (isOwner) {
+      const { data: lead } = await a.rpc("_can_lead", { _u: context.userId });
+      if (!lead) return { mode: "upgrade" as const, members: [] as { id: string; name: string; group: string; status: string | null }[] };
+    } else {
       const { data: g } = await a.from("course_grants").select("can_reshare").eq("course_id", data.courseId).eq("recipient_id", context.userId).eq("status", "actif").maybeSingle();
       const { data: link } = await a.from("team_links").select("id").eq("leader_id", c.owner_id).eq("member_id", context.userId).eq("status", "actif").maybeSingle();
       if (!g?.can_reshare || !link) return { mode: "none" as const, members: [] as { id: string; name: string; group: string; status: string | null }[] };
@@ -406,7 +413,7 @@ export const listReceived = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     const { data: grants } = await context.supabase.from("course_grants")
       .select("id, course_id, owner_id, grantor_id, status, can_reshare, version_id, created_at")
-      .eq("recipient_id", context.userId).in("status", ["en_attente", "actif"]).order("created_at", { ascending: false });
+      .eq("recipient_id", context.userId).in("status", ["en_attente", "actif", "retire_moderation"]).order("created_at", { ascending: false });
     const gs = grants ?? [];
     if (!gs.length) return [];
     const a = await admin();
@@ -417,6 +424,9 @@ export const listReceived = createServerFn({ method: "GET" })
     const n = await names(a, gs.flatMap((g: any) => [g.owner_id, g.grantor_id]));
     const allLessons = (versions ?? []).flatMap((v: any) => (v.lessons as SnapshotLesson[]).map((l) => l.lesson_id));
     const rows = await progressRows(a, context.userId, allLessons);
+    const allVids = [...new Set((versions ?? []).flatMap((v: any) => (v.lessons as SnapshotLesson[]).map((l) => l.video_id)))];
+    const { data: aliveR } = allVids.length ? await a.from("user_videos").select("id").in("id", allVids).is("moderated_at", null).is("deleted_at", null) : { data: [] };
+    const okR = new Set((aliveR ?? []).map((v: any) => v.id));
     return gs.map((g: any) => {
       const v = (versions ?? []).find((x: any) => x.id === g.version_id);
       const ls = (v?.lessons ?? []) as SnapshotLesson[];
@@ -426,7 +436,7 @@ export const listReceived = createServerFn({ method: "GET" })
         title: v?.title ?? "Formation", description: v?.description ?? "", author: n[g.owner_id] ?? "Partenaire",
         via: g.grantor_id !== g.owner_id ? n[g.grantor_id] ?? null : null,
         lessons: ls.length, minutes: Math.ceil(ls.reduce((s, l) => s + l.duration, 0) / 60), version: v?.version ?? 1, newerVersion: newest > (v?.version ?? 1),
-        progress: courseProgress(ls.map((l) => l.lesson_id), rows), receivedAt: g.created_at as string,
+        progress: courseProgress(availableLessonIds(ls, okR), rows), unavailable: ls.filter((l) => !okR.has(l.video_id)).length, receivedAt: g.created_at as string,
       };
     });
   });
@@ -479,7 +489,7 @@ export const getCourseReader = createServerFn({ method: "GET" })
     const { data: owner } = await a.from("profiles").select("display_name, full_name").eq("id", c.owner_id).maybeSingle();
     return {
       role, grantId, canReshare, version, courseId: c.id as string, title, description, author: owner?.display_name || owner?.full_name || "Partenaire",
-      progress: courseProgress(lessons.map((l) => l.lesson_id), rows),
+      progress: courseProgress(availableLessonIds(lessons, ok), rows),
       lessons: lessons.map((l) => ({ id: l.lesson_id, title: l.title, summary: l.summary, module: l.module, duration: l.duration, available: ok.has(l.video_id),
         progress: lessonProgress(rows.find((r) => r.lesson_id === l.lesson_id), l.duration) })),
     };
@@ -498,7 +508,7 @@ export const getLessonPlayUrl = createServerFn({ method: "POST" })
     if ((count ?? 0) >= PLAY_URLS_PER_HOUR) throw new Error("Trop de lectures en peu de temps. Réessaie dans un moment.");
     const { data: v } = await a.from("user_videos").select("storage_path").eq("id", acc.videoId).maybeSingle();
     const { data: s } = await a.storage.from(VIDEO_BUCKET).createSignedUrl(v.storage_path, PLAY_URL_TTL_S);
-    if (!s?.signedUrl) throw new Error("Lecture impossible.");
+    if (!s?.signedUrl) throw new Error("Vidéo indisponible.");
     await a.from("video_views").insert({ viewer_id: context.userId, video_id: acc.videoId });
     return { url: s.signedUrl as string };
   });

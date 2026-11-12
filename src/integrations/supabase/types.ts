@@ -1282,6 +1282,7 @@ export type Database = {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["plan_type"]
       }
+      _video_available: { Args: { _video_id: string }; Returns: boolean }
       capture_page_view: {
         Args: { _slug: string }
         Returns: {
@@ -1335,6 +1336,10 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      moderate_course: {
+        Args: { _course_id: string; _reason: string }
+        Returns: number
       }
       moderate_video: {
         Args: { _reason: string; _video_id: string }

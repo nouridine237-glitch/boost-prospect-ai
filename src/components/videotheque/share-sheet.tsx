@@ -32,7 +32,9 @@ export function ShareSheet({ courseId, open, onOpenChange }: { courseId: string;
           <SheetTitle>Partager la formation</SheetTitle>
           <SheetDescription>Chaque personne reçoit une invitation à accepter. La version publiée actuelle est partagée.</SheetDescription>
         </SheetHeader>
-        {q.isLoading ? <div className="mt-4 h-32 animate-pulse rounded-2xl bg-muted" /> : q.data?.mode === "none" ? (
+        {q.isLoading ? <div className="mt-4 h-32 animate-pulse rounded-2xl bg-muted" /> : q.data?.mode === "upgrade" ? (
+          <p className="mt-4 text-sm text-muted-foreground">Le partage initial d'une formation demande le plan Business.</p>
+        ) : q.data?.mode === "none" ? (
           <p className="mt-4 text-sm text-muted-foreground">Tu n'as pas l'autorisation de partager cette formation.</p>
         ) : !q.data?.members.length ? (
           <p className="mt-4 text-sm text-muted-foreground">Aucun membre actif dans ton équipe. Invite des partenaires depuis « Former mon équipe ».</p>
