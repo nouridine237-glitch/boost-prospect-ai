@@ -1,9 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Clock, Inbox, Layers, Play, Share2, ShieldCheck } from "lucide-react";
+import { Ban, Clock, Inbox, Layers, Play, Share2, ShieldCheck } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { AcademyTabs, EmptyState, ErrorLine } from "@/components/videotheque/academy-tabs";
 import { PageHeader, StatusBadge } from "@/components/videotheque/ui-bits";
@@ -23,6 +23,8 @@ export const Route = createFileRoute("/_authenticated/academie_/recues")({
   component: ReceivedPage,
 });
 
+const HIDDEN_KEY = "vt-received-hidden";
+
 function ReceivedPage() {
   const { user } = Route.useRouteContext();
   const fetchList = useServerFn(listReceived);
@@ -32,6 +34,11 @@ function ReceivedPage() {
   const [share, setShare] = useState<string | null>(null);
   const pending = (q.data ?? []).filter((g) => g.status === "en_attente");
   const active = (q.data ?? []).filter((g) => g.status === "actif");
+  // « Masquer » une formation retirée par la modération : mémorisé sur cet appareil uniquement.
+  const [hidden, setHidden] = useState<string[]>([]);
+  useEffect(() => { try { setHidden(JSON.parse(localStorage.getItem(HIDDEN_KEY) ?? "[]")); } catch { setHidden([]); } }, []);
+  const hide = (id: string) => { const next = [...new Set([...hidden, id])]; setHidden(next); try { localStorage.setItem(HIDDEN_KEY, JSON.stringify(next)); } catch { /* stockage indisponible */ } };
+  const retired = (q.data ?? []).filter((g) => g.status === "retire_moderation" && !hidden.includes(g.grantId));
   const answer = async (id: string, accept: boolean) => {
     try { await respond({ data: { id, accept } }); toast.success(accept ? "Formation ajoutée ✓" : "Invitation refusée"); qc.invalidateQueries({ queryKey: ["videotheque"] }); }
     catch { toast.error("Réponse non enregistrée."); }
@@ -55,7 +62,7 @@ function ReceivedPage() {
                 </div>
               </div>
             ))}
-            {!active.length && !pending.length ? (
+            {!active.length && !pending.length && !retired.length ? (
               <EmptyState icon={Inbox} title="Aucune formation reçue pour l'instant" text="Quand ton leader partagera une formation avec toi, elle apparaîtra ici." />
             ) : (
               <ul className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
@@ -73,6 +80,15 @@ function ReceivedPage() {
                       <Link to="/academie/lecture/$courseId" params={{ courseId: g.courseId }}><Play className="size-4" />{g.progress.percent === 0 ? "Commencer" : g.progress.percent >= 100 ? "Revoir" : "Reprendre"}</Link>
                     </Button>
                     {g.canReshare && <button type="button" onClick={() => setShare(g.courseId)} className="mt-3 flex min-h-11 items-center gap-2 text-sm font-semibold text-primary"><Share2 className="size-4" />Repartager</button>}
+                  </li>
+                ))}
+                {retired.map((g) => (
+                  <li key={g.grantId} className="surface flex flex-col rounded-2xl p-4 opacity-70" aria-label={`${g.title} : retirée par la modération`}>
+                    <span className="flex items-center gap-2 text-xs text-muted-foreground"><Layers className="size-3.5" />De {g.author}</span>
+                    <h2 className="mt-2 font-bold">{g.title}</h2>
+                    <div className="mt-2"><StatusBadge tone="muted" icon={Ban}>Retirée par la modération</StatusBadge></div>
+                    <p className="mt-2 flex-1 text-xs text-muted-foreground">Cette formation n'est plus disponible.</p>
+                    <Button variant="outline" className="mt-4 min-h-11 w-full" onClick={() => hide(g.grantId)}>Masquer</Button>
                   </li>
                 ))}
               </ul>

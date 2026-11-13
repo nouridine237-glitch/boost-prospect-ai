@@ -60,7 +60,7 @@ function CoursesPage() {
                       <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-primary/12 text-primary"><Layers className="size-5" /></span>
                       <span className="min-w-0 flex-1">
                         <span className="block truncate font-semibold">{c.title}</span>
-                        <span className="mt-1.5 flex flex-wrap items-center gap-2 text-xs text-muted-foreground"><CourseStatusBadge version={c.version} />{c.lessons} leçon{c.lessons > 1 ? "s" : ""}{c.recipients ? <span className="inline-flex items-center gap-1"><Users className="size-3" />{c.recipients}</span> : null}</span>
+                        <span className="mt-1.5 flex flex-wrap items-center gap-2 text-xs text-muted-foreground"><CourseStatusBadge version={c.version} />{c.lessons} leçon{c.lessons > 1 ? "s" : ""}{c.recipients ? <span className="inline-flex items-center gap-1"><Users className="size-3" />{c.recipients}</span> : null}{c.unavailable > 0 && <span className="rounded-full border border-destructive/40 px-2 py-0.5 font-medium text-destructive">{c.unavailable} leçon{c.unavailable > 1 ? "s" : ""} indisponible{c.unavailable > 1 ? "s" : ""}</span>}</span>
                       </span>
                       <ChevronRight className="size-5 text-muted-foreground" />
                     </Link>

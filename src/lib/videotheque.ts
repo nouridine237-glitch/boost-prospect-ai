@@ -131,6 +131,9 @@ const ERRORS: [string, string][] = [
   ["AUCUNE_LECON", "Ajoute au moins une leçon avec une vidéo prête avant de publier."],
   ["VIDEO_INVALIDE", "Cette vidéo n'est pas disponible (archivée ou pas encore prête)."],
   ["FORMATION_INTROUVABLE", "Formation introuvable."],
+  ["VERSION_INCOMPLETE", "Une vidéo de cette formation n'est plus disponible. Republie la formation avant de la partager."],
+  ["ADMIN_REQUIS", "Action réservée aux administrateurs."],
+  ["MOTIF_REQUIS", "Indique un motif (5 caractères minimum)."],
 ];
 export function vtError(e: unknown, fallback = "Action impossible pour le moment.") {
   const m = e instanceof Error ? e.message : String(e ?? "");
@@ -168,3 +171,12 @@ export function shouldRetryTus(status: number | null | undefined, attempt: numbe
 /** Leçons dont la vidéo est encore disponible : seules elles comptent dans la progression affichée. */
 export const availableLessonIds = (lessons: { lesson_id: string; video_id: string }[], alive: Set<string>) =>
   lessons.filter((l) => alive.has(l.video_id)).map((l) => l.lesson_id);
+
+/** Nombre de leçons d'une version dont la vidéo n'est plus disponible (supprimée, modérée ou absente). */
+export const unavailableLessonCount = (lessons: { video_id: string }[], alive: Set<string>) =>
+  lessons.filter((l) => !alive.has(l.video_id)).length;
+
+/** Dernière version publiée (numéro le plus haut) d'une formation, ou null. */
+export function latestVersionOf<T extends { course_id: string; version: number }>(versions: T[], courseId: string): T | null {
+  return versions.filter((v) => v.course_id === courseId).reduce<T | null>((best, v) => (!best || v.version > best.version ? v : best), null);
+}

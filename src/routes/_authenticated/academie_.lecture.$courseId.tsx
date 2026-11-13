@@ -101,7 +101,7 @@ function ReaderPage() {
                 {current.available ? (
                   <FilePlayer key={`${current.id}-${resumeFrom ?? 0}`} title={current.title} startAt={resumeFrom ?? 0}
                     getUrl={async () => (await playUrl({ data: { courseId, lessonId: current.id } })).url} onReport={onReport} />
-                ) : <div className="surface grid aspect-video place-items-center rounded-2xl p-6 text-center text-sm text-muted-foreground">Cette vidéo a été retirée.</div>}
+                ) : <div className="surface grid aspect-video place-items-center rounded-2xl p-6 text-center text-sm text-muted-foreground">Cette vidéo n'est plus disponible. Les autres leçons restent accessibles.</div>}
                 {canResume > 0 && resumeFrom === null && current.progress.state === "en_cours" && (
                   <button type="button" onClick={() => setResumeFrom(canResume)} className="mt-3 flex min-h-11 w-full items-center justify-center gap-2 rounded-lg border border-primary/50 bg-primary/5 text-sm font-semibold text-primary transition-colors duration-150 hover:bg-primary/10 sm:w-auto sm:px-4"><PlayCircle className="size-4" />Reprendre à {formatTime(canResume)}</button>
                 )}

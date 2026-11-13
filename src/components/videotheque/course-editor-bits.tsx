@@ -8,7 +8,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { formatDuration, formatTotal } from "@/lib/videotheque";
 import { CourseStatusBadge } from "./ui-bits";
 
-export type EditorLesson = { id: string; title: string; duration: number; thumbUrl: string | null };
+export type EditorLesson = { id: string; title: string; duration: number; thumbUrl: string | null; available?: boolean };
 
 /** Miniature 16:9 avec repli icône. */
 export function Thumb({ url, className = "" }: { url: string | null; className?: string }) {
@@ -60,6 +60,7 @@ export function LessonRow({ number, lesson, canUp, canDown, onUp, onDown, onEdit
       <span className="min-w-0 flex-1">
         <span className="line-clamp-2 text-sm font-semibold leading-snug"><span className="text-muted-foreground tabular-nums sm:hidden">{number}. </span>{lesson.title}</span>
         <span className="text-xs tabular-nums text-muted-foreground">{formatDuration(lesson.duration)}</span>
+        {lesson.available === false && <span className="ml-2 rounded-full border border-destructive/40 px-2 py-0.5 text-[11px] font-medium text-destructive">Vidéo indisponible</span>}
       </span>
       {editable && (
         <span className="flex shrink-0 items-center">

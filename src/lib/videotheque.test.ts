@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { availableLessonIds, canRevoke, mustKeepVideo, checkVideoFile, formatEta, formatTotal, groupByModule, isSameUploadTarget, isUploadComplete, MB, normalizeType, quotaOf, shouldRetryTus, tusFingerprint, uploadRate, VIDEO_BUCKET, vtError } from "./videotheque";
+import { availableLessonIds, unavailableLessonCount, latestVersionOf, canRevoke, mustKeepVideo, checkVideoFile, formatEta, formatTotal, groupByModule, isSameUploadTarget, isUploadComplete, MB, normalizeType, quotaOf, shouldRetryTus, tusFingerprint, uploadRate, VIDEO_BUCKET, vtError } from "./videotheque";
 import { hasFeature } from "./plans";
 
 const f = (size: number, duration = 60, type = "video/mp4") => ({ size, duration, type, name: "a.mp4" });
@@ -116,4 +116,14 @@ describe("Vidéos protégées et leçons indisponibles", () => {
   test("aucune référence : suppression possible", () => expect(mustKeepVideo({ lessons: 0, grants: 0, latestVersions: 0 })).toBe(false));
   test("progression sans la leçon indisponible", () =>
     expect(availableLessonIds([{ lesson_id: "a", video_id: "v1" }, { lesson_id: "b", video_id: "v2" }], new Set(["v1"]))).toEqual(["a"]));
+});
+
+describe("Modération limitée à la leçon (option B)", () => {
+  const ls = [{ lesson_id: "a", video_id: "v1" }, { lesson_id: "b", video_id: "v2" }, { lesson_id: "c", video_id: "v3" }];
+  test("une vidéo retirée rend une seule leçon indisponible", () => expect(unavailableLessonCount(ls, new Set(["v1", "v3"]))).toBe(1));
+  test("les autres leçons restent disponibles", () => expect(availableLessonIds(ls, new Set(["v1", "v3"]))).toEqual(["a", "c"]));
+  test("aucune vidéo retirée : rien d'indisponible", () => expect(unavailableLessonCount(ls, new Set(["v1", "v2", "v3"]))).toBe(0));
+  test("la dernière version publiée est celle au numéro le plus haut", () =>
+    expect(latestVersionOf([{ course_id: "c", version: 1 }, { course_id: "c", version: 3 }, { course_id: "d", version: 9 }, { course_id: "c", version: 2 }], "c")?.version).toBe(3));
+  test("formation jamais publiée : pas de version", () => expect(latestVersionOf([{ course_id: "d", version: 1 }], "c")).toBeNull());
 });

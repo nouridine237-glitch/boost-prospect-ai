@@ -49,7 +49,7 @@ export function LessonOutline({ courseId, lessons, currentId, onSelect }: {
                             <span className="tabular-nums">{formatDuration(x.duration)}</span>
                             {st === "en_cours" && <span className="font-semibold text-primary tabular-nums">{x.progress.percent} %</span>}
                             {st === "terminee" && <span className="text-success">Terminée</span>}
-                            {!x.available && <span>Vidéo retirée</span>}
+                            {!x.available && <span>Vidéo indisponible</span>}
                           </span>
                         </span>
                       </Link>

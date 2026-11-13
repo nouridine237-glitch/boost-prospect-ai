@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { ACCEPTED_TYPES, CATEGORIES, PLAY_URL_TTL_S, PLAY_URLS_PER_HOUR, VIDEO_BUCKET, quotaOf, vtError, isUploadComplete, mustKeepVideo, availableLessonIds, type SnapshotLesson } from "@/lib/videotheque";
+import { ACCEPTED_TYPES, CATEGORIES, PLAY_URL_TTL_S, PLAY_URLS_PER_HOUR, VIDEO_BUCKET, quotaOf, vtError, isUploadComplete, mustKeepVideo, availableLessonIds, unavailableLessonCount, latestVersionOf, type SnapshotLesson } from "@/lib/videotheque";
 import { hasFeature } from "@/lib/plans";
 import { courseProgress, lessonProgress, type ProgressRow } from "@/lib/academy-progress";
 
@@ -200,9 +200,15 @@ export const listMyCourses = createServerFn({ method: "GET" })
     const ids = (courses ?? []).map((c: any) => c.id);
     const [{ data: lessons }, { data: versions }, { data: grants }] = ids.length ? await Promise.all([
       context.supabase.from("academy_lessons").select("course_id").in("course_id", ids).is("archived_at", null),
-      context.supabase.from("course_versions").select("course_id, version").in("course_id", ids),
+      context.supabase.from("course_versions").select("course_id, version, lessons").in("course_id", ids),
       context.supabase.from("course_grants").select("course_id, status").in("course_id", ids).in("status", ["en_attente", "actif"]),
     ]) : [{ data: [] }, { data: [] }, { data: [] }];
+    // Leçons indisponibles dans la dernière version publiée (vidéo supprimée, modérée ou pas prête).
+    const vs = (versions ?? []) as { course_id: string; version: number; lessons: SnapshotLesson[] }[];
+    const latestByCourse = new Map(ids.map((id: string) => [id, latestVersionOf(vs, id)]));
+    const latestVids = [...new Set([...latestByCourse.values()].flatMap((v) => (v?.lessons ?? []).map((l) => l.video_id)))];
+    const { data: aliveL } = latestVids.length ? await context.supabase.from("user_videos").select("id").in("id", latestVids).eq("status", "pret").is("moderated_at", null).is("deleted_at", null) : { data: [] };
+    const aliveSetL = new Set<string>((aliveL ?? []).map((v: any) => v.id));
     return {
       canCreate: hasFeature(plan, "videoLibrary"), canShare: hasFeature(plan, "teamTraining"),
       courses: (courses ?? []).map((c: any) => ({
@@ -210,6 +216,7 @@ export const listMyCourses = createServerFn({ method: "GET" })
         lessons: (lessons ?? []).filter((l: any) => l.course_id === c.id).length,
         version: Math.max(0, ...(versions ?? []).filter((v: any) => v.course_id === c.id).map((v: any) => v.version)),
         recipients: (grants ?? []).filter((g: any) => g.course_id === c.id).length,
+        unavailable: unavailableLessonCount(latestByCourse.get(c.id)?.lessons ?? [], aliveSetL),
       })),
     };
   });
@@ -239,7 +246,7 @@ export const getCourseEditor = createServerFn({ method: "GET" })
     const [{ data: lessons }, { data: videos }, { data: versions }, { data: grants }] = await Promise.all([
       context.supabase.from("academy_lessons").select("id, title, summary, module_title, user_video_id, sort_order, updated_at").eq("course_id", c.id).is("archived_at", null).order("sort_order").order("created_at"),
       context.supabase.from("user_videos").select("id, title, duration_seconds, thumb_path, status, archived_at").eq("status", "pret").is("archived_at", null).order("created_at", { ascending: false }),
-      context.supabase.from("course_versions").select("id, version, created_at").eq("course_id", c.id).order("version", { ascending: false }),
+      context.supabase.from("course_versions").select("id, version, created_at, lessons").eq("course_id", c.id).order("version", { ascending: false }),
       context.supabase.from("course_grants").select("id, recipient_id, grantor_id, status, can_reshare, origin, created_at, accepted_at, version_id").eq("course_id", c.id).order("created_at", { ascending: false }),
     ]);
     const vids = videos ?? [];
@@ -251,16 +258,18 @@ export const getCourseEditor = createServerFn({ method: "GET" })
     const { data: prog } = lessonIds.length && recipients.length
       ? await a.from("academy_lesson_progress").select("user_id").eq("course_id", c.id).eq("status", "terminee").in("user_id", recipients)
       : { data: [] };
-    const lessonVids = [...new Set((lessons ?? []).map((l: any) => l.user_video_id as string))];
-    const { data: aliveVids } = lessonVids.length ? await a.from("user_videos").select("id").in("id", lessonVids).eq("status", "pret").is("moderated_at", null).is("deleted_at", null) : { data: [] };
-    const aliveSet = new Set((aliveVids ?? []).map((v: any) => v.id));
     const latest = (versions ?? [])[0];
+    const latestLessons = (latest?.lessons ?? []) as SnapshotLesson[];
+    const lessonVids = [...new Set([...(lessons ?? []).map((l: any) => l.user_video_id as string), ...latestLessons.map((l) => l.video_id)])];
+    const { data: aliveVids } = lessonVids.length ? await a.from("user_videos").select("id").in("id", lessonVids).eq("status", "pret").is("moderated_at", null).is("deleted_at", null) : { data: [] };
+    const aliveSet = new Set<string>((aliveVids ?? []).map((v: any) => v.id));
     const changedSince = latest ? (lessons ?? []).some((l: any) => new Date(l.updated_at) > new Date(latest.created_at)) : true;
     return {
       canShare: hasFeature(plan, "teamTraining"),
       course: { id: c.id as string, title: c.title as string, description: c.description as string, archived: !!c.archived_at, published: c.status === "publie" },
       version: latest ? { number: latest.version as number, at: latest.created_at as string } : null,
       draftChanges: changedSince,
+      versionUnavailable: unavailableLessonCount(latestLessons, aliveSet),
       lessons: (lessons ?? []).map((l: any) => {
         const v = vids.find((x: any) => x.id === l.user_video_id);
         return { id: l.id as string, title: l.title as string, summary: l.summary as string, module: l.module_title as string, videoId: l.user_video_id as string, sort: l.sort_order as number,
@@ -426,7 +435,7 @@ export const listReceived = createServerFn({ method: "GET" })
     const rows = await progressRows(a, context.userId, allLessons);
     const allVids = [...new Set((versions ?? []).flatMap((v: any) => (v.lessons as SnapshotLesson[]).map((l) => l.video_id)))];
     const { data: aliveR } = allVids.length ? await a.from("user_videos").select("id").in("id", allVids).is("moderated_at", null).is("deleted_at", null) : { data: [] };
-    const okR = new Set((aliveR ?? []).map((v: any) => v.id));
+    const okR = new Set<string>((aliveR ?? []).map((v: any) => v.id));
     return gs.map((g: any) => {
       const v = (versions ?? []).find((x: any) => x.id === g.version_id);
       const ls = (v?.lessons ?? []) as SnapshotLesson[];
@@ -484,7 +493,7 @@ export const getCourseReader = createServerFn({ method: "GET" })
     }
     const vids = [...new Set(lessons.map((l) => l.video_id))];
     const { data: alive } = vids.length ? await a.from("user_videos").select("id").in("id", vids).is("moderated_at", null).is("deleted_at", null) : { data: [] };
-    const ok = new Set((alive ?? []).map((v: any) => v.id));
+    const ok = new Set<string>((alive ?? []).map((v: any) => v.id));
     const rows = await progressRows(a, context.userId, lessons.map((l) => l.lesson_id));
     const { data: owner } = await a.from("profiles").select("display_name, full_name").eq("id", c.owner_id).maybeSingle();
     return {
@@ -538,9 +547,21 @@ export const adminListVideoReports = createServerFn({ method: "GET" })
     const ids = (data ?? []).map((r: any) => r.video_id);
     const { data: vids } = ids.length ? await a.from("user_videos").select("id, title, owner_id").in("id", ids) : { data: [] };
     const n = await names(a, (vids ?? []).map((v: any) => v.owner_id));
+    // Formations partagées (accès en attente ou actifs) dont une version contient la vidéo signalée.
+    const uniq = [...new Set(ids)];
+    const versionLists = await Promise.all(uniq.map((vid) => a.from("course_versions").select("id, course_id").contains("lessons", [{ video_id: vid }])));
+    const versionsByVideo = new Map(uniq.map((vid, i) => [vid, (versionLists[i]?.data ?? []) as { id: string; course_id: string }[]]));
+    const courseIds = [...new Set([...versionsByVideo.values()].flatMap((vs) => vs.map((v) => v.course_id)))];
+    const [{ data: cs }, { data: gs }] = courseIds.length ? await Promise.all([
+      a.from("academy_courses").select("id, title").in("id", courseIds),
+      a.from("course_grants").select("course_id").in("course_id", courseIds).in("status", ["en_attente", "actif"]),
+    ]) : [{ data: [] }, { data: [] }];
     return (data ?? []).map((r: any) => {
       const v = (vids ?? []).find((x: any) => x.id === r.video_id);
-      return { id: r.id as string, videoId: r.video_id as string, title: v?.title ?? "?", owner: n[v?.owner_id] ?? "?", reason: r.reason as string, at: r.created_at as string };
+      const cids = [...new Set((versionsByVideo.get(r.video_id) ?? []).map((x) => x.course_id))];
+      const courses = cids.map((cid) => ({ id: cid, title: ((cs ?? []).find((c: any) => c.id === cid)?.title ?? "Formation") as string, people: (gs ?? []).filter((g: any) => g.course_id === cid).length }))
+        .filter((c) => c.people > 0);
+      return { id: r.id as string, videoId: r.video_id as string, title: v?.title ?? "?", owner: n[v?.owner_id] ?? "?", reason: r.reason as string, at: r.created_at as string, courses };
     });
   });
 
@@ -556,6 +577,16 @@ export const adminModerateVideo = createServerFn({ method: "POST" })
       if (v) await removeFiles(a, v);
     }
     return { result: String(r) };
+  });
+
+/** Retrait administratif explicite d'une formation entière (distinct du retrait d'une vidéo). */
+export const adminModerateCourse = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ courseId: uuid, reason: z.string().trim().min(5).max(500) }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { data: n, error } = await context.supabase.rpc("moderate_course", { _course_id: data.courseId, _reason: data.reason });
+    if (error) throw new Error(vtError(error.message, "Retrait impossible."));
+    return { revoked: Number(n) };
   });
 
 export const adminDismissReport = createServerFn({ method: "POST" })

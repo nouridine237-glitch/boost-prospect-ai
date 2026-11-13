@@ -82,6 +82,13 @@ function EditorPage() {
           </div>
           {editable && <button type="button" onClick={() => setMeta({ title: d.course.title, description: d.course.description })} className="grid size-11 shrink-0 place-items-center rounded-lg border border-border/60 text-muted-foreground transition-colors duration-150 hover:text-foreground" aria-label="Modifier le titre et la description"><Pencil className="size-4" /></button>}
         </header>
+        {d.versionUnavailable > 0 && d.version && (
+          <div role="status" className="mt-4 rounded-2xl border border-destructive/40 bg-destructive/8 p-4 text-sm">
+            <p><span className="font-semibold">{d.versionUnavailable} leçon{d.versionUnavailable > 1 ? "s" : ""} indisponible{d.versionUnavailable > 1 ? "s" : ""}</span> dans la version {d.version.number} : la vidéo a été retirée. Ceux qui ont reçu la formation gardent les autres leçons.</p>
+            <p className="mt-1 text-muted-foreground">Republie pour partager une version sans cette vidéo. Les personnes qui ont déjà la formation pourront la mettre à jour si elles le souhaitent.</p>
+            {editable && <Button className="mt-3 min-h-11" disabled={publishing} onClick={async () => { setPublishing(true); await run(async () => { const r = await publish({ data: { id } }); toast.success(`Version ${r.version} publiée`); }); setPublishing(false); }}>Republier sans cette vidéo</Button>}
+          </div>
+        )}
         {d.course.archived && <p className="surface mt-4 rounded-2xl p-4 text-sm">Formation archivée : elle n'est plus modifiable ni partageable. Les personnes qui l'ont reçue la gardent. <button type="button" className="font-semibold text-primary" onClick={() => run(() => archive({ data: { id, archived: false } }), "Formation restaurée")}>Restaurer</button></p>}
 
         <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px] lg:items-start">
@@ -167,7 +174,7 @@ function EditorPage() {
       </div>
 
       {editable && (
-        <PublishBar courseId={id} version={d.version?.number} changed={d.draftChanges} canPublish={d.lessons.length > 0} busy={publishing}
+        <PublishBar courseId={id} version={d.version?.number} changed={d.draftChanges || d.versionUnavailable > 0} canPublish={d.lessons.length > 0} busy={publishing}
           onPublish={async () => { setPublishing(true); await run(async () => { const r = await publish({ data: { id } }); toast.success(`Version ${r.version} publiée`); }); setPublishing(false); }} />
       )}
 
