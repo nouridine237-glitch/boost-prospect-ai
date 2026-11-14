@@ -111,6 +111,8 @@ BEGIN
   EXCEPTION WHEN OTHERS THEN out := out || ('retrait_formation_non_admin=' || (SQLERRM = 'ADMIN_REQUIS')); END;
   PERFORM set_config('request.jwt.claims', json_build_object('sub', a, 'role', 'authenticated')::text, true);
   out := out || ('moderation_video=' || (moderate_video(v1, 'motif de test') = 'retire'));
+  BEGIN UPDATE user_videos SET deleted_at = now() WHERE id = v2; out := out || 'garde_fou_apres_moderation=CONTOURNE(KO)'::text;
+  EXCEPTION WHEN OTHERS THEN out := out || ('garde_fou_apres_moderation=' || (SQLERRM = 'CHAMP_PROTEGE')); END;
   SELECT count(*) INTO n FROM course_grants WHERE course_id = crs AND recipient_id IN (b, c) AND status = 'actif';
   out := out || ('acces_restent_actifs=' || (n = 2));
   UPDATE course_grants SET status = 'refuse' WHERE id = gd;

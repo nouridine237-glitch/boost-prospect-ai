@@ -239,6 +239,13 @@
       "when": 1794460090980,
       "tag": "0033_tighten_grants",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1794644695338,
+      "tag": "0034_moderation_trusted_update",
+      "breakpoints": true
     }
   ]
 }
