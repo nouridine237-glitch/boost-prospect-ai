@@ -24,3 +24,5 @@
 - [ ] Vidéothèque P1-4 historique des échecs — reporté (décision utilisateur)
 - [ ] Vidéothèque P2-5 trafic — reporté ; décision : alerte uniquement, aucun ralentissement ni blocage
 - [x] Partage vidéo : P1-B retrait 7 j depuis acceptation, P1-A version incomplète, P1-C repartage sans plan, P2 droits/écrans/modération par leçon/tests (+ correctif : le retrait d'une vidéo par un admin était bloqué)
+- [x] Refonte de la page d'accueil (plan final du 15 nov.) : nouveau titre, 4 piliers avec forfaits, coach, duplication, transparence, comparaison des forfaits, FAQ
+- [ ] Page d'accueil — vraies captures d'écran : attend un compte de démonstration avec contacts fictifs
