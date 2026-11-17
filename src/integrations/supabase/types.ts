@@ -699,6 +699,95 @@ export type Database = {
         }
         Relationships: []
       }
+      duplication_public_events: {
+        Row: {
+          count: number
+          day: string
+          kind: string
+          link_id: string
+        }
+        Insert: {
+          count?: number
+          day?: string
+          kind: string
+          link_id: string
+        }
+        Update: {
+          count?: number
+          day?: string
+          kind?: string
+          link_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "duplication_public_events_link_id_fkey"
+            columns: ["link_id"]
+            isOneToOne: false
+            referencedRelation: "duplication_public_links"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      duplication_public_links: {
+        Row: {
+          course_id: string
+          created_at: string
+          expires_at: string | null
+          free_lesson_id: string
+          id: string
+          intro: string
+          owner_id: string
+          revoked_at: string | null
+          show_whatsapp: boolean
+          status: string
+          token_hash: string
+          version_id: string
+        }
+        Insert: {
+          course_id: string
+          created_at?: string
+          expires_at?: string | null
+          free_lesson_id: string
+          id?: string
+          intro?: string
+          owner_id: string
+          revoked_at?: string | null
+          show_whatsapp?: boolean
+          status?: string
+          token_hash: string
+          version_id: string
+        }
+        Update: {
+          course_id?: string
+          created_at?: string
+          expires_at?: string | null
+          free_lesson_id?: string
+          id?: string
+          intro?: string
+          owner_id?: string
+          revoked_at?: string | null
+          show_whatsapp?: boolean
+          status?: string
+          token_hash?: string
+          version_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "duplication_public_links_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "academy_courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "duplication_public_links_version_id_fkey"
+            columns: ["version_id"]
+            isOneToOne: false
+            referencedRelation: "course_versions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payment_requests: {
         Row: {
           capture_paiement: string | null
@@ -1282,6 +1371,24 @@ export type Database = {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["plan_type"]
       }
+      _public_link_hash: { Args: { _token: string }; Returns: string }
+      _public_link_rate: {
+        Args: { _key: string; _max: number }
+        Returns: boolean
+      }
+      _public_link_valid: {
+        Args: { _token: string }
+        Returns: {
+          course_id: string
+          free_lesson_id: string
+          intro: string
+          link_id: string
+          owner_id: string
+          show_whatsapp: boolean
+          version_id: string
+          video_id: string
+        }[]
+      }
       _video_available: { Args: { _video_id: string }; Returns: boolean }
       capture_page_view: {
         Args: { _slug: string }
@@ -1354,6 +1461,29 @@ export type Database = {
           link_id: string
         }[]
       }
+      public_link_create: {
+        Args: {
+          _course_id: string
+          _expires_days: number
+          _intro: string
+          _lesson_id: string
+          _show_whatsapp: boolean
+        }
+        Returns: string
+      }
+      public_link_event: {
+        Args: { _ip_hash: string; _kind: string; _token: string }
+        Returns: undefined
+      }
+      public_link_play: {
+        Args: { _ip_hash: string; _token: string }
+        Returns: string
+      }
+      public_link_resolve: {
+        Args: { _ip_hash: string; _token: string }
+        Returns: Json
+      }
+      public_link_revoke: { Args: { _link_id: string }; Returns: string }
       record_academy_result: {
         Args: {
           _level: number
