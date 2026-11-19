@@ -7,6 +7,7 @@ import { Archive, ArrowLeft, ChevronDown, Clock, Eye, Film, Layers, Pencil, Plus
 import { AppShell } from "@/components/app-shell";
 import { ErrorLine } from "@/components/videotheque/academy-tabs";
 import { ShareSheet } from "@/components/videotheque/share-sheet";
+import { PublicLinkPanel } from "@/components/videotheque/public-link-panel";
 import { LessonRow, ModuleSection, PublishBar, Thumb, VideoPicker } from "@/components/videotheque/course-editor-bits";
 import { CourseStatusBadge, StatusBadge } from "@/components/videotheque/ui-bits";
 import { Button } from "@/components/ui/button";
@@ -159,6 +160,7 @@ function EditorPage() {
                 )}
               </div>
             </div>
+            {editable && <PublicLinkPanel courseId={id} lessons={d.lessons} published={!!d.version} />}
             {d.lessons.length > 0 && (
               <Link to="/academie/lecture/$courseId" params={{ courseId: id }} className="surface group hidden overflow-hidden rounded-2xl transition-colors duration-200 hover:border-primary/40 lg:block">
                 <span className="relative block">

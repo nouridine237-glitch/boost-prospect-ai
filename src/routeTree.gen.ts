@@ -35,6 +35,7 @@ import { Route as AuthenticatedScriptsRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedSimulateurRouteImport } from './routes/_authenticated/simulateur'
 import { Route as AuthenticatedStatistiquesRouteImport } from './routes/_authenticated/statistiques'
 import { Route as AuthenticatedTramesVocalesRouteImport } from './routes/_authenticated/trames-vocales'
+import { Route as DTokenRouteImport } from './routes/d.$token'
 import { Route as PPseudoRouteImport } from './routes/p.$pseudo'
 import { Route as RejoindreCodeRouteImport } from './routes/rejoindre.$code'
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
@@ -185,6 +186,11 @@ const AuthenticatedTramesVocalesRoute =
     path: '/trames-vocales',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const DTokenRoute = DTokenRouteImport.update({
+  id: '/d/$token',
+  path: '/d/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PPseudoRoute = PPseudoRouteImport.update({
   id: '/p/$pseudo',
   path: '/p/$pseudo',
@@ -290,6 +296,7 @@ export interface FileRoutesByFullPath {
   '/simulateur': typeof AuthenticatedSimulateurRoute
   '/statistiques': typeof AuthenticatedStatistiquesRoute
   '/trames-vocales': typeof AuthenticatedTramesVocalesRoute
+  '/d/$token': typeof DTokenRoute
   '/p/$pseudo': typeof PPseudoRoute
   '/rejoindre/$code': typeof RejoindreCodeRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
@@ -331,6 +338,7 @@ export interface FileRoutesByTo {
   '/simulateur': typeof AuthenticatedSimulateurRoute
   '/statistiques': typeof AuthenticatedStatistiquesRoute
   '/trames-vocales': typeof AuthenticatedTramesVocalesRoute
+  '/d/$token': typeof DTokenRoute
   '/p/$pseudo': typeof PPseudoRoute
   '/rejoindre/$code': typeof RejoindreCodeRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
@@ -374,6 +382,7 @@ export interface FileRoutesById {
   '/_authenticated/simulateur': typeof AuthenticatedSimulateurRoute
   '/_authenticated/statistiques': typeof AuthenticatedStatistiquesRoute
   '/_authenticated/trames-vocales': typeof AuthenticatedTramesVocalesRoute
+  '/d/$token': typeof DTokenRoute
   '/p/$pseudo': typeof PPseudoRoute
   '/rejoindre/$code': typeof RejoindreCodeRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
@@ -417,6 +426,7 @@ export interface FileRouteTypes {
     | '/simulateur'
     | '/statistiques'
     | '/trames-vocales'
+    | '/d/$token'
     | '/p/$pseudo'
     | '/rejoindre/$code'
     | '/.lovable/oauth/consent'
@@ -458,6 +468,7 @@ export interface FileRouteTypes {
     | '/simulateur'
     | '/statistiques'
     | '/trames-vocales'
+    | '/d/$token'
     | '/p/$pseudo'
     | '/rejoindre/$code'
     | '/.lovable/oauth/consent'
@@ -500,6 +511,7 @@ export interface FileRouteTypes {
     | '/_authenticated/simulateur'
     | '/_authenticated/statistiques'
     | '/_authenticated/trames-vocales'
+    | '/d/$token'
     | '/p/$pseudo'
     | '/rejoindre/$code'
     | '/.lovable/oauth/consent'
@@ -524,6 +536,7 @@ export interface RootRouteChildren {
   McpRoute: typeof McpRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
+  DTokenRoute: typeof DTokenRoute
   PPseudoRoute: typeof PPseudoRoute
   RejoindreCodeRoute: typeof RejoindreCodeRoute
   DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
@@ -717,6 +730,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedTramesVocalesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/d/$token': {
+      id: '/d/$token'
+      path: '/d/$token'
+      fullPath: '/d/$token'
+      preLoaderRoute: typeof DTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/p/$pseudo': {
       id: '/p/$pseudo'
       path: '/p/$pseudo'
@@ -891,6 +911,7 @@ const rootRouteChildren: RootRouteChildren = {
   ResetPasswordRoute: ResetPasswordRoute,
   Char91DotwellKnownChar93OauthProtectedResourceRoute:
     Char91DotwellKnownChar93OauthProtectedResourceRoute,
+  DTokenRoute: DTokenRoute,
   PPseudoRoute: PPseudoRoute,
   RejoindreCodeRoute: RejoindreCodeRoute,
   DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,

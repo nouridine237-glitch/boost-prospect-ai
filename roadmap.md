@@ -26,3 +26,9 @@
 - [x] Partage vidéo : P1-B retrait 7 j depuis acceptation, P1-A version incomplète, P1-C repartage sans plan, P2 droits/écrans/modération par leçon/tests (+ correctif : le retrait d'une vidéo par un admin était bloqué)
 - [x] Refonte de la page d'accueil (plan final du 15 nov.) : nouveau titre, 4 piliers avec forfaits, coach, duplication, transparence, comparaison des forfaits, FAQ
 - [ ] Page d'accueil — vraies captures d'écran : attend un compte de démonstration avec contacts fictifs
+
+## Duplication Hub P0
+- [x] Lien public en base, règles, fonctions serveur
+- [x] Page publique /d/… (leçon offerte, sommaire verrouillé, bouton selon les droits, retour après connexion)
+- [x] Panneau « Lien public » dans l'éditeur de formation
+- [ ] Test réel à 3 comptes (formateur Business, membre, visiteur) sur Android et ordinateur
