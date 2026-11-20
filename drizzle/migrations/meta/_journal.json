@@ -253,6 +253,13 @@
       "when": 1794951249419,
       "tag": "0035_duplication_public_links",
       "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1795204344985,
+      "tag": "0036_prospect_events_immutable",
+      "breakpoints": true
     }
   ]
 }

@@ -77,7 +77,8 @@ export const getPublicLinkPanel = createServerFn({ method: "GET" })
     const sb = context.supabase;
     const { data: link } = await sb.from("duplication_public_links").select("id, free_lesson_id, intro, show_whatsapp, expires_at, created_at")
       .eq("course_id", data.courseId).eq("status", "actif").maybeSingle();
-    const { data: canLead } = await sb.rpc("_can_lead", { _u: context.userId });
+    // _can_lead n'est exécutable que côté serveur privilégié (même règle que le partage).
+    const { data: canLead } = await (await admin()).rpc("_can_lead", { _u: context.userId });
     let stats: Record<string, number> = {};
     if (link) {
       const { data: ev } = await sb.from("duplication_public_events").select("kind, count").eq("link_id", link.id);

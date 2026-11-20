@@ -32,3 +32,10 @@
 - [x] Page publique /d/… (leçon offerte, sommaire verrouillé, bouton selon les droits, retour après connexion)
 - [x] Panneau « Lien public » dans l'éditeur de formation
 - [ ] Test réel à 3 comptes (formateur Business, membre, visiteur) sur Android et ordinateur
+
+## Performance & Team Intelligence Center
+- [x] Audit en lecture seule (rapport approuvé)
+- [x] Phase 0 : données de test nettoyées, panneau Lien public corrigé, historique prospects protégé
+- [ ] Phase 0 : source des ventes validées — attend la décision du propriétaire
+- [ ] Phase 1 : tableau d'équipe en lecture seule (un niveau) — attend les décisions ventes / membre actif / vue du leader
+- [ ] Phases 2 à 5 : hiérarchie et délégation, objectifs et missions, alertes et rapports, IA et classements
