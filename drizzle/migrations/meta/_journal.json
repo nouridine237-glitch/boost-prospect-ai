@@ -260,6 +260,13 @@
       "when": 1795204344985,
       "tag": "0036_prospect_events_immutable",
       "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1795240345056,
+      "tag": "0037_revoke_company_script_teasers",
+      "breakpoints": true
     }
   ]
 }
