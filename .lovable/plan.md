@@ -81,7 +81,7 @@ Phase 0 bis (déclencheur, colonne, date de début, fonction), puis tests en bas
 
 ## 9. Décisions finales (validées)
 - **Paramètres N et D (V1) :** seul un administrateur peut les modifier.
-  - Ils sont stockés dans `app_settings` (clé `activity_rule` = {min_activities, window_days}). Lecture par tous les utilisateurs connectés, écriture réservée à l'admin, vérifiée via `has_role(auth.uid(),'admin')`.
+  - Ils sont stockés dans `app_settings` (clé `activity_rule` = {min_activities, window_days}). Lecture et écriture réservées à l'admin (règle actuelle d'`app_settings`) ; `member_activity` lit N et D côté serveur, vérifiée via `has_role(auth.uid(),'admin')`.
   - Bornes contrôlées côté serveur : N de 1 à 20, D de 1 à 90.
   - Un réglage dans l'écran d'administration existant.
   - `member_activity` lit toujours ces valeurs côté serveur : aucun paramètre n'est envoyé par le navigateur. Les mêmes valeurs servent donc au membre, au leader et aux tests.
@@ -99,5 +99,45 @@ Tests ajoutés :
 - Phase 2 : un responsable ne voit pas une sous-équipe sœur ; après retrait de sa délégation, il obtient 0 ligne ; aucun champ de prospect n'apparaît.
 
 ## 10. Points encore ouverts
-- Aucun pour la V1.
+- V1 : durée de conservation de la trace d'activité (voir §11), à valider.
 - Phase 2 : le modèle exact `teams`/`team_members` (rattachement d'un membre à plusieurs équipes ou à une seule) sera à trancher au démarrage de la phase 2.
+
+## 11. Décision D1 — Activité conservée après suppression (option A, validée)
+**Règle :** supprimer un prospect ou une publication n'efface jamais une activité qualifiante déjà enregistrée. Les indicateurs passés ne changent pas.
+
+**Trace minimale** (nouvelle table `activity_ledger`, prévue en phase 0 bis, non créée) :
+- membre (`user_id`) ;
+- type : `etape`, `publication` ou `lecon` ;
+- `occurred_at`, l'heure du serveur ;
+- clé de déduplication unique : une empreinte non réversible, par exemple `etape:` + empreinte(prospect + transition + jour), `publication:` + empreinte(post), `lecon:` + empreinte(leçon) ;
+- pour les leçons, le mode : lecture ou manuel ;
+- `created_at`.
+
+Interdit dans la trace : nom, téléphone, coordonnées, notes ou contenu du prospect, texte de la publication, et tout identifiant de prospect ou de post en clair.
+
+**Écriture :** uniquement par des déclencheurs serveur, au moment de l'activité réelle (changement d'étape, première publication, première fin de leçon). Insertion seulement, avec `ON CONFLICT` sur la clé, ce qui garantit qu'une activité n'est jamais comptée deux fois.
+- Aucun lien vers `prospects`, `content_posts` ni les leçons : leur suppression ne touche donc pas la trace.
+- Aucun accès direct depuis le navigateur, ni en lecture ni en écriture : la lecture passe uniquement par `member_activity`.
+
+**Source de vérité :** `member_activity` lit la trace, et non plus les tables d'origine. Chaque activité y est écrite une seule fois, au moment où elle se produit. Ce n'est pas une recopie d'indicateurs : les chiffres restent calculés à la lecture.
+
+**Conservation et suppression :**
+- Durée de conservation : **à valider** par le propriétaire, au regard des obligations applicables. Aucune durée n'est codée sans cette validation.
+- En attendant, la purge est prévue mais désactivée : une fonction réservée à l'admin supprime les traces plus anciennes que X, une fois X validé.
+- Suppression d'un compte : toutes ses traces sont supprimées.
+- Demande d'effacement : suppression des traces du membre concerné, à la demande.
+- La trace ne contenant aucune donnée de prospect, la suppression d'un prospect ne demande aucune anonymisation de la trace.
+
+**Tests ajoutés :**
+- Un changement d'étape crée une trace ; supprimer ensuite le prospect ne change pas le compte d'activité.
+- Publier, supprimer le post : la publication reste comptée ; republier un autre post compte en plus ; republier le même post ne compte pas deux fois.
+- Terminer une leçon, puis supprimer la formation : l'activité reste comptée.
+- La trace ne contient aucune colonne de nom, téléphone, notes ni contenu.
+- Un membre ou un leader qui lit ou écrit directement dans la trace est refusé.
+- La suppression d'un compte supprime ses traces.
+- Non-régression : Conversion, CRM, planificateur et Académie s'affichent comme avant.
+
+## 12. Décisions restantes
+- **D2 (phase 2) :** appartenance d'un membre à une seule équipe ou à plusieurs ; possibilité d'être membre et responsable à la fois ; profondeur maximale.
+- **D3 (phase 2) :** le partage de formations reste-t-il limité à l'équipe directe, ou s'étend-il au nouveau périmètre ?
+- **Durée de conservation** de la trace d'activité.
