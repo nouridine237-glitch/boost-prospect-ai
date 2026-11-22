@@ -79,6 +79,25 @@ Phase 0 bis (déclencheur, colonne, date de début, fonction), puis tests en bas
 - Changer les réglages N et D modifie bien le résultat.
 - Non-régression : CRM, Conversion, planificateur, Académie, lien public et tous les tests existants passent.
 
-## 9. Points encore ouverts
-- Valeurs par défaut de N (1) et D (7) : qui peut les changer ? Proposition : l'admin seulement en V1.
-- Phase 2 : confirmer que les responsables délégués voient les noms (A3) dans leur sous-équipe.
+## 9. Décisions finales (validées)
+- **Paramètres N et D (V1) :** seul un administrateur peut les modifier.
+  - Ils sont stockés dans `app_settings` (clé `activity_rule` = {min_activities, window_days}). Lecture par tous les utilisateurs connectés, écriture réservée à l'admin, vérifiée via `has_role(auth.uid(),'admin')`.
+  - Bornes contrôlées côté serveur : N de 1 à 20, D de 1 à 90.
+  - Un réglage dans l'écran d'administration existant.
+  - `member_activity` lit toujours ces valeurs côté serveur : aucun paramètre n'est envoyé par le navigateur. Les mêmes valeurs servent donc au membre, au leader et aux tests.
+  - Chaque changement est horodaté (`updated_at`) et la règle en vigueur est affichée (« Actif : N activité(s) sur D jours »).
+- **Responsables délégués (phase 2) :** un responsable voit uniquement les noms et les chiffres d'activité des membres de sa sous-équipe autorisée, c'est-à-dire sa sous-équipe et celles qui en dépendent, selon `team_scope(viewer)`.
+  - Il ne voit jamais un nom, un numéro, une coordonnée, une note ni un détail de prospect.
+  - Il n'a pas accès aux équipes sœurs ni au niveau supérieur.
+  - Il perd l'accès dès que sa délégation est retirée.
+  - Il passe par la même fonction `member_activity` : aucun chemin d'accès supplémentaire.
+
+Tests ajoutés :
+- Un non-admin qui tente de modifier N ou D est refusé.
+- Des valeurs hors bornes sont refusées.
+- Un changement de N ou D par l'admin modifie le statut actif partout de façon identique.
+- Phase 2 : un responsable ne voit pas une sous-équipe sœur ; après retrait de sa délégation, il obtient 0 ligne ; aucun champ de prospect n'apparaît.
+
+## 10. Points encore ouverts
+- Aucun pour la V1.
+- Phase 2 : le modèle exact `teams`/`team_members` (rattachement d'un membre à plusieurs équipes ou à une seule) sera à trancher au démarrage de la phase 2.
