@@ -27,39 +27,58 @@ Anti-doublon : on compte des activités distinctes par jour et par type.
 - Une publication = un post, compté une seule fois à sa première publication.
 - Une leçon = une leçon, comptée une seule fois à sa première fin.
 
-## 2. Incompatibilités et corrections préalables (phase 0 bis)
-1. **Changement d'étape fiable :** ajouter un déclencheur côté serveur sur `prospects`, qui écrit lui-même `changement_statut` quand le statut change vraiment. Ensuite, refuser ce type d'événement quand il vient du navigateur, et retirer l'écriture faite dans `crm.tsx`. Les événements anciens restent lisibles, mais le calcul « actif » utilisera seulement ceux du déclencheur, à partir de sa date de mise en service.
-2. **Publication :** garder la première date de publication. Pour cela, ajouter une colonne `first_published_at` qui ne change plus une fois remplie (ajout seulement, aucune donnée existante modifiée). Le caractère déclaratif reste : à valider (A2).
-3. **Relance :** non traçable aujourd'hui. Choix à faire (A1).
-4. **Vue de calcul unique :** une fonction serveur `member_activity_7d(...)` qui ne renvoie que des comptes. Elle sert à la fois au membre, pour lui-même, et au leader, en agrégats seulement. Aucune table de recopie.
+## 2. Décisions A1 à A6 (validées)
+- **A1 Relances :** exclues du calcul « membre actif » en V1. Aucun nouvel événement « relance faite ».
+- **A2 Publications :** comptées comme activité **déclarative**, avec le libellé « déclaré publié — pas une preuve de publication externe ». Nouvelle colonne `content_posts.first_published_at`, remplie une seule fois par le serveur et jamais remise à zéro. Une republication ne compte pas deux fois. Un post supprimé n'est plus compté (pas de recopie des données).
+- **A3 Noms des membres :** le leader voit le nom de chaque membre de son périmètre et ses chiffres d'activité. Il ne voit jamais un nom, un numéro, une coordonnée, une note ni un contenu de prospect.
+- **A4 Petites équipes :** pas de seuil minimal. Seuls les chiffres nécessaires sont renvoyés, et uniquement pour le périmètre autorisé.
+- **A5 Leçons :** une leçon terminée en manuel (au moins 60 % de la durée) compte pour « actif ». Les indicateurs affichent séparément « lecture complète » (`completion_method = lecture`) et « fin déclarée » (`manuel`), jamais additionnées sous un même libellé.
+- **A6 Historique :** seuls les changements d'étape créés par le déclencheur serveur comptent. Sa date de mise en service est enregistrée dans `app_settings` (clé `activity_measure_start`) et affichée sous la forme « Mesure depuis le JJ/MM/AAAA ». Pour les publications et les leçons, la même date de début s'applique, pour que tous les chiffres partent du même jour.
 
-## 3. Décision 3 — Leader : agrégats seulement
-- Le leader ne lit jamais `prospects`, `prospect_events`, `content_posts` ni la progression détaillée d'un membre. Les règles d'accès actuelles réservées au propriétaire restent inchangées.
-- L'accès passe uniquement par des fonctions serveur, sur le modèle de `team_member_progress`. Elles vérifient le lien d'équipe actif dans `team_links` et renvoient des chiffres.
-- **Incompatibilité à arbitrer (A3) :** aujourd'hui, `team_member_progress` renvoie déjà le **nom du membre** au leader. Votre décision interdit les identifiants des *prospects*. Elle ne précise pas les *membres*.
-  - Option a : garder le nom du membre, avec ses chiffres seulement.
-  - Option b : vue d'équipe totalement anonyme (totaux et répartition uniquement).
-- Seuil de petite équipe : si l'équipe compte moins de 3 membres, afficher seulement les totaux, pour éviter de deviner qui a fait quoi (A4).
-- Le forfait Business ne suffit jamais à lui seul : il faut un lien d'équipe actif ET le bon forfait. Le réglage `teamCenter` est ajouté dans `FEATURE_MIN_PLAN`.
+## 3. Spécification consolidée — membre actif (V1)
+Un membre est **actif** s'il a au moins N activités qualifiantes (N = 1 par défaut, configurable) sur les D derniers jours (D = 7 par défaut, configurable), à partir de `activity_measure_start`.
 
-## 4. Plan technique actualisé (V1)
-- **Phase 0 bis (prérequis) :** déclencheur de changement d'étape côté serveur, `first_published_at`, fonction `member_activity_7d`, puis tests en base dans une transaction annulée.
-- **Phase 1 :** carte « Mon activité 7 jours » pour le membre, et tableau d'équipe d'un seul niveau en lecture seule : membres actifs / total, activités par type, leçons terminées, évolution sur 4 semaines.
-- **Phase 2 et suivantes** (inchangées) : hiérarchie et délégation, objectifs et missions, alertes et rapports, puis IA et classements. Toutes reposent sur la même fonction de calcul.
-- Module Ventes : hors V1.
+Activités qualifiantes (sans doublon) :
+1. Un changement d'étape réel, écrit par le serveur. Une seule fois par prospect, par transition et par jour.
+2. La première publication d'un post (`first_published_at`, déclarative).
+3. La première fin d'une leçon (`completed_at`), avec le détail lecture ou manuel.
 
-## 5. Tests prévus
-- Un faux `changement_statut` envoyé depuis le navigateur est refusé ; un vrai changement d'étape crée un seul événement.
-- Copie, WhatsApp et connexion ne rendent pas un membre actif.
-- Publier, dépublier puis republier un post compte une seule publication.
-- Une même leçon terminée deux fois compte une seule fois.
-- Un leader sans lien actif obtient 0 ligne ; un Business sans équipe obtient 0 ligne ; aucun nom ni numéro de prospect dans les réponses.
-- Le seuil configurable (7 jours par défaut) est respecté.
+Ne comptent jamais : copie, ouverture de WhatsApp, connexion, notes, report de relance, missions du coach, campagnes, quiz, jours de duplication, statut « Client » en tant que vente.
 
-## 6. Points à arbitrer
-- **A1 Relance :** (a) l'exclure en V1, ou (b) ajouter un bouton explicite « Relance faite », déclaratif, compté comme événement distinct.
-- **A2 Publication déclarative :** l'accepter comme activité, sachant que rien ne prouve la publication réelle ?
-- **A3 Nom des membres** visible par le leader : option a ou b.
-- **A4 Seuil d'anonymat** pour les petites équipes : 3 membres ?
-- **A5 Leçon terminée en manuel** (au moins 60 % de la durée) : la compter, ou seulement la lecture réelle ?
-- **A6 Historique :** les changements d'étape enregistrés avant le déclencheur ne comptent pas. Accepté ?
+## 4. Travaux préalables (phase 0 bis)
+1. Un déclencheur serveur sur `prospects` écrit `changement_statut` lors d'un vrai changement d'étape. Ce type d'événement est refusé s'il est envoyé par le navigateur, et l'écriture faite dans `crm.tsx` est retirée. L'historique « Conversion » existant reste lisible.
+2. Ajout de `first_published_at` (ajout seulement). Le déclencheur `content_posts_guard` est étendu pour la remplir une seule fois.
+3. Ajout de la clé `activity_measure_start` dans `app_settings`.
+4. Une fonction unique `member_activity(_viewer, _days)` en SECURITY DEFINER. Elle renvoie des comptes par membre : étapes, publications déclarées, leçons en lecture complète, leçons en fin déclarée, actif oui/non. Elle ne renvoie aucun identifiant de prospect. Le périmètre se vérifie par l'utilisateur lui-même ou par un lien actif dans `team_links`.
+
+## 5. Visibilité et sécurité
+- Les règles d'accès existantes réservées au propriétaire ne changent pas. Le leader ne lit aucune table de ses membres, seulement `member_activity`.
+- Le forfait Business ne suffit pas à lui seul : il faut aussi le périmètre et `FEATURE_MIN_PLAN.teamCenter`.
+- Les classements restent privés par défaut : rien n'est classé en V1.
+
+## 6. Conflits ou tensions avec les décisions déjà validées
+- **Structure libre d'équipes et sous-équipes, sur plusieurs niveaux :** l'existant (`team_links`) n'a qu'un niveau. La V1 reste à un niveau. Le multi-niveau demande les tables `teams` et `team_members` en phase 2. `member_activity` est conçue pour recevoir alors une fonction `team_scope(viewer)` sans changer son calcul. Ce n'est pas un conflit, c'est un report.
+- **Délégation aux responsables :** absente en V1 et dépendante de la phase 2. Une fois en place, un responsable délégué verra lui aussi les noms des membres (A3) de sa sous-équipe uniquement. C'est à confirmer à ce moment-là.
+- **Classement privé par défaut :** compatible. A3 donne au leader une liste nominative de chiffres, mais ce n'est pas un classement partagé. L'affichage sera trié par nom, pas par score, pour ne pas créer un classement implicite. Le classement opt-in arrive en phase 5.
+- **Source unique de vérité :** respectée. Le calcul se fait toujours à la volée depuis `prospect_events`, `content_posts` et `academy_lesson_progress`, sans table de recopie. Seule réserve : A2 dépend de la ligne du post. Supprimer un post retire l'activité, ce qui est cohérent avec la source unique.
+- **Ventes :** aucune. Un emplacement est réservé pour un futur module Ventes.
+
+## 7. Dépendances et ordre
+Phase 0 bis (déclencheur, colonne, date de début, fonction), puis tests en base, puis phase 1 (carte membre et tableau leader à un niveau). Ensuite, phase 2 (hiérarchie et délégation), phase 3 (objectifs et missions), phase 4 (alertes et rapports), phase 5 (IA et classements opt-in).
+
+## 8. Tests d'acceptation
+- Un `changement_statut` envoyé depuis le navigateur est refusé ; un vrai changement d'étape crée exactement un événement.
+- Deux changements identiques le même jour comptent pour 1.
+- Copie, ouverture de WhatsApp, connexion, report de relance et quiz : le membre reste inactif.
+- Publier, dépublier puis republier : 1 publication, et `first_published_at` ne change pas.
+- Une leçon en lecture complète compte en « lecture » ; une fin manuelle compte en « déclarée » ; une leçon terminée deux fois compte pour 1.
+- Les événements antérieurs à `activity_measure_start` sont ignorés, et la date s'affiche.
+- Un leader avec lien actif voit les noms des membres et leurs chiffres, et aucun champ de prospect. Sans lien, ou Business sans équipe : 0 ligne. Un lien terminé coupe l'accès immédiatement.
+- Une équipe d'un seul membre s'affiche (aucun seuil).
+- Un membre ne voit que ses propres chiffres.
+- Changer les réglages N et D modifie bien le résultat.
+- Non-régression : CRM, Conversion, planificateur, Académie, lien public et tous les tests existants passent.
+
+## 9. Points encore ouverts
+- Valeurs par défaut de N (1) et D (7) : qui peut les changer ? Proposition : l'admin seulement en V1.
+- Phase 2 : confirmer que les responsables délégués voient les noms (A3) dans leur sous-équipe.
