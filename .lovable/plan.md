@@ -212,3 +212,29 @@ Principes à examiner :
 - **Information des membres :** mention dans la politique de confidentialité, à rédiger après validation.
 
 Règle d'ici là : **aucune purge automatique n'est activée** avant la validation juridique. La fonction de purge reste désactivée, et la suppression d'un compte ou une demande d'effacement est traitée à la demande.
+
+### 16.1 Références — Loi camerounaise n°2024/017 du 23 décembre 2024
+Source : texte officiel publié par la Présidence de la République. Les références ci-dessous sont celles fournies par le propriétaire. Leur rédaction exacte n'a pas été relue dans le texte officiel au cours de cette mise à jour.
+- **Section 13 :** les données ne sont pas conservées plus longtemps que nécessaire au traitement. La durée dépend du régime d'autorisation prévu par la loi et ses textes d'application.
+- **Section 21 :** la personne concernée est informée, notamment, de la durée de conservation.
+- **Section 28 :** la durée maximale est fixée par l'Autorité dans son référentiel, selon la finalité et la nature des données.
+- **Sections 27 et 29 :** obligations de sécurité et de traçabilité, et tenue du registre des traitements, à examiner.
+- **Sections 37 à 42 :** droits d'accès, de rectification, d'opposition et d'effacement, sous réserve des obligations légales de conservation, à examiner.
+
+### 16.2 Nature des données du registre
+- `activity_ledger` contient des **données personnelles du membre** : `user_id` est un identifiant pseudonyme qui permet de le rattacher à une personne.
+- Le registre n'est **pas anonyme**, même s'il ne contient aucune donnée de prospect.
+- Obligations qui en découlent :
+  - **minimiser** les champs ;
+  - **sécuriser** l'accès ;
+  - **informer** les membres, y compris sur la durée une fois fixée ;
+  - inscrire le traitement au **registre des traitements** ;
+  - **traiter les demandes de droits** (accès, rectification, opposition, effacement), en respectant les éventuelles obligations de conservation.
+
+### 16.3 À confirmer par une validation juridique locale
+- Les textes d'application de la loi n°2024/017.
+- Le référentiel de l'Autorité et la durée maximale applicable à ce type de données.
+- Les formalités applicables à MLM Boost AI : déclaration ou autorisation, registre, information.
+- L'articulation entre le droit à l'effacement et l'audit des indicateurs.
+
+**Aucune durée chiffrée n'est fixée. Aucune purge automatique avant validation.**
