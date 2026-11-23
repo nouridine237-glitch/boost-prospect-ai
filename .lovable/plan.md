@@ -163,8 +163,25 @@ Interdit dans la trace : nom, téléphone, coordonnées, notes ou contenu du pro
 ## 13. Décision D3 — Partage des formations (validée)
 - Destinataires autorisés : les membres présents dans `team_scope(partageur)`, c'est-à-dire sa sous-équipe et ses descendantes. Les équipes sœurs et les niveaux supérieurs sont exclus.
 - Les règles existantes restent inchangées : partage initial réservé à Business ou admin, un seul niveau de repartage, `can_reshare`, retrait possible dans les 7 jours, version reçue conservée, modération par leçon, abonnement et confidentialité.
-- **Retrait d'une délégation :** le responsable perd la possibilité de partager vers ce périmètre et de le consulter.
-  - **Point à confirmer :** qu'arrive-t-il aux accès déjà **acceptés** par les membres concernés ? La règle actuelle dit qu'un accès accepté est permanent et ne dépend pas des liens d'équipe. Je propose de garder ces accès et d'arrêter seulement les nouveaux partages et les invitations en attente. Sinon, il faudrait une exception explicite à la règle de permanence.
+- **Retrait d'une délégation (validé) :** un accès obtenu **uniquement** grâce au périmètre de la délégation cesse, même s'il avait été accepté. C'est une exception explicite et limitée à la règle de permanence des `course_grants`.
+  - **Traçabilité de la cause :** nouvelle colonne `course_grants.via_manager_id`, nullable, qui désigne la délégation (`team_managers`) ayant permis le partage. Elle est remplie par `grant_share` seulement quand le destinataire n'était éligible que via cette délégation. Les octrois existants restent à NULL : ils ne sont pas concernés et restent permanents.
+  - **Révocation ciblée :** la fonction `team_revoke_manager` passe au statut `revoque_delegation`, avec `ended_at`, uniquement les octrois dont `via_manager_id` est la délégation retirée. Les invitations en attente sont annulées de la même façon.
+  - **Droits indépendants préservés :**
+    - avant de couper, le serveur vérifie si le destinataire a une autre autorisation valide sur la même formation : il est propriétaire ou a un autre octroi actif ;
+    - s'il est toujours dans un périmètre autorisé du même partageur, l'octroi est rattaché à cette autre délégation au lieu d'être coupé ;
+    - la règle « une formation, un destinataire » (`course_id`, `recipient_id`) reste unique.
+  - **Contrôle côté serveur :** `lessonAccess` et `course_grants` en lecture ignorent tout statut `revoque_delegation`. Aucun contrôle ne se fait dans le navigateur.
+  - **Repartages en aval :** un octroi repartagé à partir d'un octroi coupé suit la même règle. Il cesse s'il dépendait uniquement de cette délégation, et il est conservé s'il repose sur une autre autorisation valide.
+  - **Délai de 7 jours :** il continue à s'appliquer au retrait volontaire par le partageur. Le retrait de délégation est une cause distincte, sans délai.
+  - **Tests :**
+    - un octroi via délégation, accepté, est coupé au retrait de la délégation et la lecture est refusée ;
+    - un octroi direct du propriétaire au même membre est conservé ;
+    - un membre encore couvert par une autre délégation conserve son accès, rattaché à celle-ci ;
+    - les octrois existants (NULL) ne sont pas touchés ;
+    - une équipe sœur reste hors périmètre ;
+    - un repartage en aval est coupé ou conservé selon la même règle ;
+    - une invitation en attente est annulée ;
+    - non-régression : retrait dans les 7 jours, versions reçues, modération et lien public inchangés.
 - `grant_share` sera adapté pour utiliser `team_scope` au lieu de `team_links`, en phase 2 uniquement.
 
 ## 14. Conservation du registre `activity_ledger`
@@ -174,5 +191,4 @@ Interdit dans la trace : nom, téléphone, coordonnées, notes ou contenu du pro
 - Le registre ne contient jamais de donnée personnelle de prospect.
 
 ## 15. Décisions restantes
-- Effet du retrait d'une délégation sur les accès **déjà acceptés** (voir §13) : garder l'accès (recommandé) ou le retirer.
 - Durée de conservation du registre (§14).
