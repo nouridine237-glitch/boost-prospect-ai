@@ -192,3 +192,23 @@ Interdit dans la trace : nom, téléphone, coordonnées, notes ou contenu du pro
 
 ## 15. Décisions restantes
 - Durée de conservation du registre (§14).
+
+## 16. Analyse juridique à compléter — conservation activity_ledger
+**Statut : non tranché.** Aucune durée n'est fixée ni validée.
+
+La durée sera déterminée après :
+- l'analyse du droit camerounais applicable à la protection des données personnelles (textes en vigueur à identifier et à vérifier) ;
+- l'analyse des éventuelles règles sectorielles applicables (vente directe, commerce électronique, consommation) ;
+- la définition précise des finalités du registre : calcul des indicateurs d'activité et audit de ces indicateurs ;
+- une **validation juridique locale** (juriste ou conseil au Cameroun).
+
+Principes à examiner :
+- **Finalité :** usage limité au calcul et à l'audit des indicateurs, sans autre réutilisation, publicitaire ou de profilage.
+- **Minimisation :** trace limitée au membre, au type d'activité, à l'horodatage, à la clé de déduplication non réversible et au mode de fin de leçon. Aucune donnée de prospect.
+- **Limitation de la conservation :** durée proportionnée aux finalités, à justifier, puis suppression ou anonymisation.
+- **Sécurité :** aucun accès direct depuis le navigateur, lecture uniquement par fonction serveur, écriture par déclencheur, accès administrateur tracé.
+- **Droits des personnes :** accès, rectification et effacement pour le membre concerné. Les modalités (procédure, délai de réponse) sont à définir.
+- **Obligations de conservation ou de preuve :** vérifier s'il existe une obligation de garder ces traces (preuve, litige, contrôle) qui imposerait une durée minimale ou limiterait l'effacement.
+- **Information des membres :** mention dans la politique de confidentialité, à rédiger après validation.
+
+Règle d'ici là : **aucune purge automatique n'est activée** avant la validation juridique. La fonction de purge reste désactivée, et la suppression d'un compte ou une demande d'effacement est traitée à la demande.
