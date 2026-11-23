@@ -137,7 +137,42 @@ Interdit dans la trace : nom, téléphone, coordonnées, notes ou contenu du pro
 - La suppression d'un compte supprime ses traces.
 - Non-régression : Conversion, CRM, planificateur et Académie s'affichent comme avant.
 
-## 12. Décisions restantes
-- **D2 (phase 2) :** appartenance d'un membre à une seule équipe ou à plusieurs ; possibilité d'être membre et responsable à la fois ; profondeur maximale.
-- **D3 (phase 2) :** le partage de formations reste-t-il limité à l'équipe directe, ou s'étend-il au nouveau périmètre ?
-- **Durée de conservation** de la trace d'activité.
+## 12. Décision D2 — Organisation des équipes (option A, validée)
+**Modèle prévu en phase 2** (non créé) :
+- `teams` (id, parent_id nullable, owner_id, nom). C'est un arbre sans limite de profondeur.
+- `team_memberships` (user_id, team_id, statut, dates), avec une contrainte d'unicité : **une seule équipe principale active par membre**.
+- `team_managers` (user_id, team_id, délégué_par, dates, statut) : la **responsabilité**, distincte de l'appartenance. Un membre peut gérer plusieurs sous-équipes.
+
+**Règles :**
+- `team_scope(viewer)` est une fonction SECURITY DEFINER, récursive, qui renvoie les membres des équipes gérées par le viewer et de toutes leurs descendantes.
+- Elle exclut les équipes sœurs et les niveaux supérieurs.
+- C'est la seule source de périmètre pour `member_activity` et pour le partage de formations.
+
+**Protection contre les cycles :** un déclencheur refuse tout `parent_id` qui ferait d'une équipe sa propre ascendante. Le contrôle se fait par parcours des ascendants, sous verrou.
+
+**Écritures :** uniquement par des fonctions `team_*` SECURITY DEFINER. Le navigateur n'écrit jamais directement.
+- Seul le propriétaire de l'arbre, ou un responsable pour ses descendantes, peut créer une sous-équipe ou déléguer.
+- Retirer une délégation coupe l'accès immédiatement.
+
+**Migration depuis `team_links` :**
+- Chaque leader reçoit une équipe racine ; chaque lien actif devient une appartenance.
+- `team_links` reste en place et lisible pendant la transition.
+- Les octrois `course_grants` existants ne sont pas modifiés : l'accès accepté reste permanent.
+- Tests avant/après : mêmes membres visibles, mêmes formations accessibles.
+
+## 13. Décision D3 — Partage des formations (validée)
+- Destinataires autorisés : les membres présents dans `team_scope(partageur)`, c'est-à-dire sa sous-équipe et ses descendantes. Les équipes sœurs et les niveaux supérieurs sont exclus.
+- Les règles existantes restent inchangées : partage initial réservé à Business ou admin, un seul niveau de repartage, `can_reshare`, retrait possible dans les 7 jours, version reçue conservée, modération par leçon, abonnement et confidentialité.
+- **Retrait d'une délégation :** le responsable perd la possibilité de partager vers ce périmètre et de le consulter.
+  - **Point à confirmer :** qu'arrive-t-il aux accès déjà **acceptés** par les membres concernés ? La règle actuelle dit qu'un accès accepté est permanent et ne dépend pas des liens d'équipe. Je propose de garder ces accès et d'arrêter seulement les nouveaux partages et les invitations en attente. Sinon, il faudrait une exception explicite à la règle de permanence.
+- `grant_share` sera adapté pour utiliser `team_scope` au lieu de `team_links`, en phase 2 uniquement.
+
+## 14. Conservation du registre `activity_ledger`
+- Aucune durée fixée à ce stade.
+- La durée sera déterminée après vérification des obligations légales et réglementaires applicables, des besoins opérationnels et du principe de minimisation des données.
+- Jusqu'à cette décision, la purge reste désactivée.
+- Le registre ne contient jamais de donnée personnelle de prospect.
+
+## 15. Décisions restantes
+- Effet du retrait d'une délégation sur les accès **déjà acceptés** (voir §13) : garder l'accès (recommandé) ou le retirer.
+- Durée de conservation du registre (§14).
