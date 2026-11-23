@@ -102,40 +102,33 @@ Tests ajoutés :
 - V1 : durée de conservation de la trace d'activité (voir §11), à valider.
 - Phase 2 : le modèle exact `teams`/`team_members` (rattachement d'un membre à plusieurs équipes ou à une seule) sera à trancher au démarrage de la phase 2.
 
-## 11. Décision D1 — Activité conservée après suppression (option A, validée)
-**Règle :** supprimer un prospect ou une publication n'efface jamais une activité qualifiante déjà enregistrée. Les indicateurs passés ne changent pas.
+## 11. Décision D1 — Activité après suppression (révisée, voir §17)
+**Correction :** l'ancienne règle, qui conservait systématiquement l'activité après la suppression d'un prospect ou d'un post, **ne s'applique plus**. La règle conditionnelle du §17, critère 5, prévaut.
 
-**Trace minimale** (nouvelle table `activity_ledger`, prévue en phase 0 bis, non créée) :
-- membre (`user_id`) ;
-- type : `etape`, `publication` ou `lecon` ;
-- `occurred_at`, l'heure du serveur ;
-- clé de déduplication unique : une empreinte non réversible, par exemple `etape:` + empreinte(prospect + transition + jour), `publication:` + empreinte(post), `lecon:` + empreinte(leçon) ;
-- pour les leçons, le mode : lecture ou manuel ;
-- `created_at`.
+**Trace envisagée (`activity_ledger`, non créée) :**
+- `user_id`, `event_type`, `occurred_at` ;
+- une référence technique, seulement si elle est indispensable à la déduplication, par exemple la clé `etape`, `publication` ou `lecon` ;
+- le mode de fin de leçon.
 
-Interdit dans la trace : nom, téléphone, coordonnées, notes ou contenu du prospect, texte de la publication, et tout identifiant de prospect ou de post en clair.
+Aucune copie de données métier ni de données de prospect. `user_id` et toute empreinte déterministe ou recoupable sont des **données personnelles pseudonymisées, jamais anonymes**.
 
-**Écriture :** uniquement par des déclencheurs serveur, au moment de l'activité réelle (changement d'étape, première publication, première fin de leçon). Insertion seulement, avec `ON CONFLICT` sur la clé, ce qui garantit qu'une activité n'est jamais comptée deux fois.
-- Aucun lien vers `prospects`, `content_posts` ni les leçons : leur suppression ne touche donc pas la trace.
-- Aucun accès direct depuis le navigateur, ni en lecture ni en écriture : la lecture passe uniquement par `member_activity`.
+**Écriture :** uniquement par des déclencheurs serveur, en insertion seule, avec `ON CONFLICT` sur la clé technique. Aucun accès direct depuis le navigateur.
 
-**Source de vérité :** `member_activity` lit la trace, et non plus les tables d'origine. Chaque activité y est écrite une seule fois, au moment où elle se produit. Ce n'est pas une recopie d'indicateurs : les chiffres restent calculés à la lecture.
+**Source de vérité — BLOQUANT à arbitrer avant toute implémentation :**
+- **Option L (registre source) :** `activity_ledger` devient le registre source des événements d'activité. `member_activity` ne lit que lui, et les tables d'origine ne sont plus la source des indicateurs.
+  - La suppression d'un prospect ou d'un post n'efface la trace que selon le §17-5.
+  - La suppression d'un compte ou une demande d'effacement entraîne la suppression ou l'anonymisation réelle de ses lignes.
+  - Il n'y a aucune autre table de statistiques.
+- **Option S (tables d'origine) :** les indicateurs sont recalculés depuis `prospect_events`, `content_posts` et `academy_lesson_progress`, et il n'y a pas de registre. Supprimer une donnée d'origine retire l'activité. C'est conforme au §17-5, mais les chiffres passés peuvent alors baisser.
+- **Contradiction relevée :** l'objectif de stabilité des indicateurs (D1 initiale) et le critère 5 (pas de conservation pour préserver artificiellement des statistiques) ne sont compatibles avec l'option L que si la nécessité, la base légale et la proportionnalité sont documentées. Ce point n'est pas tranché.
 
-**Conservation et suppression :**
-- Durée de conservation : **à valider** par le propriétaire, au regard des obligations applicables. Aucune durée n'est codée sans cette validation.
-- En attendant, la purge est prévue mais désactivée : une fonction réservée à l'admin supprime les traces plus anciennes que X, une fois X validé.
-- Suppression d'un compte : toutes ses traces sont supprimées.
-- Demande d'effacement : suppression des traces du membre concerné, à la demande.
-- La trace ne contenant aucune donnée de prospect, la suppression d'un prospect ne demande aucune anonymisation de la trace.
-
-**Tests ajoutés :**
-- Un changement d'étape crée une trace ; supprimer ensuite le prospect ne change pas le compte d'activité.
-- Publier, supprimer le post : la publication reste comptée ; republier un autre post compte en plus ; republier le même post ne compte pas deux fois.
-- Terminer une leçon, puis supprimer la formation : l'activité reste comptée.
-- La trace ne contient aucune colonne de nom, téléphone, notes ni contenu.
-- Un membre ou un leader qui lit ou écrit directement dans la trace est refusé.
-- La suppression d'un compte supprime ses traces.
-- Non-régression : Conversion, CRM, planificateur et Académie s'affichent comme avant.
+**Tests à prévoir selon l'option retenue :**
+- suppression d'un prospect ou d'un post ;
+- suppression d'un compte (effacement réel) ;
+- absence de données de prospect ;
+- accès direct refusé ;
+- déduplication ;
+- non-régression de Conversion, du CRM, du planificateur et de l'Académie.
 
 ## 12. Décision D2 — Organisation des équipes (option A, validée)
 **Modèle prévu en phase 2** (non créé) :
@@ -157,7 +150,7 @@ Interdit dans la trace : nom, téléphone, coordonnées, notes ou contenu du pro
 **Migration depuis `team_links` :**
 - Chaque leader reçoit une équipe racine ; chaque lien actif devient une appartenance.
 - `team_links` reste en place et lisible pendant la transition.
-- Les octrois `course_grants` existants ne sont pas modifiés : l'accès accepté reste permanent.
+- Les octrois `course_grants` existants restent valides. Seule exception (D3, §13) : les autorisations qui dépendent **exclusivement** d'une délégation révoquée sont révoquées. Les accès indépendants restent valides.
 - Tests avant/après : mêmes membres visibles, mêmes formations accessibles.
 
 ## 13. Décision D3 — Partage des formations (validée)
@@ -204,7 +197,7 @@ La durée sera déterminée après :
 
 Principes à examiner :
 - **Finalité :** usage limité au calcul et à l'audit des indicateurs, sans autre réutilisation, publicitaire ou de profilage.
-- **Minimisation :** trace limitée au membre, au type d'activité, à l'horodatage, à la clé de déduplication non réversible et au mode de fin de leçon. Aucune donnée de prospect.
+- **Minimisation :** trace limitée au membre, au type d'activité, à l'horodatage, à la référence technique indispensable et au mode de fin de leçon. Ce sont des données pseudonymisées, pas anonymes. Aucune donnée de prospect.
 - **Limitation de la conservation :** durée proportionnée aux finalités, à justifier, puis suppression ou anonymisation.
 - **Sécurité :** aucun accès direct depuis le navigateur, lecture uniquement par fonction serveur, écriture par déclencheur, accès administrateur tracé.
 - **Droits des personnes :** accès, rectification et effacement pour le membre concerné. Les modalités (procédure, délai de réponse) sont à définir.
@@ -214,7 +207,7 @@ Principes à examiner :
 Règle d'ici là : **aucune purge automatique n'est activée** avant la validation juridique. La fonction de purge reste désactivée, et la suppression d'un compte ou une demande d'effacement est traitée à la demande.
 
 ### 16.1 Références — Loi camerounaise n°2024/017 du 23 décembre 2024
-Source : texte officiel publié par la Présidence de la République. Les références ci-dessous sont celles fournies par le propriétaire. Leur rédaction exacte n'a pas été relue dans le texte officiel au cours de cette mise à jour.
+Source : texte officiel publié par la Présidence de la République. Les références des sections 13, 21, 27, 28, 29 et 37 à 42 ont été vérifiées dans le texte officiel par le propriétaire. Leur portée, les textes d'application, le référentiel de l'Autorité et les formalités restent à confirmer par un juriste camerounais. Le projet n'est **pas** déclaré juridiquement conforme.
 - **Section 13 :** les données ne sont pas conservées plus longtemps que nécessaire au traitement. La durée dépend du régime d'autorisation prévu par la loi et ses textes d'application.
 - **Section 21 :** la personne concernée est informée, notamment, de la durée de conservation.
 - **Section 28 :** la durée maximale est fixée par l'Autorité dans son référentiel, selon la finalité et la nature des données.
@@ -238,3 +231,42 @@ Source : texte officiel publié par la Présidence de la République. Les réfé
 - L'articulation entre le droit à l'effacement et l'audit des indicateurs.
 
 **Aucune durée chiffrée n'est fixée. Aucune purge automatique avant validation.**
+
+## 17. Activity Ledger — 10 critères validés par le propriétaire
+1. **Finalité :** calcul des indicateurs du Performance Center et statistiques d'équipe autorisées uniquement. Pas de surveillance des conversations, pas d'analyse des prospects, pas de profilage secondaire.
+2. **Minimisation :** `user_id`, `event_type`, `occurred_at`, et une référence technique seulement si elle est indispensable. Aucune copie de données métier. `user_id` et toute empreinte déterministe ou recoupable sont des données personnelles pseudonymisées, jamais anonymes.
+3. **Aucune donnée personnelle de prospect.**
+4. **Durée :** non chiffrée et non arbitraire, à fixer après validation du droit camerounais, des textes d'application et du référentiel de l'Autorité. La purge automatique reste désactivée.
+5. **Suppressions :**
+   - Après suppression d'un prospect ou d'un post, une trace n'est conservée que si sa nécessité, sa base légale et sa proportionnalité sont documentées. Sinon, la trace est supprimée.
+   - Après suppression d'un compte ou une demande d'effacement, les données sont réellement effacées ou anonymisées, sauf exception légale documentée avec une durée définie.
+   - Jamais de conservation dans le seul but de préserver des statistiques.
+6. **Accès sur quatre niveaux :** membre (ses propres données), responsable, manager délégué (son périmètre `team_scope` uniquement), administrateur. Périmètre minimal et révocation immédiate.
+7. **Intégrité :** écritures côté serveur uniquement, anti-doublon et intégrité garantis, aucun secret exposé, accès administrateur journalisés, tests de sécurité.
+8. **Information :** au moment de la collecte et dans la politique de confidentialité, avec finalités, champs, destinataires, prestataires et transferts, et durée.
+9. **Droits des personnes :** procédure d'accès, de rectification, d'effacement, d'opposition et de réclamation, avec suivi.
+10. **Gouvernance :**
+    - registre des traitements ;
+    - cartographie des prestataires et des transferts (hébergement et IA) ;
+    - vérification des formalités locales ;
+    - gestion des incidents ;
+    - revue juridique avant la mise en production.
+
+| Critère | Validé par le propriétaire | Validation juridique locale | Tests techniques |
+|---|---|---|---|
+| 1 Finalité | Oui | À faire | À faire |
+| 2 Minimisation | Oui | À faire | À faire |
+| 3 Aucun prospect | Oui | À faire | À faire |
+| 4 Durée / purge désactivée | Oui | À faire (durée non fixée) | À faire |
+| 5 Suppressions | Oui | À faire | À faire |
+| 6 Accès 4 niveaux | Oui | À faire | À faire |
+| 7 Intégrité et sécurité | Oui | À faire | À faire |
+| 8 Information | Oui | À faire | Sans objet (rédaction) |
+| 9 Droits | Oui | À faire | À faire (procédure) |
+| 10 Gouvernance | Oui | À faire | Sans objet |
+
+## 18. Points bloquants avant implémentation
+- **Source de vérité :** option L (registre source) ou option S (tables d'origine), voir §11.
+- **Critère 5 :** documenter la nécessité, la base légale et la proportionnalité d'une trace conservée après la suppression d'un prospect ou d'un post. Sinon, il n'y a pas de conservation.
+- **Validation juridique locale :** textes d'application, référentiel de l'Autorité, formalités et durée de conservation.
+- **Information et procédure de droits :** à rédiger avant la mise en production.
