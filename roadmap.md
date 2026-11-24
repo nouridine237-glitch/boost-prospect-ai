@@ -39,3 +39,6 @@
 - [ ] Phase 0 : source des ventes validées — attend la décision du propriétaire
 - [ ] Phase 1 : tableau d'équipe en lecture seule (un niveau) — attend les décisions ventes / membre actif / vue du leader
 - [ ] Phases 2 à 5 : hiérarchie et délégation, objectifs et missions, alertes et rapports, IA et classements
+
+## Admin Ad Studio
+- [x] Lot 1 : page admin principale protégée (UUID serveur), états vides, modules « À venir »

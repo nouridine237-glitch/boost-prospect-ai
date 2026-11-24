@@ -1,12 +1,13 @@
 import { Link, useLocation } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { BarChart3, Bot, CalendarDays, Gift, Globe, ContactRound, CreditCard, FileText, GraduationCap, LayoutDashboard, Lock, LogOut, Megaphone, Menu, MessagesSquare, Mic, Settings, ShieldCheck, ShieldQuestion, Target, Users, Route as RouteIcon } from "lucide-react";
+import { BarChart3, Bot, CalendarDays, Gift, Globe, ContactRound, CreditCard, FileText, GraduationCap, LayoutDashboard, Lock, LogOut, Megaphone, Menu, MessagesSquare, Mic, Settings, ShieldCheck, Clapperboard, ShieldQuestion, Target, Users, Route as RouteIcon } from "lucide-react";
 import { Brand } from "@/components/brand";
 import { supabase } from "@/integrations/supabase/client";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import type { User } from "@supabase/supabase-js";
 import { usePlan } from "@/hooks/use-plan";
 import { hasFeature } from "@/lib/plans";
+import { isAdStudioOwner } from "@/lib/ad-studio";
 
 const nav = [
   { icon: LayoutDashboard, label: "Dashboard", to: "/dashboard" },
@@ -37,7 +38,8 @@ export function AppShell({ children, user, title }: { children: React.ReactNode;
   const [isAdmin, setIsAdmin] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const displayName = String(user.user_metadata?.["full_name"] ?? user.email?.split("@")[0] ?? "Networker");
-  const items = isAdmin ? [...nav, { icon: ShieldCheck, label: "Admin", to: "/admin" }] : nav;
+  const adminItems = isAdmin ? [{ icon: ShieldCheck, label: "Admin", to: "/admin" }, ...(isAdStudioOwner(user.id) ? [{ icon: Clapperboard, label: "Admin Ad Studio", to: "/admin/ad-studio" }] : [])] : [];
+  const items = [...nav, ...adminItems];
 
   useEffect(() => {
     supabase.from("user_roles").select("role").eq("user_id", user.id).eq("role", "admin").maybeSingle().then(({ data }) => {

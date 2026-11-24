@@ -43,6 +43,7 @@ import { Route as AuthenticatedAcademieNiveauRouteImport } from './routes/_authe
 import { Route as AuthenticatedAcademieMesFormationsRouteImport } from './routes/_authenticated/academie_.mes-formations'
 import { Route as AuthenticatedAcademieRecuesRouteImport } from './routes/_authenticated/academie_.recues'
 import { Route as AuthenticatedAcademieVideosRouteImport } from './routes/_authenticated/academie_.videos'
+import { Route as AuthenticatedAdminAdStudioRouteImport } from './routes/_authenticated/admin_.ad-studio'
 import { Route as ApiPublicSaspayWebhookRouteImport } from './routes/api/public/saspay-webhook'
 import { Route as AuthenticatedAcademieCoursSlugRouteImport } from './routes/_authenticated/academie_.cours.$slug'
 import { Route as AuthenticatedAcademieLectureCourseIdRouteImport } from './routes/_authenticated/academie_.lecture.$courseId'
@@ -230,6 +231,12 @@ const AuthenticatedAcademieVideosRoute =
     path: '/academie/videos',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedAdminAdStudioRoute =
+  AuthenticatedAdminAdStudioRouteImport.update({
+    id: '/admin_/ad-studio',
+    path: '/admin/ad-studio',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const ApiPublicSaspayWebhookRoute = ApiPublicSaspayWebhookRouteImport.update({
   id: '/api/public/saspay-webhook',
   path: '/api/public/saspay-webhook',
@@ -304,6 +311,7 @@ export interface FileRoutesByFullPath {
   '/academie/mes-formations': typeof AuthenticatedAcademieMesFormationsRoute
   '/academie/recues': typeof AuthenticatedAcademieRecuesRoute
   '/academie/videos': typeof AuthenticatedAcademieVideosRoute
+  '/admin/ad-studio': typeof AuthenticatedAdminAdStudioRoute
   '/api/public/saspay-webhook': typeof ApiPublicSaspayWebhookRoute
   '/academie/cours/$slug': typeof AuthenticatedAcademieCoursSlugRoute
   '/academie/lecture/$courseId': typeof AuthenticatedAcademieLectureCourseIdRoute
@@ -346,6 +354,7 @@ export interface FileRoutesByTo {
   '/academie/mes-formations': typeof AuthenticatedAcademieMesFormationsRoute
   '/academie/recues': typeof AuthenticatedAcademieRecuesRoute
   '/academie/videos': typeof AuthenticatedAcademieVideosRoute
+  '/admin/ad-studio': typeof AuthenticatedAdminAdStudioRoute
   '/api/public/saspay-webhook': typeof ApiPublicSaspayWebhookRoute
   '/academie/cours/$slug': typeof AuthenticatedAcademieCoursSlugRoute
   '/academie/lecture/$courseId': typeof AuthenticatedAcademieLectureCourseIdRoute
@@ -390,6 +399,7 @@ export interface FileRoutesById {
   '/_authenticated/academie_/mes-formations': typeof AuthenticatedAcademieMesFormationsRoute
   '/_authenticated/academie_/recues': typeof AuthenticatedAcademieRecuesRoute
   '/_authenticated/academie_/videos': typeof AuthenticatedAcademieVideosRoute
+  '/_authenticated/admin_/ad-studio': typeof AuthenticatedAdminAdStudioRoute
   '/api/public/saspay-webhook': typeof ApiPublicSaspayWebhookRoute
   '/_authenticated/academie_/cours/$slug': typeof AuthenticatedAcademieCoursSlugRoute
   '/_authenticated/academie_/lecture/$courseId': typeof AuthenticatedAcademieLectureCourseIdRoute
@@ -434,6 +444,7 @@ export interface FileRouteTypes {
     | '/academie/mes-formations'
     | '/academie/recues'
     | '/academie/videos'
+    | '/admin/ad-studio'
     | '/api/public/saspay-webhook'
     | '/academie/cours/$slug'
     | '/academie/lecture/$courseId'
@@ -476,6 +487,7 @@ export interface FileRouteTypes {
     | '/academie/mes-formations'
     | '/academie/recues'
     | '/academie/videos'
+    | '/admin/ad-studio'
     | '/api/public/saspay-webhook'
     | '/academie/cours/$slug'
     | '/academie/lecture/$courseId'
@@ -519,6 +531,7 @@ export interface FileRouteTypes {
     | '/_authenticated/academie_/mes-formations'
     | '/_authenticated/academie_/recues'
     | '/_authenticated/academie_/videos'
+    | '/_authenticated/admin_/ad-studio'
     | '/api/public/saspay-webhook'
     | '/_authenticated/academie_/cours/$slug'
     | '/_authenticated/academie_/lecture/$courseId'
@@ -786,6 +799,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAcademieVideosRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/admin_/ad-studio': {
+      id: '/_authenticated/admin_/ad-studio'
+      path: '/admin/ad-studio'
+      fullPath: '/admin/ad-studio'
+      preLoaderRoute: typeof AuthenticatedAdminAdStudioRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/api/public/saspay-webhook': {
       id: '/api/public/saspay-webhook'
       path: '/api/public/saspay-webhook'
@@ -862,6 +882,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAcademieMesFormationsRoute: typeof AuthenticatedAcademieMesFormationsRoute
   AuthenticatedAcademieRecuesRoute: typeof AuthenticatedAcademieRecuesRoute
   AuthenticatedAcademieVideosRoute: typeof AuthenticatedAcademieVideosRoute
+  AuthenticatedAdminAdStudioRoute: typeof AuthenticatedAdminAdStudioRoute
   AuthenticatedAcademieCoursSlugRoute: typeof AuthenticatedAcademieCoursSlugRoute
   AuthenticatedAcademieLectureCourseIdRoute: typeof AuthenticatedAcademieLectureCourseIdRoute
   AuthenticatedAcademieMesFormationsIdRoute: typeof AuthenticatedAcademieMesFormationsIdRoute
@@ -892,6 +913,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
     AuthenticatedAcademieMesFormationsRoute,
   AuthenticatedAcademieRecuesRoute: AuthenticatedAcademieRecuesRoute,
   AuthenticatedAcademieVideosRoute: AuthenticatedAcademieVideosRoute,
+  AuthenticatedAdminAdStudioRoute: AuthenticatedAdminAdStudioRoute,
   AuthenticatedAcademieCoursSlugRoute: AuthenticatedAcademieCoursSlugRoute,
   AuthenticatedAcademieLectureCourseIdRoute:
     AuthenticatedAcademieLectureCourseIdRoute,
