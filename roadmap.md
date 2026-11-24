@@ -42,3 +42,4 @@
 
 ## Admin Ad Studio
 - [x] Lot 1 : page admin principale protégée (UUID serveur), états vides, modules « À venir »
+- [ ] Lot 2A : URL Analyzer (analyse publique sécurisée, rapport, historique)

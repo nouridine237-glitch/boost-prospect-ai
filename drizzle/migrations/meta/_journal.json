@@ -267,6 +267,13 @@
       "when": 1795240345056,
       "tag": "0037_revoke_company_script_teasers",
       "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1795479581504,
+      "tag": "0038_ad_studio_url_analyses",
+      "breakpoints": true
     }
   ]
 }

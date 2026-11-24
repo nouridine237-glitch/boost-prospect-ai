@@ -342,6 +342,39 @@ export type Database = {
           },
         ]
       }
+      ad_studio_url_analyses: {
+        Row: {
+          created_at: string
+          error: string
+          finished_at: string | null
+          id: string
+          owner_id: string
+          report: Json | null
+          status: string
+          url: string
+        }
+        Insert: {
+          created_at?: string
+          error?: string
+          finished_at?: string | null
+          id?: string
+          owner_id: string
+          report?: Json | null
+          status?: string
+          url: string
+        }
+        Update: {
+          created_at?: string
+          error?: string
+          finished_at?: string | null
+          id?: string
+          owner_id?: string
+          report?: Json | null
+          status?: string
+          url?: string
+        }
+        Relationships: []
+      }
       ai_generations: {
         Row: {
           created_at: string
