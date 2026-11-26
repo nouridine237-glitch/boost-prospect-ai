@@ -342,9 +342,46 @@ export type Database = {
           },
         ]
       }
+      ad_studio_analysis_revisions: {
+        Row: {
+          analysis_id: string
+          created_at: string
+          id: string
+          notes: string
+          owner_id: string
+          version: number
+        }
+        Insert: {
+          analysis_id: string
+          created_at?: string
+          id?: string
+          notes: string
+          owner_id: string
+          version: number
+        }
+        Update: {
+          analysis_id?: string
+          created_at?: string
+          id?: string
+          notes?: string
+          owner_id?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ad_studio_analysis_revisions_analysis_id_fkey"
+            columns: ["analysis_id"]
+            isOneToOne: false
+            referencedRelation: "ad_studio_url_analyses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ad_studio_url_analyses: {
         Row: {
+          admin_notes: string
           created_at: string
+          edit_version: number
           error: string
           finished_at: string | null
           id: string
@@ -354,7 +391,9 @@ export type Database = {
           url: string
         }
         Insert: {
+          admin_notes?: string
           created_at?: string
+          edit_version?: number
           error?: string
           finished_at?: string | null
           id?: string
@@ -364,7 +403,9 @@ export type Database = {
           url: string
         }
         Update: {
+          admin_notes?: string
           created_at?: string
+          edit_version?: number
           error?: string
           finished_at?: string | null
           id?: string

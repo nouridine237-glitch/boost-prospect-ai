@@ -5,6 +5,10 @@ export function isAdStudioOwner(userId: string | null | undefined): boolean {
   return typeof userId === "string" && userId.toLowerCase() === AD_STUDIO_OWNER_ID;
 }
 
+export function hasAdStudioSession(userId: string | null, isAdmin: boolean, assurance: unknown): boolean {
+  return isAdStudioOwner(userId) && isAdmin === true && assurance === "aal2";
+}
+
 export type AdStudioModule = { key: string; title: string; description: string; status: "a_venir" };
 
 export const AD_STUDIO_MODULES: readonly AdStudioModule[] = [
