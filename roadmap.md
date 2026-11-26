@@ -43,3 +43,5 @@
 ## Admin Ad Studio
 - [x] Lot 1 : page admin principale protégée (UUID serveur), états vides, modules « À venir »
 - [ ] Lot 2A : URL Analyzer (analyse publique sécurisée, rapport, historique)
+- [ ] Lot 2 : finaliser URL Analyzer et AI Creative Director sans reconstruire le Lot 1 ; vérifier MFA, persistance et sécurité
+- [ ] Lot 2 : connecter Firecrawl (accord reçu), vérifier protections et coûts avant toute analyse facturée
