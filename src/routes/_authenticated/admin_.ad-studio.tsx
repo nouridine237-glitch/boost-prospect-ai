@@ -6,6 +6,10 @@ import { AppShell } from "@/components/app-shell";
 import { Card, CardContent } from "@/components/ui/card";
 import { getAdStudio } from "@/lib/ad-studio.functions";
 import type { AdStudioModule } from "@/lib/ad-studio";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { StudioMfaGate } from "@/components/ad-studio/mfa-gate";
+import { UrlAnalyzerPanel } from "@/components/ad-studio/url-analyzer-panel";
 
 export const Route = createFileRoute("/_authenticated/admin_/ad-studio")({
   head: () => ({ meta: [
@@ -23,12 +27,14 @@ export const Route = createFileRoute("/_authenticated/admin_/ad-studio")({
 function AdStudioPage() {
   const { user } = Route.useRouteContext();
   const fetchStudio = useServerFn(getAdStudio);
-  const [state, setState] = useState<"loading" | "denied" | "ok">("loading");
+  const [state, setState] = useState<"loading" | "denied" | "mfa" | "ok">("loading");
   const [modules, setModules] = useState<AdStudioModule[]>([]);
 
-  useEffect(() => {
-    fetchStudio().then((r) => { setModules(r.modules); setState("ok"); }).catch(() => setState("denied"));
-  }, []);
+  function refreshAccess() {
+    setState("loading");
+    fetchStudio().then((r) => { setModules(r.modules); setState(r.mfaRequired ? "mfa" : "ok"); }).catch(() => setState("denied"));
+  }
+  useEffect(() => { refreshAccess(); }, []);
 
   return (
     <AppShell user={user} title="Admin Ad Studio">
@@ -39,18 +45,22 @@ function AdStudioPage() {
             <Lock className="size-4" />Accès réservé à l'administrateur principal.
           </CardContent></Card>
         )}
+        {state === "mfa" && <><h1 className="text-2xl font-bold">MLM Boost AI — Admin Ad Studio</h1><StudioMfaGate onVerified={refreshAccess} /></>}
         {state === "ok" && (
           <>
             <div className="mb-8 flex items-start gap-4">
               <span className="grid size-12 shrink-0 place-items-center rounded-xl bg-primary/12 text-primary"><Clapperboard className="size-6" /></span>
               <div>
                 <h1 className="text-2xl font-bold tracking-tight lg:text-3xl">MLM Boost AI — Admin Ad Studio</h1>
-                <p className="mt-1 text-sm text-muted-foreground">Atelier publicitaire interne. Aucun module n'est encore actif.</p>
+                <p className="mt-1 text-sm text-muted-foreground">Stratégie publicitaire · atelier privé</p>
               </div>
             </div>
-            <Card className="mb-6 border-dashed"><CardContent className="p-6 text-sm text-muted-foreground">
-              Aucune création, aucune campagne et aucune dépense pour l'instant. Les modules ci-dessous seront ouverts lors des prochains lots.
-            </CardContent></Card>
+            <Tabs defaultValue="analyzer" className="mb-10">
+              <TabsList className="mb-6 h-auto max-w-full flex-wrap justify-start gap-1"><TabsTrigger value="analyzer" className="h-10">URL Analyzer</TabsTrigger><TabsTrigger value="director" className="h-10">AI Creative Director</TabsTrigger></TabsList>
+              <TabsContent value="analyzer"><UrlAnalyzerPanel /></TabsContent>
+              <TabsContent value="director"><section className="border-t border-border py-6"><h2 className="text-xl font-semibold">AI Creative Director</h2><p className="mt-3 max-w-xl text-sm text-muted-foreground">Génération textuelle non activée. Le plafond de crédits par campagne et le contrôle des dépenses restent à valider.</p><Button disabled className="mt-5">Génération indisponible</Button></section></TabsContent>
+            </Tabs>
+            <h2 className="mb-4 text-lg font-semibold">Prochains modules</h2>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {modules.map((m) => (
                 <Card key={m.key} aria-disabled="true" className="opacity-70">
@@ -60,7 +70,7 @@ function AdStudioPage() {
                       <span className="rounded-full border border-border px-2.5 py-0.5 text-xs text-muted-foreground">À venir</span>
                     </div>
                     <p className="mt-2 text-sm text-muted-foreground">{m.description}</p>
-                    <button type="button" disabled className="mt-4 h-11 w-full cursor-not-allowed rounded-md border border-border text-sm text-muted-foreground">Indisponible</button>
+                    <Button type="button" variant="outline" disabled className="mt-4 h-11 w-full">Indisponible</Button>
                   </CardContent>
                 </Card>
               ))}
